@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 980" width="100%" height="100%" style="background-color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="fda-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#b91c1c" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="fdb-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="node-wan" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="node-core" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#7e22ce" />
+    </linearGradient>
+    <linearGradient id="node-agg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="node-acc-a" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f87171" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+    <linearGradient id="node-acc-b" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- TITLE -->
+  <text x="575" y="40" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="1">ABC HQ - CAMPUS PHYSICAL TOPOLOGY SCHEMA</text>
+  <text x="575" y="62" text-anchor="middle" fill="#94a3b8" font-size="13">Dual Failure Domain Architecture (FD-A / FD-B) across 10 Floors</text>
+
+  <!-- FAILURE DOMAIN BACKGROUND CONTAINERS -->
+  <!-- Domain A (Red) -->
+  <rect x="50" y="90" width="500" height="780" rx="16" fill="url(#fda-grad)" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,6"/>
+  <rect x="70" y="105" width="220" height="30" rx="6" fill="#ef4444" fill-opacity="0.2"/>
+  <text x="80" y="125" fill="#fca5a5" font-size="14" font-weight="700">FAILURE DOMAIN A (Red)</text>
+
+  <!-- Domain B (Blue) -->
+  <rect x="600" y="90" width="500" height="780" rx="16" fill="url(#fdb-grad)" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,6"/>
+  <rect x="620" y="105" width="220" height="30" rx="6" fill="#3b82f6" fill-opacity="0.2"/>
+  <text x="630" y="125" fill="#93c5fd" font-size="14" font-weight="700">FAILURE DOMAIN B (Blue)</text>
+
+  <!-- EXTERNAL WAN LINES -->
+  <path d="M 200,30 L 200,160" stroke="#38bdf8" stroke-width="3" stroke-dasharray="4,4"/>
+  <rect x="140" y="30" width="120" height="22" rx="4" fill="#0284c7"/>
+  <text x="200" y="45" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">ISP-A (1Gbps)</text>
+
+  <path d="M 950,30 L 950,160" stroke="#38bdf8" stroke-width="3" stroke-dasharray="4,4"/>
+  <rect x="890" y="30" width="120" height="22" rx="4" fill="#0284c7"/>
+  <text x="950" y="45" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">ISP-B (1Gbps)</text>
+
+  <!-- LINKS LAYER -->
+  
+  <!-- Inter-Device 100G Horizontal Links -->
+  <!-- WAN to WAN -->
+  <path d="M 270,185 L 880,185" stroke="#f59e0b" stroke-width="3"/>
+  
+  <!-- Core 100G Mesh -->
+  <path d="M 230,325 L 370,325" stroke="#38bdf8" stroke-width="3"/> <!-- Cor-01 to Cor-02 -->
+  <path d="M 780,325 L 920,325" stroke="#38bdf8" stroke-width="3"/> <!-- Cor-03 to Cor-04 -->
+  <path d="M 200,325 C 200,260 950,260 950,325" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,4" fill="none"/> <!-- Cross FD Core Mesh (01-03) -->
+
+  <!-- Agg 100G Links -->
+  <path d="M 230,485 L 370,485" stroke="#38bdf8" stroke-width="3"/> <!-- Agg-01 to Agg-02 -->
+  <path d="M 780,485 L 920,485" stroke="#38bdf8" stroke-width="3"/> <!-- Agg-03 to Agg-04 -->
+
+  <!-- Vertical & Cross Links -->
+  <!-- WAN to Core -->
+  <path d="M 200,210 L 170,300" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M 950,210 L 920,300" stroke="#38bdf8" stroke-width="3"/>
+
+  <!-- Core to Agg (FD-A) -->
+  <path d="M 170,350 L 170,460" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M 170,350 L 320,460" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M 320,350 L 170,460" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M 320,350 L 320,460" stroke="#38bdf8" stroke-width="3"/>
+
+  <!-- Core to Agg (FD-B) -->
+  <path d="M 730,350 L 730,460" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M 730,350 L 880,460" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M 880,350 L 730,460" stroke="#38bdf8" stroke-width="3"/>
+  <path d="M 880,350 L 880,460" stroke="#38bdf8" stroke-width="3"/>
+
+  <!-- Agg to Access (10G Fiber Links) -->
+  <!-- Floor 1 -->
+  <path d="M 170,510 L 200,610" stroke="#10b981" stroke-width="2"/>
+  <path d="M 320,510 L 200,610" stroke="#10b981" stroke-width="2"/>
+  <path d="M 730,510 L 950,610" stroke="#10b981" stroke-width="2"/>
+  <path d="M 880,510 L 950,610" stroke="#10b981" stroke-width="2"/>
+
+  <!-- Floor 10 -->
+  <path d="M 170,510 L 200,780" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
+  <path d="M 320,510 L 200,780" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
+  <path d="M 730,510 L 950,780" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
+  <path d="M 880,510 L 950,780" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
+
+  <!-- NODES LAYER -->
+
+  <!-- LAYER 1: WAN ROUTERS -->
+  <g id="wan-routers" filter="url(#shadow)">
+    <!-- WAN-01 -->
+    <rect x="130" y="160" width="140" height="50" rx="8" fill="url(#node-wan)"/>
+    <text x="200" y="183" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-wan-01</text>
+    <text x="200" y="198" text-anchor="middle" fill="#e0f2fe" font-size="10">Role: WAN Router</text>
+
+    <!-- WAN-02 -->
+    <rect x="880" y="160" width="140" height="50" rx="8" fill="url(#node-wan)"/>
+    <text x="950" y="183" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-wan-02</text>
+    <text x="950" y="198" text-anchor="middle" fill="#e0f2fe" font-size="10">Role: WAN Router</text>
+  </g>
+
+  <!-- LAYER 2: CORE ROUTERS -->
+  <g id="core-routers" filter="url(#shadow)">
+    <!-- Cor-01 -->
+    <rect x="100" y="300" width="130" height="50" rx="8" fill="url(#node-core)"/>
+    <text x="165" y="323" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-01</text>
+    <text x="165" y="338" text-anchor="middle" fill="#f3e8ff" font-size="10">Core / Spine</text>
+
+    <!-- Cor-02 -->
+    <rect x="270" y="300" width="130" height="50" rx="8" fill="url(#node-core)"/>
+    <text x="335" y="323" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-02</text>
+    <text x="335" y="338" text-anchor="middle" fill="#f3e8ff" font-size="10">Core / Spine</text>
+
+    <!-- Cor-03 -->
+    <rect x="680" y="300" width="130" height="50" rx="8" fill="url(#node-core)"/>
+    <text x="745" y="323" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-03</text>
+    <text x="745" y="338" text-anchor="middle" fill="#f3e8ff" font-size="10">Core / Spine</text>
+
+    <!-- Cor-04 -->
+    <rect x="850" y="300" width="130" height="50" rx="8" fill="url(#node-core)"/>
+    <text x="915" y="323" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-04</text>
+    <text x="915" y="338" text-anchor="middle" fill="#f3e8ff" font-size="10">Core / Spine</text>
+  </g>
+
+  <!-- LAYER 3: AGGREGATION SWITCHES -->
+  <g id="agg-switches" filter="url(#shadow)">
+    <!-- Agg-01 -->
+    <rect x="100" y="460" width="130" height="50" rx="8" fill="url(#node-agg)"/>
+    <text x="165" y="483" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-01</text>
+    <text x="165" y="498" text-anchor="middle" fill="#fef3c7" font-size="10">Aggregation</text>
+
+    <!-- Agg-02 -->
+    <rect x="270" y="460" width="130" height="50" rx="8" fill="url(#node-agg)"/>
+    <text x="335" y="483" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-02</text>
+    <text x="335" y="498" text-anchor="middle" fill="#fef3c7" font-size="10">Aggregation</text>
+
+    <!-- Agg-03 -->
+    <rect x="680" y="460" width="130" height="50" rx="8" fill="url(#node-agg)"/>
+    <text x="745" y="483" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-03</text>
+    <text x="745" y="498" text-anchor="middle" fill="#fef3c7" font-size="10">Aggregation</text>
+
+    <!-- Agg-04 -->
+    <rect x="850" y="460" width="130" height="50" rx="8" fill="url(#node-agg)"/>
+    <text x="915" y="483" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-04</text>
+    <text x="915" y="498" text-anchor="middle" fill="#fef3c7" font-size="10">Aggregation</text>
+  </g>
+
+  <!-- LAYER 4: ACCESS SWITCHES (FLOORS 1 to 10) -->
+  
+  <!-- FLOOR 1 -->
+  <rect x="70" y="580" width="1010" height="80" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="85" y="625" fill="#f8fafc" font-size="14" font-weight="700">FLOOR 01</text>
+
+  <g id="f01-switches" filter="url(#shadow)">
+    <!-- f01-acc-01 -->
+    <rect x="200" y="595" width="220" height="50" rx="8" fill="url(#node-acc-a)"/>
+    <text x="310" y="618" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f01-acc-01</text>
+    <text x="310" y="633" text-anchor="middle" fill="#fee2e2" font-size="10">IDF-1A | Colorless Ports</text>
+
+    <!-- f01-acc-02 -->
+    <rect x="730" y="595" width="220" height="50" rx="8" fill="url(#node-acc-b)"/>
+    <text x="840" y="618" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f01-acc-02</text>
+    <text x="840" y="633" text-anchor="middle" fill="#dbeafe" font-size="10">IDF-1B | Colorless Ports</text>
+  </g>
+
+  <!-- FLOORS 2-9 BREAK INDICATOR -->
+  <g transform="translate(0, 675)">
+    <line x1="70" y1="20" x2="1080" y2="20" stroke="#475569" stroke-width="2" stroke-dasharray="8,8"/>
+    <rect x="475" y="5" width="200" height="30" rx="15" fill="#334155"/>
+    <text x="575" y="25" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="600">... FLOORS 02 THROUGH 09 ...</text>
+  </g>
+
+  <!-- FLOOR 10 -->
+  <rect x="70" y="750" width="1010" height="80" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="85" y="795" fill="#f8fafc" font-size="14" font-weight="700">FLOOR 10</text>
+
+  <g id="f10-switches" filter="url(#shadow)">
+    <!-- f10-acc-01 -->
+    <rect x="200" y="765" width="220" height="50" rx="8" fill="url(#node-acc-a)"/>
+    <text x="310" y="788" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f10-acc-01</text>
+    <text x="310" y="803" text-anchor="middle" fill="#fee2e2" font-size="10">IDF-10A | Colorless Ports</text>
+
+    <!-- f10-acc-02 -->
+    <rect x="730" y="765" width="220" height="50" rx="8" fill="url(#node-acc-b)"/>
+    <text x="840" y="788" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f10-acc-02</text>
+    <text x="840" y="803" text-anchor="middle" fill="#dbeafe" font-size="10">IDF-10B | Colorless Ports</text>
+  </g>
+
+  <!-- LEGEND -->
+  <g transform="translate(180, 900)" filter="url(#shadow)">
+    <rect x="0" y="0" width="790" height="50" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    
+    <text x="20" y="30" fill="#f8fafc" font-size="12" font-weight="700">LEGEND:</text>
+    
+    <line x1="100" y1="26" x2="140" y2="26" stroke="#38bdf8" stroke-width="3"/>
+    <text x="150" y="30" fill="#94a3b8" font-size="11">100G Inter-Device / Core-Agg</text>
+
+    <line x1="350" y1="26" x2="390" y2="26" stroke="#10b981" stroke-width="2"/>
+    <text x="400" y="30" fill="#94a3b8" font-size="11">10G Agg-to-Access</text>
+
+    <line x1="530" y1="26" x2="570" y2="26" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,4"/>
+    <text x="580" y="30" fill="#94a3b8" font-size="11">1G WAN Ethernet Line</text>
+  </g>
+</svg>
