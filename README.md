@@ -19,7 +19,41 @@ The business requirements can be summarized as:
 | Segment voice/data/wireless/camera/IPTV so one domain can't degrade or expose another | - ​Macro-Segmentation (VRF Isolation) to separate differnt business nature of devices into different tenants <br> - ​Micro-Segmentation & QoS Policies to restrict communication between devices within the same tenant |
 | BAU Change is fast, low-risk, and auditable | ​- Single Source of Truth (SSoT) & Infrastructure-as-Code (IaC) <br> - ​CI/CD Pipeline with Automated Validation <br> - ​Streaming Telemetry & Closed-Loop Auditing |
 
-## Design
+## Network Design
+
+This section outlines the architectural framework and design principles for the campus network:
+
+### Topology & Connectivity Hierarchy
+
+* Implements a standard five-tier architecture: Regional On-Prem/Cloud Colo Access $\rightarrow$ WAN $\rightarrow$ Core $\rightarrow$ Aggregation $\rightarrow$ Access.
+* Extends dual-homed connections across all network tiers for end-to-end path redundancy.
+
+### Control Plane & Overlay Architecture
+
+* Deploys a unified BGP and Segment Routing-based transport underlay.
+* Runs EVPN-VXLAN on top of the underlay to deliver flexible Layer 2/Layer 3 multi-tenant virtual overlay networks.
+
+### Network Services & Security
+
+* Mandates 802.1X Network Access Control (NAC) across all Access switch endpoint interfaces.
+* Centralizes RADIUS authentication and authorization services within the hub data center.
+
+### Platform Standardization
+
+* WAN Tier: Standardized on a dedicated WAN routing platform optimized for edge peering and WAN features.
+* Core & Aggregation Tiers: Standardized on a single, high-throughput campus fabric switching platform.
+* Access Tier: Standardized on a dedicated edge-switching platform designed for high-density endpoint connectivity and 802.1X enforcement.
+
+### Resiliency & Fault Isolation
+
+* Enforces complete two-way physical and logical diversity across all infrastructure components (dual WAN routers, dual ISP/colo circuits).
+* Extends two-way isolation into dedicated dual failure domains (FD-A and FD-B) spanning the Core, Aggregation, and Access layers.
+
+### Bandwidth & Interface Capacity
+
+* Endpoint Ports: Supports 1Gbps or 10Gbps access connectivity per endpoint interface.
+* Inter-Device Trunking: All internal backbone, Core, Aggregation, and inter-plane links operate at 100Gbps.
+* WAN Edge Uplinks: Dual 10Gbps dedicated circuits connecting the campus WAN edge to regional on-prem data centers and cloud colocation facilities.
 
 ### Data models 
 
@@ -49,8 +83,8 @@ site_physical_topology:
   # ============================================================================
   link_standards:
     wan_circuit:
-      speed: "1Gbps"
-      media: "1000BASE-T_Ethernet"
+      speed: "10Gbps"
+      media: "10GBASE-SR_Fiber"
     inter_device: # Same-layer horizontal links (WAN-to-WAN, Core-to-Core, Agg-to-Agg)
       speed: "100Gbps"
       media: "100GBASE-SR4_Fiber"
@@ -70,9 +104,9 @@ site_physical_topology:
     - name: "abc-hq-wan-01"
       failure_domain: "FD-A"
       external_links:
-        - interface: "GigabitEthernet0/0/0"
+        - interface: "TenGigabitEthernet0/0/0"
           type: "wan_circuit"
-          description: "ISP-A Primary 1Gbps Ethernet Line"
+          description: "Server Provider A 10Gbps Ethernet Line"
       internal_links:
         - local_port: "HundredGigE0/1/0"
           remote_device: "abc-hq-wan-02"       # Link between same-type devices (FD-A to FD-B)
@@ -86,9 +120,9 @@ site_physical_topology:
     - name: "abc-hq-wan-02"
       failure_domain: "FD-B"
       external_links:
-        - interface: "GigabitEthernet0/0/0"
+        - interface: "TenGigabitEthernet0/0/0"
           type: "wan_circuit"
-          description: "ISP-B Backup 1Gbps Ethernet Line"
+          description: "Service Provider B 10Gbps Ethernet Line"
       internal_links:
         - local_port: "HundredGigE0/1/0"
           remote_device: "abc-hq-wan-01"
@@ -165,25 +199,25 @@ site_physical_topology:
         - name: "abc-hq-f01-acc-01"
           failure_domain: "FD-A"
           uplinks:
-            - local_port: "TenGigabitEthernet1/1/1"
+            - local_port: "HundredGigabitEthernet1/1/1"
               remote_device: "abc-hq-agg-01"
-              remote_port: "TenGigabitEthernet1/0/1"
+              remote_port: "HundredGigabitEthernet1/0/1"
               type: "agg_to_access"
-            - local_port: "TenGigabitEthernet1/1/2"
+            - local_port: "HundredGigabitEthernet1/1/2"
               remote_device: "abc-hq-agg-02"
-              remote_port: "TenGigabitEthernet1/0/1"
+              remote_port: "HundredGigabitEthernet1/0/1"
               type: "agg_to_access"
 
         - name: "abc-hq-f01-acc-02"
           failure_domain: "FD-B"
           uplinks:
-            - local_port: "TenGigabitEthernet1/1/1"
+            - local_port: "HundredGigabitEthernet1/1/1"
               remote_device: "abc-hq-agg-03"
-              remote_port: "TenGigabitEthernet1/0/1"
+              remote_port: "HundredGigabitEthernet1/0/1"
               type: "agg_to_access"
-            - local_port: "TenGigabitEthernet1/1/2"
+            - local_port: "HundredGigabitEthernet1/1/2"
               remote_device: "abc-hq-agg-04"
-              remote_port: "TenGigabitEthernet1/0/1"
+              remote_port: "HundredGigabitEthernet1/0/1"
               type: "agg_to_access"
 
     # [ Floors 2 to 10 follow the identical pattern for acc-01 and acc-02 ]
