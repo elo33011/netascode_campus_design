@@ -2,6 +2,10 @@
 
 This is a sample network design to demonstrate how an automation native network design should look like. Automation native is a design approach which incorporates the elements required by network automation into design process. These elements are: Determinsitic Topology, Abstraction, Machine-Friendly interfaces & structured data, Unique source of truth, Declarative state and Streaming Telemetry.
 
+Key steps:
+- Design created from data model in yaml
+- Diagram rendered from yaml
+
 ## Business Requirement
 
 Company ABC is setting up a new 2,000 user campus across a 10-floor building. At this scale, the business needs the network to onboard new starters, moves, and floor-capacity changes quickly without service risk; to keep voice, data, wireless, and fixed-function devices like cameras and IPTV appropriately segmented so a change in one domain can't degrade or expose another. The business also wants these changes itself to be fast, low-risk, and auditable — every BAU change traceable to a reviewed, versioned intent rather than an ad hoc CLI session.
@@ -607,5 +611,14 @@ site_context:
 ```
 </details>
 
+## Deployment Details
+
+Physical data model to generate rack & stack, patching scheme. The data model also need to include rack information.
+Onsite facility team complete the rack and stack, patching, preconfigure with mgmt IP so that Ansible runner is reachable.
+Device build steps.
+Device specific baseline configuration
+- Data model for each platform for baseline configuration, data model is schema only, data is pulled from the network source of truth, Jinja2 template per device platform to render config
+Design specific configuration
+- Use data model from physical topology and logical topology.
 
 
