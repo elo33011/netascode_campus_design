@@ -58,7 +58,7 @@ This section outlines the architectural framework and design principles for the 
 ### Data models 
 
 <details>
-<summary>Physical Topology</summary>
+<summary>Physical Topology - Campus Network </summary>
 
 ```yaml
 ---
@@ -604,4 +604,6 @@ site_context:
       # [...Floors 2-10 are repetitive using the acc-vtep schema shown above...]
 ```
 </details>
+
+![Logical Network Diagram](./logical.svg)
 
