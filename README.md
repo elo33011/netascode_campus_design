@@ -412,4 +412,4 @@ management_context:
 ```
 </details>
 
-![Campus Network Diagram](./mgmt_.svg)
+![Campus Network Diagram](./mgmt_topology.svg)
