@@ -292,6 +292,8 @@ site_physical_topology:
 </details>
 
 ![Campus Physical Topology](./topology.svg)
+![Campus Physical Topology](./topology.svg)
+
 
 
 
