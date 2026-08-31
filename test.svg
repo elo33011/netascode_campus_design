@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1250 1420"
+     width="800"
+     height="auto"
+     style="background-color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <!-- Gradients for Failure Domains -->
+    <linearGradient id="fda-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.10" />
+      <stop offset="100%" stop-color="#b91c1c" stop-opacity="0.03" />
+    </linearGradient>
+    <linearGradient id="fdb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.10" />
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.03" />
+    </linearGradient>
+
+    <!-- Node Gradients -->
+    <linearGradient id="wan-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="core-a-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f87171" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <linearGradient id="core-b-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="100%" stop-color="#1e40af" />
+    </linearGradient>
+    <linearGradient id="agg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+    <linearGradient id="vtep-a-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#881337" />
+    </linearGradient>
+    <linearGradient id="vtep-b-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- TITLE BLOCK -->
+  <text x="625" y="32" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">
+    ABC HQ - LOGICAL BGP, UNDERLAY &amp; VXLAN EVPN TOPOLOGY
+  </text>
+  <text x="625" y="55" text-anchor="middle" fill="#94a3b8" font-size="13">
+    Unified Campus AS 65100 | Pure L3 Underlay Transit | EVPN Overlay Exclusively at Access VTEPs
+  </text>
+
+  <!-- (… everything else in your SVG remains unchanged …) -->
+
+</svg>
