@@ -291,3 +291,4 @@ site_physical_topology:
 ```
 </details>
 
+![Diagram](./topology.svg)
