@@ -37,28 +37,28 @@
   </defs>
 
   <!-- TITLE -->
-  <text x="575" y="40" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="1">ABC HQ - CAMPUS PHYSICAL TOPOLOGY SCHEMA</text>
-  <text x="575" y="62" text-anchor="middle" fill="#94a3b8" font-size="13">Dual Failure Domain Architecture (FD-A / FD-B) with Full WAN-to-Core Cross-Connect Matrix</text>
+  <text x="575" y="25" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="1">ABC HQ - CAMPUS PHYSICAL TOPOLOGY SCHEMA</text>
+  <text x="575" y="45" text-anchor="middle" fill="#94a3b8" font-size="13">Dual Failure Domain Architecture (FD-A / FD-B) with Full WAN-to-Core Cross-Connect Matrix</text>
 
   <!-- FAILURE DOMAIN BACKGROUND CONTAINERS -->
   <!-- Domain A (Red) -->
-  <rect x="50" y="90" width="500" height="780" rx="16" fill="url(#fda-grad)" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,6"/>
+  <rect x="50" y="90" width="500" height="780" rx="16" fill="url(#fda-grad)" stroke="#ef4444" stroke-width="2"/>
   <rect x="70" y="105" width="220" height="30" rx="6" fill="#ef4444" fill-opacity="0.2"/>
   <text x="80" y="125" fill="#fca5a5" font-size="14" font-weight="700">FAILURE DOMAIN A (Red)</text>
 
   <!-- Domain B (Blue) -->
-  <rect x="600" y="90" width="500" height="780" rx="16" fill="url(#fdb-grad)" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,6"/>
+  <rect x="600" y="90" width="500" height="780" rx="16" fill="url(#fdb-grad)" stroke="#3b82f6" stroke-width="2"/>
   <rect x="620" y="105" width="220" height="30" rx="6" fill="#3b82f6" fill-opacity="0.2"/>
   <text x="630" y="125" fill="#93c5fd" font-size="14" font-weight="700">FAILURE DOMAIN B (Blue)</text>
 
   <!-- EXTERNAL WAN LINES -->
-  <path d="M 165,30 L 165,160" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4"/>
-  <rect x="95" y="30" width="140" height="22" rx="4" fill="#b45309"/>
-  <text x="165" y="45" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Provider A (10Gbps)</text>
+  <path d="M 165,75 L 165,160" stroke="#f59e0b" stroke-width="3"/>
+  <rect x="95" y="60" width="140" height="22" rx="4" fill="#b45309"/>
+  <text x="165" y="75" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Provider A (10Gbps)</text>
 
-  <path d="M 915,30 L 915,160" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4"/>
-  <rect x="845" y="30" width="140" height="22" rx="4" fill="#b45309"/>
-  <text x="915" y="45" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Provider B (10Gbps)</text>
+  <path d="M 915,75 L 915,160" stroke="#f59e0b" stroke-width="3"/>
+  <rect x="845" y="60" width="140" height="22" rx="4" fill="#b45309"/>
+  <text x="915" y="75" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Provider B (10Gbps)</text>
 
   <!-- LINKS LAYER -->
   
@@ -77,11 +77,11 @@
   <!-- WAN TO CORE FULL CROSS-CONNECT MATRIX (100G) -->
   <!-- WAN-01 (FD-A) Connections -->
   <path d="M 165,210 L 165,300" stroke="#38bdf8" stroke-width="2.5"/> <!-- WAN-01 -> Cor-01 (FD-A) -->
-  <path d="M 185,210 L 745,300" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6,3"/> <!-- WAN-01 -> Cor-03 (FD-B Cross) -->
+  <path d="M 185,210 L 745,300" stroke="#38bdf8" stroke-width="2.5"/> <!-- WAN-01 -> Cor-03 (FD-B Cross) -->
 
   <!-- WAN-02 (FD-B) Connections -->
   <path d="M 915,210 L 915,300" stroke="#38bdf8" stroke-width="2.5"/> <!-- WAN-02 -> Cor-04 (FD-B) -->
-  <path d="M 895,210 L 335,300" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6,3"/> <!-- WAN-02 -> Cor-02 (FD-A Cross) -->
+  <path d="M 895,210 L 335,300" stroke="#38bdf8" stroke-width="2.5"/> <!-- WAN-02 -> Cor-02 (FD-A Cross) -->
 
   <!-- Core to Agg (FD-A) -->
   <path d="M 165,350 L 165,460" stroke="#38bdf8" stroke-width="3"/>
@@ -103,21 +103,21 @@
   <path d="M 915,510 L 840,595" stroke="#10b981" stroke-width="2"/>
 
   <!-- Floor 10 -->
-  <path d="M 165,510 L 310,765" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
-  <path d="M 335,510 L 310,765" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
-  <path d="M 745,510 L 840,765" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
-  <path d="M 915,510 L 840,765" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2,2"/>
+  <path d="M 165,510 L 310,765" stroke="#10b981" stroke-width="1.5"/>
+  <path d="M 335,510 L 310,765" stroke="#10b981" stroke-width="1.5"/>
+  <path d="M 745,510 L 840,765" stroke="#10b981" stroke-width="1.5"/>
+  <path d="M 915,510 L 840,765" stroke="#10b981" stroke-width="1.5"/>
 
   <!-- NODES LAYER -->
 
   <!-- LAYER 1: WAN ROUTERS -->
   <g id="wan-routers" filter="url(#shadow)">
-    <!-- WAN-01 (Aligned horizontally with Agg-01 at x=100) -->
+    <!-- WAN-01 -->
     <rect x="100" y="160" width="130" height="50" rx="8" fill="url(#node-wan)"/>
     <text x="165" y="183" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-wan-01</text>
     <text x="165" y="198" text-anchor="middle" fill="#e0f2fe" font-size="10">Role: WAN Edge</text>
 
-    <!-- WAN-02 (Aligned horizontally with Agg-04 at x=850) -->
+    <!-- WAN-02 -->
     <rect x="850" y="160" width="130" height="50" rx="8" fill="url(#node-wan)"/>
     <text x="915" y="183" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-wan-02</text>
     <text x="915" y="198" text-anchor="middle" fill="#e0f2fe" font-size="10">Role: WAN Edge</text>
@@ -189,7 +189,7 @@
 
   <!-- FLOORS 2-9 BREAK INDICATOR -->
   <g transform="translate(0, 675)">
-    <line x1="70" y1="20" x2="1080" y2="20" stroke="#475569" stroke-width="2" stroke-dasharray="8,8"/>
+    <line x1="70" y1="20" x2="1080" y2="20" stroke="#475569" stroke-width="2"/>
     <rect x="475" y="5" width="200" height="30" rx="15" fill="#334155"/>
     <text x="575" y="25" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="600">... FLOORS 02 THROUGH 09 ...</text>
   </g>
@@ -216,13 +216,13 @@
     
     <text x="20" y="30" fill="#f8fafc" font-size="12" font-weight="700">LEGEND:</text>
     
-    <line x1="100" y1="26" x2="140" y2="26" stroke="#38bdf8" stroke-width="3"/>
-    <text x="150" y="30" fill="#94a3b8" font-size="11">100G Inter-Device / Intra-FD Links</text>
+    <line x1="90" y1="26" x2="130" y2="26" stroke="#f59e0b" stroke-width="3"/>
+    <text x="140" y="30" fill="#94a3b8" font-size="11">10G Provider WAN Link</text>
 
-    <line x1="360" y1="26" x2="400" y2="26" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6,3"/>
-    <text x="410" y="30" fill="#94a3b8" font-size="11">100G Cross-FD WAN-Core Link</text>
+    <line x1="310" y1="26" x2="350" y2="26" stroke="#38bdf8" stroke-width="3"/>
+    <text x="360" y="30" fill="#94a3b8" font-size="11">100G Core / WAN Backbone</text>
 
-    <line x1="610" y1="26" x2="650" y2="26" stroke="#10b981" stroke-width="2"/>
-    <text x="660" y="30" fill="#94a3b8" font-size="11">10G Agg-to-Access</text>
+    <line x1="560" y1="26" x2="600" y2="26" stroke="#10b981" stroke-width="2"/>
+    <text x="610" y="30" fill="#94a3b8" font-size="11">10G Agg-to-Access</text>
   </g>
 </svg>
