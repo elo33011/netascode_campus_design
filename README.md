@@ -291,4 +291,4 @@ site_physical_topology:
 ```
 </details>
 
-![Diagram](./topology1.svg)
+![Campus Network Diagram](./topology1.svg)
