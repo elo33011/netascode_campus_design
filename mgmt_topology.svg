@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 980" width="100%" height="100%" style="background-color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="fdmgt-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#047857" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="node-mgt-wan" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="node-mgt-core" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2dd4bf" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+    <linearGradient id="node-ts" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f472b6" />
+      <stop offset="100%" stop-color="#be185d" />
+    </linearGradient>
+    <linearGradient id="node-ms" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- TITLE -->
+  <text x="575" y="25" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="1">ABC HQ - OUT-OF-BAND MANAGEMENT TOPOLOGY SCHEMA</text>
+  <text x="575" y="45" text-anchor="middle" fill="#94a3b8" font-size="13">Isolated OOB Management Network with Dedicated WAN Circuit, Core Switch &amp; Access Gateways</text>
+
+  <!-- ISOLATED MANAGEMENT CONTAINER -->
+  <rect x="50" y="90" width="1050" height="780" rx="16" fill="url(#fdmgt-grad)" stroke="#10b981" stroke-width="2"/>
+  <rect x="70" y="105" width="280" height="30" rx="6" fill="#10b981" fill-opacity="0.2"/>
+  <text x="80" y="125" fill="#6ee7b7" font-size="14" font-weight="700">COMPLETELY ISOLATED OOB NETWORK</text>
+
+  <!-- EXTERNAL MANAGEMENT WAN LINE -->
+  <path d="M 575,75 L 575,160" stroke="#f59e0b" stroke-width="3"/>
+  <rect x="475" y="60" width="200" height="22" rx="4" fill="#b45309"/>
+  <text x="575" y="75" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Dedicated MGT WAN (1Gbps)</text>
+
+  <!-- LINKS LAYER -->
+  
+  <!-- MGT WAN Router to MGT Core Switch (10G MGT Backbone) -->
+  <path d="M 575,210 L 575,300" stroke="#10b981" stroke-width="3"/>
+
+  <!-- MGT Core Switch to MGT Access Layer (10G MGT Backbone) -->
+  <path d="M 575,350 L 335,460" stroke="#10b981" stroke-width="3"/>
+  <path d="M 575,350 L 815,460" stroke="#10b981" stroke-width="3"/>
+
+  <!-- Serial Console Links (MGT TS to Target Production Devices) -->
+  <path d="M 335,510 L 310,595" stroke="#ec4899" stroke-width="2" stroke-dasharray="4,4"/>
+  <path d="M 335,510 L 310,765" stroke="#ec4899" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- GigE SSH Management Links (MGT Switch to Target Production Devices) -->
+  <path d="M 815,510 L 840,595" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,4"/>
+  <path d="M 815,510 L 840,765" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- NODES LAYER -->
+
+  <!-- LAYER 1: MANAGEMENT WAN ROUTER -->
+  <g id="mgt-wan-router" filter="url(#shadow)">
+    <rect x="495" y="160" width="160" height="50" rx="8" fill="url(#node-mgt-wan)"/>
+    <text x="575" y="183" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-mgt-wan-01</text>
+    <text x="575" y="198" text-anchor="middle" fill="#d1fae5" font-size="10">Role: MGT WAN Router</text>
+  </g>
+
+  <!-- LAYER 2: MANAGEMENT CORE SWITCH -->
+  <g id="mgt-core-switch" filter="url(#shadow)">
+    <rect x="480" y="300" width="190" height="50" rx="8" fill="url(#node-mgt-core)"/>
+    <text x="575" y="323" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-mgt-cor-01</text>
+    <text x="575" y="338" text-anchor="middle" fill="#ccfbf1" font-size="10">OOB Core Switch (10G)</text>
+  </g>
+
+  <!-- LAYER 3: MANAGEMENT ACCESS LAYER (OOB Gateways) -->
+  <g id="mgt-access-nodes" filter="url(#shadow)">
+    <!-- Terminal Server -->
+    <rect x="220" y="460" width="230" height="50" rx="8" fill="url(#node-ts)"/>
+    <text x="335" y="483" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-mgt-ts-idf-main-01</text>
+    <text x="335" y="498" text-anchor="middle" fill="#fce7f3" font-size="10">Terminal Server | Async Serial Console</text>
+
+    <!-- Management Switch -->
+    <rect x="700" y="460" width="230" height="50" rx="8" fill="url(#node-ms)"/>
+    <text x="815" y="483" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-mgt-acc-idf-main-01</text>
+    <text x="815" y="498" text-anchor="middle" fill="#dbeafe" font-size="10">Management Switch | GigE SSH Access</text>
+  </g>
+
+  <!-- LAYER 4: TARGET PRODUCTION DEVICES INVENTORY -->
+  
+  <!-- PRODUCTION TARGET 1 (WAN / CORE DEVICES) -->
+  <rect x="70" y="580" width="1010" height="80" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="85" y="625" fill="#f8fafc" font-size="14" font-weight="700">WAN &amp; CORE TARGETS</text>
+
+  <g id="target-wan-core-devices" filter="url(#shadow)">
+    <!-- Target: abc-hq-wan-01 -->
+    <rect x="200" y="595" width="220" height="50" rx="8" fill="#334155" stroke="#f472b6" stroke-width="1.5"/>
+    <text x="310" y="618" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-wan-01</text>
+    <text x="310" y="633" text-anchor="middle" fill="#f472b6" font-size="10">Async1 (Console) target</text>
+
+    <!-- Target: abc-hq-wan-01 GigE SSH -->
+    <rect x="730" y="595" width="220" height="50" rx="8" fill="#334155" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="840" y="618" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-wan-01</text>
+    <text x="840" y="633" text-anchor="middle" fill="#60a5fa" font-size="10">GigE1/1 (Management0 SSH)</text>
+  </g>
+
+  <!-- ADDITIONAL TARGET DEVICES BREAK INDICATOR -->
+  <g transform="translate(0, 675)">
+    <line x1="70" y1="20" x2="1080" y2="20" stroke="#475569" stroke-width="2"/>
+    <rect x="435" y="5" width="280" height="30" rx="15" fill="#334155"/>
+    <text x="575" y="25" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="600">... ADDITIONAL PRODUCTION TARGET NODES ...</text>
+  </g>
+
+  <!-- PRODUCTION TARGET 2 (CORE ROUTERS) -->
+  <rect x="70" y="750" width="1010" height="80" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="85" y="795" fill="#f8fafc" font-size="14" font-weight="700">CORE TARGETS</text>
+
+  <g id="target-core-devices" filter="url(#shadow)">
+    <!-- Target: abc-hq-cor-01 Console -->
+    <rect x="200" y="765" width="220" height="50" rx="8" fill="#334155" stroke="#f472b6" stroke-width="1.5"/>
+    <text x="310" y="788" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-01</text>
+    <text x="310" y="803" text-anchor="middle" fill="#f472b6" font-size="10">Async2 (Console) target</text>
+
+    <!-- Target: abc-hq-cor-01 SSH -->
+    <rect x="730" y="765" width="220" height="50" rx="8" fill="#334155" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="840" y="788" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-01</text>
+    <text x="840" y="803" text-anchor="middle" fill="#60a5fa" font-size="10">GigE1/2 (GigabitEthernet0 SSH)</text>
+  </g>
+
+  <!-- LEGEND -->
+  <g transform="translate(140, 900)" filter="url(#shadow)">
+    <rect x="0" y="0" width="870" height="50" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    
+    <text x="20" y="30" fill="#f8fafc" font-size="12" font-weight="700">LEGEND:</text>
+    
+    <line x1="90" y1="26" x2="130" y2="26" stroke="#f59e0b" stroke-width="3"/>
+    <text x="140" y="30" fill="#94a3b8" font-size="11">1G MGT WAN Circuit</text>
+
+    <line x1="300" y1="26" x2="340" y2="26" stroke="#10b981" stroke-width="3"/>
+    <text x="350" y="30" fill="#94a3b8" font-size="11">10G MGT Backbone</text>
+
+    <line x1="500" y1="26" x2="540" y2="26" stroke="#ec4899" stroke-width="2" stroke-dasharray="4,4"/>
+    <text x="550" y="30" fill="#94a3b8" font-size="11">Serial Console (115.2k)</text>
+
+    <line x1="700" y1="26" x2="740" y2="26" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,4"/>
+    <text x="750" y="30" fill="#94a3b8" font-size="11">1G Copper SSH (MGT Ethernet)</text>
+  </g>
+</svg>
