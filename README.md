@@ -106,14 +106,18 @@ site_physical_topology:
       external_links:
         - interface: "TenGigabitEthernet0/0/0"
           type: "wan_circuit"
-          description: "Server Provider A 10Gbps Ethernet Line"
+          description: "Service Provider A 10Gbps Ethernet Line"
       internal_links:
         - local_port: "HundredGigE0/1/0"
-          remote_device: "abc-hq-wan-02"       # Link between same-type devices (FD-A to FD-B)
+          remote_device: "abc-hq-wan-02"       # Horizontal WAN Interconnect (FD-A to FD-B)
           remote_port: "HundredGigE0/1/0"
           type: "inter_device"
         - local_port: "HundredGigE0/2/0"
-          remote_device: "abc-hq-cor-01"
+          remote_device: "abc-hq-cor-01"       # FD-A WAN to FD-A Core
+          remote_port: "HundredGigE0/0/1"
+          type: "inter_device"
+        - local_port: "HundredGigE0/2/1"
+          remote_device: "abc-hq-cor-03"       # Cross-FD: FD-A WAN to FD-B Core
           remote_port: "HundredGigE0/0/1"
           type: "inter_device"
 
@@ -125,11 +129,15 @@ site_physical_topology:
           description: "Service Provider B 10Gbps Ethernet Line"
       internal_links:
         - local_port: "HundredGigE0/1/0"
-          remote_device: "abc-hq-wan-01"
+          remote_device: "abc-hq-wan-01"       # Horizontal WAN Interconnect (FD-B to FD-A)
           remote_port: "HundredGigE0/1/0"
           type: "inter_device"
         - local_port: "HundredGigE0/2/0"
-          remote_device: "abc-hq-cor-03"
+          remote_device: "abc-hq-cor-04"       # FD-B WAN to FD-B Core
+          remote_port: "HundredGigE0/0/1"
+          type: "inter_device"
+        - local_port: "HundredGigE0/2/1"
+          remote_device: "abc-hq-cor-02"       # Cross-FD: FD-B WAN to FD-A Core
           remote_port: "HundredGigE0/0/1"
           type: "inter_device"
 
@@ -139,13 +147,13 @@ site_physical_topology:
     - name: "abc-hq-cor-01"
       failure_domain: "FD-A"
       links:
-        - local_port: "HundredGigE0/0/2"
-          remote_device: "abc-hq-cor-02"       # Core-to-Core (Same FD)
-          remote_port: "HundredGigE0/0/2"
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-01"       # Core-to-WAN Uplink
+          remote_port: "HundredGigE0/2/0"
           type: "inter_device"
-        - local_port: "HundredGigE0/0/3"
-          remote_device: "abc-hq-cor-03"       # Core-to-Core (Cross FD)
-          remote_port: "HundredGigE0/0/3"
+        - local_port: "HundredGigE0/0/2"
+          remote_device: "abc-hq-cor-02"       # Core-to-Core (Intra-FD)
+          remote_port: "HundredGigE0/0/2"
           type: "inter_device"
         - local_port: "HundredGigE1/0/1"
           remote_device: "abc-hq-agg-01"       # Core-to-Agg
@@ -159,20 +167,63 @@ site_physical_topology:
     - name: "abc-hq-cor-02"
       failure_domain: "FD-A"
       links:
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-02"       # Core-to-WAN Uplink (Cross-FD)
+          remote_port: "HundredGigE0/2/1"
+          type: "inter_device"
         - local_port: "HundredGigE0/0/2"
-          remote_device: "abc-hq-cor-01"
+          remote_device: "abc-hq-cor-01"       # Core-to-Core (Intra-FD)
           remote_port: "HundredGigE0/0/2"
           type: "inter_device"
         - local_port: "HundredGigE1/0/1"
-          remote_device: "abc-hq-agg-01"
+          remote_device: "abc-hq-agg-01"       # Core-to-Agg
           remote_port: "HundredGigE0/2"
           type: "core_to_agg"
         - local_port: "HundredGigE1/0/2"
-          remote_device: "abc-hq-agg-02"
+          remote_device: "abc-hq-agg-02"       # Core-to-Agg
           remote_port: "HundredGigE0/2"
           type: "core_to_agg"
 
-    # [ Devices abc-hq-cor-03 and 04 follow the same pattern in FD-B ]
+    # Failure Domain B Core Pair
+    - name: "abc-hq-cor-03"
+      failure_domain: "FD-B"
+      links:
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-01"       # Core-to-WAN Uplink (Cross-FD)
+          remote_port: "HundredGigE0/2/1"
+          type: "inter_device"
+        - local_port: "HundredGigE0/0/2"
+          remote_device: "abc-hq-cor-04"       # Core-to-Core (Intra-FD)
+          remote_port: "HundredGigE0/0/2"
+          type: "inter_device"
+        - local_port: "HundredGigE1/0/1"
+          remote_device: "abc-hq-agg-03"       # Core-to-Agg
+          remote_port: "HundredGigE0/1"
+          type: "core_to_agg"
+        - local_port: "HundredGigE1/0/2"
+          remote_device: "abc-hq-agg-04"       # Core-to-Agg
+          remote_port: "HundredGigE0/1"
+          type: "core_to_agg"
+
+    - name: "abc-hq-cor-04"
+      failure_domain: "FD-B"
+      links:
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-02"       # Core-to-WAN Uplink
+          remote_port: "HundredGigE0/2/0"
+          type: "inter_device"
+        - local_port: "HundredGigE0/0/2"
+          remote_device: "abc-hq-cor-03"       # Core-to-Core (Intra-FD)
+          remote_port: "HundredGigE0/0/2"
+          type: "inter_device"
+        - local_port: "HundredGigE1/0/1"
+          remote_device: "abc-hq-agg-03"       # Core-to-Agg
+          remote_port: "HundredGigE0/2"
+          type: "core_to_agg"
+        - local_port: "HundredGigE1/0/2"
+          remote_device: "abc-hq-agg-04"       # Core-to-Agg
+          remote_port: "HundredGigE0/2"
+          type: "core_to_agg"
 
   # --- AGGREGATION LAYER ---
   aggregation_switches:
@@ -184,11 +235,27 @@ site_physical_topology:
           remote_port: "HundredGigE0/48"
           type: "inter_device"
 
+    - name: "abc-hq-agg-02"
+      failure_domain: "FD-A"
+      links:
+        - local_port: "HundredGigE0/48"
+          remote_device: "abc-hq-agg-01"       # Agg-to-Agg (Same FD)
+          remote_port: "HundredGigE0/48"
+          type: "inter_device"
+
     - name: "abc-hq-agg-03"
       failure_domain: "FD-B"
       links:
         - local_port: "HundredGigE0/48"
           remote_device: "abc-hq-agg-04"       # Agg-to-Agg (Same FD)
+          remote_port: "HundredGigE0/48"
+          type: "inter_device"
+
+    - name: "abc-hq-agg-04"
+      failure_domain: "FD-B"
+      links:
+        - local_port: "HundredGigE0/48"
+          remote_device: "abc-hq-agg-03"       # Agg-to-Agg (Same FD)
           remote_port: "HundredGigE0/48"
           type: "inter_device"
 
@@ -199,25 +266,25 @@ site_physical_topology:
         - name: "abc-hq-f01-acc-01"
           failure_domain: "FD-A"
           uplinks:
-            - local_port: "HundredGigabitEthernet1/1/1"
+            - local_port: "TenGigabitEthernet1/1/1"
               remote_device: "abc-hq-agg-01"
-              remote_port: "HundredGigabitEthernet1/0/1"
+              remote_port: "TenGigabitEthernet1/0/1"
               type: "agg_to_access"
-            - local_port: "HundredGigabitEthernet1/1/2"
+            - local_port: "TenGigabitEthernet1/1/2"
               remote_device: "abc-hq-agg-02"
-              remote_port: "HundredGigabitEthernet1/0/1"
+              remote_port: "TenGigabitEthernet1/0/1"
               type: "agg_to_access"
 
         - name: "abc-hq-f01-acc-02"
           failure_domain: "FD-B"
           uplinks:
-            - local_port: "HundredGigabitEthernet1/1/1"
+            - local_port: "TenGigabitEthernet1/1/1"
               remote_device: "abc-hq-agg-03"
-              remote_port: "HundredGigabitEthernet1/0/1"
+              remote_port: "TenGigabitEthernet1/0/1"
               type: "agg_to_access"
-            - local_port: "HundredGigabitEthernet1/1/2"
+            - local_port: "TenGigabitEthernet1/1/2"
               remote_device: "abc-hq-agg-04"
-              remote_port: "HundredGigabitEthernet1/0/1"
+              remote_port: "TenGigabitEthernet1/0/1"
               type: "agg_to_access"
 
     # [ Floors 2 to 10 follow the identical pattern for acc-01 and acc-02 ]
