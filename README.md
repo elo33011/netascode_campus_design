@@ -292,3 +292,124 @@ site_physical_topology:
 </details>
 
 ![Campus Network Diagram](./topology1.svg)
+
+<details>
+<summary>Physical Topology - Device Management Network </summary>
+
+```yaml
+# ============================================================================
+# Site Out-of-Band (OOB) Management Data Model Contract
+# Target: Campus Management Pipeline (Console/SSH Access, separate from SOT)
+# ============================================================================
+
+management_context:
+  site_code: "abc-hq"
+  site_name: "Company ABC Main Campus OOB"
+
+  # ============================================================================
+  # 1. MANAGEMENT LINK SPEED STANDARDS
+  # ============================================================================
+  # Global standards specifically for OOB management connectivity.
+  link_standards:
+    mgt_wan_circuit:
+      speed: "1Gbps"
+      media: "1000BASE-T_Copper"
+      description: "Dedicated management WAN connection (console/SSH access)"
+    mgt_backbone:
+      speed: "10Gbps"
+      media: "10GBASE-SR_Fiber"
+      description: "Connections between Management Core/Agg/Access switches"
+    mgt_ethernet:
+      speed: "1Gbps"
+      media: "1000BASE-T_Copper"
+      description: "Production device Management GigE port to MGT Switch (SSH)"
+    mgt_console:
+      speed: "115200bps"
+      media: "Serial-RJ45"
+      description: "Production device Console port to Terminal Server"
+
+  # ============================================================================
+  # 2. MANAGEMENT IPAM SCHEMA (Examples)
+  # ============================================================================
+  ipam_schema:
+    oob_wan_subnet: "192.168.100.0/30" # Dedicted WAN IP space
+    oob_management_loopbacks: "10.254.0.0/19" # Loopbacks for OOB switches
+    oob_console_servers: "10.254.32.0/24" # Specific for TS nodes
+
+  # ============================================================================
+  # 3. SEPARATE MANAGEMENT INVENTORY (Out-of-Band Network)
+  # ============================================================================
+  # This dedicated network provides secure console and SSH access to the designs.
+  management_tier:
+
+    # --- MANAGEMENT WAN LAYER ---
+    mgt_wan_routers:
+      - name: "abc-hq-mgt-wan-01"
+        external_links:
+          - interface: "GigabitEthernet0/0/0"
+            type: "mgt_wan_circuit"
+            description: "Dedicated Management WAN line (OOB Access)"
+        internal_links:
+          - local_port: "TenGigabitEthernet0/1/0"
+            remote_device: "abc-hq-mgt-cor-01"
+            remote_port: "TenGigabitEthernet1/1"
+            type: "mgt_backbone"
+
+    # --- MANAGEMENT CORE LAYER ---
+    mgt_core_switches:
+      - name: "abc-hq-mgt-cor-01"
+        links:
+          # Uplink to MGT WAN
+          - local_port: "TenGigabitEthernet1/1"
+            remote_device: "abc-hq-mgt-wan-01"
+            remote_port: "TenGigabitEthernet0/1/0"
+            type: "mgt_backbone"
+          # Fiber Backbone down to Management switches in IDFs
+          - local_port: "TenGigabitEthernet1/2"
+            remote_device: "abc-hq-mgt-acc-idf-main-01" # MGT-Switch (SSH)
+            remote_port: "TenGigabitEthernet1/1"
+            type: "mgt_backbone"
+          - local_port: "TenGigabitEthernet1/3"
+            remote_device: "abc-hq-mgt-ts-idf-main-01" # Terminal-Server (Console)
+            remote_port: "TenGigabitEthernet1/1"
+            type: "mgt_backbone"
+
+    # --- MANAGEMENT ACCESS LAYER (OOB Gateways) ---
+    mgt_access_nodes:
+      # Terminal Servers for Serial Console access
+      - name: "abc-hq-mgt-ts-idf-main-01"
+        type: "terminal_server"
+        links:
+          - local_port: "TenGigabitEthernet1/1"
+            remote_device: "abc-hq-mgt-cor-01"
+            remote_port: "TenGigabitEthernet1/3"
+            type: "mgt_backbone"
+        # Definition of physical Async ports connecting to production device Console ports
+        async_console_mappings:
+          - async_port: "Async1"
+            description: "Console to wan-01"
+            target_device: "abc-hq-wan-01"
+          - async_port: "Async2"
+            description: "Console to cor-01"
+            target_device: "abc-hq-cor-01"
+
+      # Management Switches for GigE SSH access
+      - name: "abc-hq-mgt-acc-idf-main-01"
+        type: "mgt_switch"
+        links:
+          - local_port: "TenGigabitEthernet1/1"
+            remote_device: "abc-hq-mgt-cor-01"
+            remote_port: "TenGigabitEthernet1/2"
+            type: "mgt_backbone"
+        # Definition of physical GigE ports connecting to production device Management ports
+        mgt_ethernet_mappings:
+          - mgt_port: "GigabitEthernet1/1"
+            description: "SSH to wan-01 Management0"
+            target_device: "abc-hq-wan-01"
+          - mgt_port: "GigabitEthernet1/2"
+            description: "SSH to cor-01 GigabitEthernet0"
+            target_device: "abc-hq-cor-01"
+```
+</details>
+
+![Campus Network Diagram](./mgmt_.svg)
