@@ -413,3 +413,195 @@ management_context:
 </details>
 
 ![Campus Management Network Diagram](./mgmt_topology.svg)
+
+<details>
+<summary>Logical Topology</summary>
+
+```yaml
+
+# ============================================================================
+# Site Routing, BGP, & VXLAN EVPN Complete Data Model Contract
+# Update: LAYER 3 ROUTED ACCESS VTEPS ONLY (Campus unified AS 65100)
+# Expanded EVPN Overlay VNI Mappings (Data, Voice, Wireless APs, IPTV, Critical)
+# ============================================================================
+
+site_context:
+  site_code: "abc-hq"
+  site_name: "Company ABC Main Campus"
+
+  # ============================================================================
+  # 1. GLOBAL IPAM & AS SCHEMAS
+  # ============================================================================
+  ipam_design:
+    point_to_point:
+      allocation: "schema-driven" # /31 physical interconnects
+    loopback:
+      allocation: "schema-driven" # Lo0 (Mgmt) & Lo1 (VTEP Source)
+
+  bgp_as_schemas:
+    - as_id: "AS_CAMPUS_PRIMARY"
+      value: "65100" # All Campus Tiers (WAN, Core, Agg, Acc)
+    - as_id: "AS_PROVIDER_A"
+      value: "65530"
+    - as_id: "AS_PROVIDER_B"
+      value: "65531"
+
+  # ============================================================================
+  # 2. SERVICE OVERLAY (VXLAN EVPN VTEP)
+  # ============================================================================
+  evpn_overlay_design:
+    # Overlay is running exclusively on Access Tier
+    vtep_parameters:
+      nve_interface: "NVE1"
+      vtep_source_interface: "Loopback1"
+    vni_service_mappings:
+      # Logical services mapped to L3 access
+      - vni_id: 10
+        vlan_id: 10
+        name: "Campus_Users"
+        description: "Primary user network segment"
+      - vni_id: 20
+        vlan_id: 20
+        name: "Security_Cameras"
+        description: "IoT/OT segment for cameras"
+      - vni_id: 30
+        vlan_id: 30
+        name: "Voice_VoIP"
+        description: "IP Telephony and VoIP endpoint segment"
+      - vni_id: 40
+        vlan_id: 40
+        name: "Wireless_AP_Mgmt"
+        description: "Access Point CAPWAP management infrastructure segment"
+      - vni_id: 50
+        vlan_id: 50
+        name: "IPTV_Multicast"
+        description: "Digital signage and IPTV streaming media segment"
+      - vni_id: 999
+        vlan_id: 999
+        name: "Critical_Services"
+        description: "Fallback segment (e.g., NAC Server dead)"
+
+  # ============================================================================
+  # 3. COMPLETE DEVICE ROUTING, BGP, & INTERCONNECTS
+  # ============================================================================
+  device_interconnects:
+
+    # --------------------------------------------------------------------------
+    # LAYER 1: WAN ROUTERS
+    # --------------------------------------------------------------------------
+    - name: "abc-hq-wan-01"
+      failure_domain: "FD-A"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.0.0.1" }
+        loopbacks: [{ interface: "Loopback0", ip_address: "10.0.0.1/32", type: "management" }]
+        bgp_peers:
+          - { description: "eBGP to ISP-A", peer_ip: "192.168.10.1", remote_as: 65530, type: "ebgp" }
+          - { description: "iBGP to core-01 (FD-A)", peer_ip: "10.18.1.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Cross-FD to core-03", peer_ip: "10.18.1.3", remote_as: 65100, type: "ibgp" }
+
+    - name: "abc-hq-wan-02"
+      failure_domain: "FD-B"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.0.0.2" }
+        loopbacks: [{ interface: "Loopback0", ip_address: "10.0.0.2/32", type: "management" }]
+        bgp_peers:
+          - { description: "eBGP to ISP-B", peer_ip: "192.168.20.1", remote_as: 65531, type: "ebgp" }
+          - { description: "iBGP to core-04 (FD-B)", peer_ip: "10.18.1.4", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Cross-FD to core-02", peer_ip: "10.18.1.2", remote_as: 65100, type: "ibgp" }
+
+    # --------------------------------------------------------------------------
+    # LAYER 2: CORE ROUTERS
+    # --------------------------------------------------------------------------
+    - name: "abc-hq-cor-01"
+      failure_domain: "FD-A"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.1.0.1" }
+        loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.1/32", type: "management" }]
+        interfaces:
+          - { interface: "HundredGigE0/1", ip_address: "10.18.1.1/31" } # to wan-01
+          - { interface: "HundredGigE1/1", ip_address: "10.9.1.0/31" } # to agg-01
+        bgp_peers:
+          - { description: "iBGP Underlay to wan-01", peer_ip: "10.18.1.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-01", peer_ip: "10.9.1.1", remote_as: 65100, type: "ibgp" }
+    # [...Other cores 02, 03, 04 omitted for brevity...]
+
+    # --------------------------------------------------------------------------
+    # LAYER 3: AGGREGATION SWITCHES (PURE L3 UNDERLAY TRANSIT)
+    # --------------------------------------------------------------------------
+    - name: "abc-hq-agg-01"
+      failure_domain: "FD-A"
+      role: "aggregation-transit"
+      # Pure Underlay Transit - No VTEP / No EVPN overlay termination
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.2.0.1" }
+        loopbacks:
+          - { interface: "Loopback0", ip_address: "10.2.0.1/32", type: "management" }
+        interfaces:
+          - { interface: "HundredGigE0/1", ip_address: "10.9.1.1/31" } # Up to cor-01
+          - { interface: "HundredGigE0/4", ip_address: "10.24.1.0/31" } # Down to f01-acc-01
+        bgp_peers:
+          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.1.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Down to f01-acc-01", peer_ip: "10.24.1.1", remote_as: 65100, type: "ibgp" }
+    # [...Other aggs 02, 03, 04 omitted for brevity...]
+
+    # --------------------------------------------------------------------------
+    # LAYER 4: LAYER 3 ROUTED ACCESS VTEPS (Floors 1-10)
+    # Target Switch Type: e.g., Cisco Catalyst 9300 / Arista 720XP
+    # --------------------------------------------------------------------------
+    floors:
+      - floor_number: 1
+        access_vteps:
+          - name: "abc-hq-f01-acc-01"
+            failure_domain: "FD-A"
+            role: "access-vtep" # Defining Routed Access VTEP
+            evpn_vtep:
+              global: { bgp_asn: 65100, router_id: "10.3.0.1" }
+              loopbacks:
+                - { interface: "Loopback0", ip_address: "10.3.0.1/32", type: "management" }
+                - { interface: "Loopback1", ip_address: "10.128.1.1/32", type: "vtep-source" } # Unique VTEP Source per Switch
+              interfaces:
+                - interface: "HundredGigabitEthernet1/1/1"
+                  description: "FD-A L3 Underlay to agg-01"
+                  ip_address: "10.24.1.1/31" # FD-A Routed Access IPAM
+                - interface: "HundredGigabitEthernet1/1/2"
+                  description: "Cross-Plane L3 Underlay to agg-02"
+                  ip_address: "10.24.1.3/31" # Cross-Plane Routed Access IPAM
+              bgp_peers:
+                - description: "iBGP Underlay up to agg-01 (FD-A Master)"
+                  peer_ip: "10.24.1.0"
+                  remote_as: 65100
+                  type: "ibgp"
+                - description: "iBGP Underlay cross up to agg-02"
+                  peer_ip: "10.24.1.2"
+                  remote_as: 65100
+                  type: "ibgp"
+
+          - name: "abc-hq-f01-acc-02"
+            failure_domain: "FD-B"
+            role: "access-vtep"
+            evpn_vtep:
+              global: { bgp_asn: 65100, router_id: "10.3.0.2" }
+              loopbacks:
+                - { interface: "Loopback0", ip_address: "10.3.0.2/32", type: "management" }
+                - { interface: "Loopback1", ip_address: "10.128.1.2/32", type: "vtep-source" }
+              interfaces:
+                - interface: "HundredGigabitEthernet1/1/1"
+                  description: "FD-B L3 Underlay to agg-03"
+                  ip_address: "10.24.2.1/31" # FD-B Routed Access IPAM
+                - interface: "HundredGigabitEthernet1/1/2"
+                  description: "Cross-Plane L3 Underlay to agg-04"
+                  ip_address: "10.24.2.3/31"
+              bgp_peers:
+                - description: "iBGP Underlay up to agg-03 (FD-B Master)"
+                  peer_ip: "10.24.2.0"
+                  remote_as: 65100
+                  type: "ibgp"
+                - description: "iBGP Underlay cross up to agg-04"
+                  peer_ip: "10.24.2.2"
+                  remote_as: 65100
+                  type: "ibgp"
+
+      # [...Floors 2-10 are repetitive using the acc-vtep schema shown above...]
+```
+</details>
+
