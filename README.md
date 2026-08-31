@@ -617,7 +617,7 @@ Physical data model to generate rack & stack, patching scheme. The data model al
 Onsite facility team complete the rack and stack, patching, preconfigure with mgmt IP so that Ansible runner is reachable.
 Device build steps.
 Device specific baseline configuration
-- Data model for each platform for baseline configuration, data model is schema only, data is pulled from the network source of truth, Jinja2 template per device platform to render config
+- Data model for each platform for baseline configuration, data model is schema only, data is pulled from the network source of truth, Jinja2 template per device platform to render, Ansible to deploy
 Design specific configuration
 - Use data model from physical topology and logical topology.
 
