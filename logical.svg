@@ -43,7 +43,7 @@
   </defs>
 
   <!-- TITLE BLOCK -->
-  <text x="625" y="32" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">abc-hq - LOGICAL BGP, UNDERLAY &amp; VXLAN EVPN TOPOLOGY</text>
+  <text x="625" y="32" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">ABC HQ - LOGICAL BGP, UNDERLAY &amp; VXLAN EVPN TOPOLOGY</text>
   <text x="625" y="55" text-anchor="middle" fill="#94a3b8" font-size="13">Unified Campus AS 65100 | Pure L3 Underlay Transit | EVPN Overlay Exclusively at Access VTEPs</text>
 
   <!-- FAILURE DOMAIN CONTAINERS -->
