@@ -9,6 +9,7 @@ Key takeaways:
 - Racking and cable patching matrix -> Render from physical data model to table (md)
 - Device baseline configuration -> Render from platform data model, Network source of truth, platform specific Jinj2 template, deploy using Ansible
 - Design specific configuration -> Render from physical topology data model, logical data model, deploy using Ansible
+- Access Switch endpoint facing interface configuration -> Render from the end-point service data model, deploy using Ansible
 
 ## Business Requirement
 
