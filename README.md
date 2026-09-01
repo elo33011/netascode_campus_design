@@ -65,11 +65,22 @@ This section outlines the architectural framework and design principles for the 
 * Inter-Device Trunking: All internal backbone, Core, Aggregation, and inter-plane links operate at 100Gbps.
 * WAN Edge Uplinks: Dual 10Gbps dedicated circuits connecting the campus WAN edge to regional on-prem data centers and cloud colocation facilities.
 
-### Data models 
+## Schemas & Models
+
+This design is constructed from a set of dataa schemas which provides a structured "source of truth" information that the automation tools will need. The data schema are used used to render, validate, deploy and maintainthe configurations over automated workflows.
+
+| Data Models | Purpose | Schema |
+|---|---|---|
+| Physical Topology - Campus Network | | |
+| Physical Topology - Management Network | | |
+| Logical Topology | | |
+| WAN Routers Baseline | | |
+| Core & Agg Switches Baseline | | |
+| Access Switches Baseline | | |
 
 <details>
 <summary>Physical Topology - Campus Network </summary>
-
+  
 ```yaml
 ---
 site_physical_topology:
