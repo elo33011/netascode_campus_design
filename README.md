@@ -83,11 +83,12 @@ The purpose of the Platform Baseline Data Model is to define a standardized, ven
 
 | Platform | Use Case | Data Model Name |
 |---|---| --- |
-| Cisco Catalyst 8000 | WAN Router |
-| Nexus 93240 | Core and Aggregation Switches |
-| Nexus 93180 | Access Switche |
+| Cisco Catalyst 8000 | WAN Router | |
+| Nexus 93240 | Core and Aggregation Switches | |
+| Nexus 93180 | Access Switche | |
 
 ## Deployment Details
+
 
 Physical data model to generate rack & stack, patching scheme. The data model also need to include rack information.
 Onsite facility team complete the rack and stack, patching, preconfigure with mgmt IP so that Ansible runner is reachable.
@@ -104,22 +105,70 @@ Design specific configuration
 <summary>Physical Topology - Campus Network </summary>
   
 ```yaml
----
 site_physical_topology:
   site_code: "abc-hq"
   site_name: "Company ABC Main Campus"
   building: "Main Building (10 Floors)"
 
   # ============================================================================
-  # 1. FAILURE DOMAIN DEFINITIONS
+  # 1. FAILURE DOMAIN & RACK INFRASTRUCTURE DEFINITIONS
   # ============================================================================
   failure_domains:
     - domain_id: "FD-A"
       description: "Primary Redundancy Plane (Red Domain)"
       rack_group: "Suite-A / Left-IDF"
+      racks:
+        - rack_id: "RACK-A01"
+          location: "Main Equipment Room - Row A, Rack 1"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-wan-01"
+              u_position_start: 40
+              u_height: 2
+            - name: "abc-hq-cor-01"
+              u_position_start: 36
+              u_height: 2
+            - name: "abc-hq-cor-02"
+              u_position_start: 34
+              u_height: 2
+            - name: "abc-hq-agg-01"
+              u_position_start: 30
+              u_height: 2
+        - rack_id: "RACK-A02"
+          location: "Main Equipment Room - Row A, Rack 2"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-agg-02"
+              u_position_start: 30
+              u_height: 2
+
     - domain_id: "FD-B"
       description: "Secondary Redundancy Plane (Blue Domain)"
       rack_group: "Suite-B / Right-IDF"
+      racks:
+        - rack_id: "RACK-B01"
+          location: "Main Equipment Room - Row B, Rack 1"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-wan-02"
+              u_position_start: 40
+              u_height: 2
+            - name: "abc-hq-cor-03"
+              u_position_start: 36
+              u_height: 2
+            - name: "abc-hq-cor-04"
+              u_position_start: 34
+              u_height: 2
+            - name: "abc-hq-agg-03"
+              u_position_start: 30
+              u_height: 2
+        - rack_id: "RACK-B02"
+          location: "Main Equipment Room - Row B, Rack 2"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-agg-04"
+              u_position_start: 30
+              u_height: 2
 
   # ============================================================================
   # 2. GLOBAL LINK SPEED STANDARDS
@@ -146,6 +195,7 @@ site_physical_topology:
   wan_routers:
     - name: "abc-hq-wan-01"
       failure_domain: "FD-A"
+      rack_location: "RACK-A01"
       external_links:
         - interface: "TenGigabitEthernet0/0/0"
           type: "wan_circuit"
@@ -166,6 +216,7 @@ site_physical_topology:
 
     - name: "abc-hq-wan-02"
       failure_domain: "FD-B"
+      rack_location: "RACK-B01"
       external_links:
         - interface: "TenGigabitEthernet0/0/0"
           type: "wan_circuit"
@@ -189,6 +240,7 @@ site_physical_topology:
     # Failure Domain A Core Pair
     - name: "abc-hq-cor-01"
       failure_domain: "FD-A"
+      rack_location: "RACK-A01"
       links:
         - local_port: "HundredGigE0/0/1"
           remote_device: "abc-hq-wan-01"       # Core-to-WAN Uplink
@@ -209,6 +261,7 @@ site_physical_topology:
 
     - name: "abc-hq-cor-02"
       failure_domain: "FD-A"
+      rack_location: "RACK-A01"
       links:
         - local_port: "HundredGigE0/0/1"
           remote_device: "abc-hq-wan-02"       # Core-to-WAN Uplink (Cross-FD)
@@ -230,6 +283,7 @@ site_physical_topology:
     # Failure Domain B Core Pair
     - name: "abc-hq-cor-03"
       failure_domain: "FD-B"
+      rack_location: "RACK-B01"
       links:
         - local_port: "HundredGigE0/0/1"
           remote_device: "abc-hq-wan-01"       # Core-to-WAN Uplink (Cross-FD)
@@ -250,6 +304,7 @@ site_physical_topology:
 
     - name: "abc-hq-cor-04"
       failure_domain: "FD-B"
+      rack_location: "RACK-B01"
       links:
         - local_port: "HundredGigE0/0/1"
           remote_device: "abc-hq-wan-02"       # Core-to-WAN Uplink
@@ -272,6 +327,7 @@ site_physical_topology:
   aggregation_switches:
     - name: "abc-hq-agg-01"
       failure_domain: "FD-A"
+      rack_location: "RACK-A01"
       links:
         - local_port: "HundredGigE0/48"
           remote_device: "abc-hq-agg-02"       # Agg-to-Agg (Same FD)
@@ -280,6 +336,7 @@ site_physical_topology:
 
     - name: "abc-hq-agg-02"
       failure_domain: "FD-A"
+      rack_location: "RACK-A02"
       links:
         - local_port: "HundredGigE0/48"
           remote_device: "abc-hq-agg-01"       # Agg-to-Agg (Same FD)
@@ -288,6 +345,7 @@ site_physical_topology:
 
     - name: "abc-hq-agg-03"
       failure_domain: "FD-B"
+      rack_location: "RACK-B01"
       links:
         - local_port: "HundredGigE0/48"
           remote_device: "abc-hq-agg-04"       # Agg-to-Agg (Same FD)
@@ -296,6 +354,7 @@ site_physical_topology:
 
     - name: "abc-hq-agg-04"
       failure_domain: "FD-B"
+      rack_location: "RACK-B02"
       links:
         - local_port: "HundredGigE0/48"
           remote_device: "abc-hq-agg-03"       # Agg-to-Agg (Same FD)
@@ -308,6 +367,7 @@ site_physical_topology:
       access_switches:
         - name: "abc-hq-f01-acc-01"
           failure_domain: "FD-A"
+          rack_location: "Floor-01 IDF-A Rack 1"
           uplinks:
             - local_port: "TenGigabitEthernet1/1/1"
               remote_device: "abc-hq-agg-01"
@@ -320,6 +380,7 @@ site_physical_topology:
 
         - name: "abc-hq-f01-acc-02"
           failure_domain: "FD-B"
+          rack_location: "Floor-01 IDF-B Rack 1"
           uplinks:
             - local_port: "TenGigabitEthernet1/1/1"
               remote_device: "abc-hq-agg-03"
@@ -338,19 +399,38 @@ site_physical_topology:
 <summary>Physical Topology - Device Management Network </summary>
 
 ```yaml
-# ============================================================================
-# Site Out-of-Band (OOB) Management Data Model Contract
-# Target: Campus Management Pipeline (Console/SSH Access, separate from SOT)
-# ============================================================================
-
 management_context:
   site_code: "abc-hq"
   site_name: "Company ABC Main Campus OOB"
 
   # ============================================================================
-  # 1. MANAGEMENT LINK SPEED STANDARDS
+  # 1. FAILURE DOMAIN & RACK INFRASTRUCTURE DEFINITIONS
   # ============================================================================
-  # Global standards specifically for OOB management connectivity.
+  failure_domains:
+    - domain_id: "FD-MGT"
+      description: "Out-of-Band Management Redundancy Plane"
+      rack_group: "Suite-MGT / OOB Rack Room"
+      racks:
+        - rack_id: "RACK-MGT01"
+          location: "Main Equipment Room - Row MGT, Rack 1"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-mgt-wan-01"
+              u_position_start: 40
+              u_height: 2
+            - name: "abc-hq-mgt-cor-01"
+              u_position_start: 36
+              u_height: 2
+            - name: "abc-hq-mgt-ts-idf-main-01"
+              u_position_start: 32
+              u_height: 2
+            - name: "abc-hq-mgt-acc-idf-main-01"
+              u_position_start: 30
+              u_height: 2
+
+  # ============================================================================
+  # 2. MANAGEMENT LINK SPEED STANDARDS
+  # ============================================================================
   link_standards:
     mgt_wan_circuit:
       speed: "1Gbps"
@@ -370,22 +450,23 @@ management_context:
       description: "Production device Console port to Terminal Server"
 
   # ============================================================================
-  # 2. MANAGEMENT IPAM SCHEMA (Examples)
+  # 3. MANAGEMENT IPAM SCHEMA
   # ============================================================================
   ipam_schema:
-    oob_wan_subnet: "192.168.100.0/30" # Dedicted WAN IP space
+    oob_wan_subnet: "192.168.100.0/30" # Dedicated WAN IP space
     oob_management_loopbacks: "10.254.0.0/19" # Loopbacks for OOB switches
     oob_console_servers: "10.254.32.0/24" # Specific for TS nodes
 
   # ============================================================================
-  # 3. SEPARATE MANAGEMENT INVENTORY (Out-of-Band Network)
+  # 4. SEPARATE MANAGEMENT INVENTORY (Out-of-Band Network)
   # ============================================================================
-  # This dedicated network provides secure console and SSH access to the designs.
   management_tier:
 
     # --- MANAGEMENT WAN LAYER ---
     mgt_wan_routers:
       - name: "abc-hq-mgt-wan-01"
+        failure_domain: "FD-MGT"
+        rack_location: "RACK-MGT01"
         external_links:
           - interface: "GigabitEthernet0/0/0"
             type: "mgt_wan_circuit"
@@ -399,6 +480,8 @@ management_context:
     # --- MANAGEMENT CORE LAYER ---
     mgt_core_switches:
       - name: "abc-hq-mgt-cor-01"
+        failure_domain: "FD-MGT"
+        rack_location: "RACK-MGT01"
         links:
           # Uplink to MGT WAN
           - local_port: "TenGigabitEthernet1/1"
@@ -420,6 +503,8 @@ management_context:
       # Terminal Servers for Serial Console access
       - name: "abc-hq-mgt-ts-idf-main-01"
         type: "terminal_server"
+        failure_domain: "FD-MGT"
+        rack_location: "RACK-MGT01"
         links:
           - local_port: "TenGigabitEthernet1/1"
             remote_device: "abc-hq-mgt-cor-01"
@@ -437,6 +522,8 @@ management_context:
       # Management Switches for GigE SSH access
       - name: "abc-hq-mgt-acc-idf-main-01"
         type: "mgt_switch"
+        failure_domain: "FD-MGT"
+        rack_location: "RACK-MGT01"
         links:
           - local_port: "TenGigabitEthernet1/1"
             remote_device: "abc-hq-mgt-cor-01"
