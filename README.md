@@ -71,18 +71,21 @@ This design is constructed from a set of data models which provides a structured
 
 ### Design Specific Models
 
-| Data Models | Purpose & Applications |
+| Data Model | Purpose |
 |---|---|
-| Physical Topology - Campus Network |  |
-| Physical Topology - Management Network | |
-| Logical Topology | |
+| Physical Topology - Campus Network | Define the precise real-world composition and interconnection of network hardware, including devices, modules, ports, and cables, providing the ground-truth asset and connectivity inventory for the network |
+| Physical Topology - Management Network | Define the precise real-world composition and interconnection of the dedicated out-of-band (OOB) hardware—including management switches, terminal servers, console/management ports, and all associated cabling |
+| Logical Topology | Define the abstract, software-defined architecture of the network—including routing domains (BGP AS), overlay networks (VXLAN EVPN), virtual network functions, and service paths—that operates independently of the underlying physical hardware, detailing how traffic is controlled, isolated, and forwarded |
 
 ### Platform Specific Models
-| Data Models | Purpose & Applications |
-|---|---|
-| WAN Router Platform Config Baseline | |
-| Core & Agg Switch Platform Config Baseline | |
-| Access Switch Platform Config Baseline | |
+
+The purpose of the Platform Baseline Data Model is to define a standardized, vendor-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device, regardless of its specific role or placement within the network architecture. This model establishes the "Day-Zero" security posture and manageability framework, ensuring configuration consistency, regulatory compliance, and robust administrative control across the entire infrastructure.
+
+| Platform | Use Case | Data Model Name |
+|---|---| --- |
+| Cisco Catalyst 8000 | WAN Router |
+| Nexus 93240 | Core and Aggregation Switches |
+| Nexus 93180 | Access Switche |
 
 ## Deployment Details
 
@@ -638,5 +641,324 @@ site_context:
                   type: "ibgp"
 
       # [...Floors 2-10 are repetitive using the acc-vtep schema shown above...]
+```
+</details>
+
+<details>
+<summary>WAN Router Platform Baseline </summary>
+  
+```yaml
+# ============================================================================
+# PLATFORM BASELINE DATA MODEL: WAN ROUTER (Strictly Vendor-Agnostic)
+# Base Configuration Standard
+# ============================================================================
+
+platform_wan_baseline:
+
+  # --------------------------------------------------------------------------
+  # 1. System Management & Access Baseline
+  # --------------------------------------------------------------------------
+  management_plane:
+    # Inherited/Refined from common baseline
+    banner_login: "Authorized Use Only. System activity is logged."
+    ssh_version: "2"
+    # Standardize timeout and retries for consistency
+    console_timeout_minutes: 10
+    vty_timeout_minutes: 15
+    login_retries: 3
+
+    # DNS resolution settings
+    dns:
+      domain_name: "campus.example.net"
+      source_interface: "Loopback0" # Management interface
+
+    # HTTP/HTTPs Services for API/Web UI
+    http_services:
+      enable: false           # Recommended baseline is off unless specifically required
+      secure_only: true       # If enabled, must be TLS 1.2+
+
+  # --------------------------------------------------------------------------
+  # 2. Infrastructure Protection Baseline (Control & Data Plane)
+  # --------------------------------------------------------------------------
+  infrastructure_protection:
+
+    # ICMP Configuration Standard
+    icmp_standards:
+      # Disable outbound ICMP unreachable messages to prevent DDoS amplification
+      unreachable_rate_limit: 100
+      # Block inbound ICMP redirects to prevent route manipulation
+      accept_redirects: false
+      # Block inbound ICMP mask requests
+      mask_requests: false
+
+    # Global IP Service Disablement
+    # Explicitly turn off common attack vectors/misconfigurations
+    disabled_ip_services:
+      - "ip_source_routing"  # Prevent source-routed packets
+      - "proxy_arp"          # Prevent unauthorized ARP responses
+
+    # IPv6 Transition/Security
+    ipv6_hardening:
+      # Suppress Router Advertisements on untrusted/WAN interfaces
+      ra_suppress: true
+
+  # --------------------------------------------------------------------------
+  # 3. Routing Protocol Baseline Security (WAN-Specific)
+  # --------------------------------------------------------------------------
+  routing_baseline:
+
+    # BGP Peering Security Standard
+    bgp_security:
+      # Require MD5 authentication on all external BGP neighbors
+      md5_authentication: true
+      # TTL Security Mechanism (GTSM) for eBGP peers to prevent spoofing
+      ttl_security_hops: 2
+      # Max prefix limits should be defined per peer in the logical design,
+      # but the capability must be enforced by the platform baseline.
+
+    # Control Plane Policing (CPP) Baseline
+    # Ensure hardware-based rate limiting for critical protocols is active
+    control_plane_policing:
+      enable: true
+      # Categories of traffic to police destined to the route processor
+      # Thresholds are device-specific but must be defined as 'low', 'medium', 'high'
+      protocols:
+        routing_updates: "medium" # BGP, OSPF, etc.
+        management_access: "low"  # SSH, SNMP
+        transit_traffic: "high"   # Traffic requiring punt to CPU (e.g., options)
+
+  # --------------------------------------------------------------------------
+  # 4. Hardware Integrity Baseline
+  # --------------------------------------------------------------------------
+  hardware_integrity:
+    # Ensure secure boot image verification is enabled
+    secure_boot_verification: true
+    # Ensure hardware acceleration for encryption is prioritized
+    hardware_crypto_acceleration: true
+
+  # --------------------------------------------------------------------------
+  # 5. Interface Security Baseline (WAN Edge)
+  # --------------------------------------------------------------------------
+  interface_baseline:
+    wan_interfaces:
+      # Apply standardized input ACL to protect against spoofing and invalid packets
+      # Content of ACL is defined by security design, but application is baseline
+      ingress_acl_name: "fw-in-wan-interface-acl"
+      # Ensure no routing protocols are advertised outbound to the untrusted ISP
+      passive_routing_interface: true
+```
+</details>
+
+<details>
+<summary>Core & Agg Switch Platform Baseline </summary>
+  
+```yaml
+# ============================================================================
+# PLATFORM BASELINE DATA MODEL: CORE & AGGREGATION SWITCHES (Vendor-Agnostic)
+# Base Configuration Standard for Core and Pure L3 Transit Aggregation Tiers
+# ============================================================================
+
+platform_core_agg_baseline:
+
+  # --------------------------------------------------------------------------
+  # 1. System Management & Access Baseline
+  # --------------------------------------------------------------------------
+  management_plane:
+    banner_login: "Authorized Use Only. System activity is logged."
+    ssh_version: "2"
+    console_timeout_minutes: 10
+    vty_timeout_minutes: 15
+    login_retries: 3
+
+    dns:
+      domain_name: "campus.example.net"
+      source_interface: "Loopback0"
+
+    http_services:
+      enable: false
+      secure_only: true
+
+  # --------------------------------------------------------------------------
+  # 2. Infrastructure Protection Baseline (Control & Data Plane)
+  # --------------------------------------------------------------------------
+  infrastructure_protection:
+    icmp_standards:
+      unreachable_rate_limit: 100
+      accept_redirects: false
+      mask_requests: false
+
+    disabled_ip_services:
+      - "ip_source_routing"
+      - "proxy_arp"
+
+    ipv6_hardening:
+      ra_suppress: true
+
+  # --------------------------------------------------------------------------
+  # 3. High Availability & Transit Discovery Baseline
+  # --------------------------------------------------------------------------
+  high_availability_and_transit:
+    # Sub-second failure detection for core and aggregation interconnections
+    bidirectional_forwarding_detection:
+      enable: true
+      default_interval_ms: 50
+      multiplier: 3
+
+    first_hop_redundancy_protocols:
+      preempt: true
+      advertisement_interval_seconds: 1
+
+    # Discovery protocols: enabled for core operational visibility, 
+    # but can be tuned or restricted per interface guidelines if needed
+    discovery_protocols:
+      cdp_enabled: true
+      lldp_enabled: true
+
+  # --------------------------------------------------------------------------
+  # 4. Routing Protocol Baseline Security
+  # --------------------------------------------------------------------------
+  routing_baseline:
+    bgp_security:
+      md5_authentication: true
+      ttl_security_hops: 1 # For internal campus iBGP/underlay peering
+
+    control_plane_policing:
+      enable: true
+      protocols:
+        routing_updates: "medium" # OSPF, iBGP transit traffic
+        management_access: "low"
+        transit_traffic: "high"
+
+  # --------------------------------------------------------------------------
+  # 5. Hardware Integrity & Fabric Baseline
+  # --------------------------------------------------------------------------
+  hardware_integrity:
+    secure_boot_verification: true
+    environmental_monitoring: true # Fan trays, power supplies, temperature sensors
+
+  # --------------------------------------------------------------------------
+  # 6. Interface & QoS Baseline
+  # --------------------------------------------------------------------------
+  interface_baseline:
+    fabric_and_transit_links:
+      mtu: 9192 # Jumbo frames enabled universally across core and aggregation transit
+      link_aggregation:
+        protocol: "lacp"
+        mode: "active"
+    unused_ports:
+      mode: "routed"
+      shutdown: true
+    qos_baseline:
+      trust_state: "dscp" # Trust DSCP across core and aggregation infrastructure
+```
+</details>
+
+<details>
+<summary>Access Switch Platform Baseline </summary>
+  
+```yaml
+# ============================================================================
+# PLATFORM BASELINE DATA MODEL: ACCESS SWITCH (Vendor-Agnostic)
+# Base Configuration Standard for Edge Access Switches
+# ============================================================================
+
+platform_access_baseline:
+
+  # --------------------------------------------------------------------------
+  # 1. System Management & Access Baseline
+  # --------------------------------------------------------------------------
+  management_plane:
+    banner_login: "Authorized Use Only. System activity is logged."
+    ssh_version: "2"
+    console_timeout_minutes: 10
+    vty_timeout_minutes: 15
+    login_retries: 3
+
+    dns:
+      domain_name: "campus.example.net"
+      source_interface: "Loopback0"
+
+    http_services:
+      enable: false
+      secure_only: true
+
+  # --------------------------------------------------------------------------
+  # 2. Infrastructure Protection Baseline (Control & Data Plane)
+  # --------------------------------------------------------------------------
+  infrastructure_protection:
+    icmp_standards:
+      unreachable_rate_limit: 100
+      accept_redirects: false
+      mask_requests: false
+
+    disabled_ip_services:
+      - "ip_source_routing"
+      - "proxy_arp"
+
+    ipv6_hardening:
+      ra_suppress: true
+
+  # --------------------------------------------------------------------------
+  # 3. Endpoint Access & Authentication Baseline (802.1X / NAC)
+  # --------------------------------------------------------------------------
+  endpoint_access_security:
+    dot1x_authentication:
+      enable: true
+      host_mode: "multi-domain" # Supports data endpoint and IP phone simultaneously
+      fallback_mechanism:
+        enabled: true
+        restricted_vlan: 998    # Quarantine/Fallback segment
+        reinitialize_timer_seconds: 300
+
+    port_security:
+      enable: true
+      max_mac_addresses_per_port: 2 # Accommodates phone + PC downstream
+      violation_action: "protect"   # Drop unauthorized traffic without disabling port
+
+    dhcp_snooping:
+      enable: true
+      trust_uplinks_to_transit: true # Trust ports connecting to aggregation/core
+
+    dynamic_arp_inspection:
+      enable: true                   # Mitigate ARP spoofing attacks against the gateway
+
+    storm_control:
+      broadcast_pps: 500
+      multicast_pps: 500
+      action: "trap_and_log"
+
+  # --------------------------------------------------------------------------
+  # 4. Routing & Control Plane Baseline
+  # --------------------------------------------------------------------------
+  routing_baseline:
+    bgp_security:
+      md5_authentication: true
+
+    control_plane_policing:
+      enable: true
+      protocols:
+        routing_updates: "medium"
+        management_access: "low"
+        transit_traffic: "high"
+
+  # --------------------------------------------------------------------------
+  # 5. Hardware Integrity Baseline
+  # --------------------------------------------------------------------------
+  hardware_integrity:
+    secure_boot_verification: true
+    environmental_monitoring: true
+
+  # --------------------------------------------------------------------------
+  # 6. Interface Baseline (Edge & Underlay)
+  # --------------------------------------------------------------------------
+  interface_baseline:
+    unused_edge_ports:
+      mode: "access"
+      default_vlan: 999            # Fallback/Dead segment
+      shutdown: true
+    underlay_uplinks:
+      link_aggregation:
+        protocol: "lacp"
+        mode: "active"
 ```
 </details>
