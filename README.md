@@ -67,9 +67,9 @@ This section outlines the architectural framework and design principles for the 
 
 ## Schemas & Models
 
-This design is constructed from a set of dataa schemas which provides a structured "source of truth" information that the automation tools will need. The data schema are used used to render, validate, deploy and maintainthe configurations over automated workflows.
+This design is constructed from a set of data schemas which provides a structured "source of truth" information that the automation tools will need. The data schemas are used to render, validate, deploy and maintainthe configurations over automated workflows.
 
-| Data Models | Purpose | Schema |
+| Data Models | Purpose & Applications | Schema |
 |---|---|---|
 | Physical Topology - Campus Network | | |
 | Physical Topology - Management Network | | |
@@ -78,6 +78,20 @@ This design is constructed from a set of dataa schemas which provides a structur
 | Core & Agg Switches Baseline | | |
 | Access Switches Baseline | | |
 
+## Deployment Details
+
+Physical data model to generate rack & stack, patching scheme. The data model also need to include rack information.
+Onsite facility team complete the rack and stack, patching, preconfigure with mgmt IP so that Ansible runner is reachable.
+Device build steps.
+Device specific baseline configuration
+- Data model for each platform for baseline configuration, data model is schema only, data is pulled from the network source of truth, Jinja2 template per device platform to render, Ansible to deploy
+Design specific configuration
+- Use data model from physical topology and logical topology.
+
+
+## Reference
+
+### Data Models
 <details>
 <summary>Physical Topology - Campus Network </summary>
   
@@ -621,15 +635,3 @@ site_context:
       # [...Floors 2-10 are repetitive using the acc-vtep schema shown above...]
 ```
 </details>
-
-## Deployment Details
-
-Physical data model to generate rack & stack, patching scheme. The data model also need to include rack information.
-Onsite facility team complete the rack and stack, patching, preconfigure with mgmt IP so that Ansible runner is reachable.
-Device build steps.
-Device specific baseline configuration
-- Data model for each platform for baseline configuration, data model is schema only, data is pulled from the network source of truth, Jinja2 template per device platform to render, Ansible to deploy
-Design specific configuration
-- Use data model from physical topology and logical topology.
-
-
