@@ -73,7 +73,7 @@ This design is constructed from a set of data models which provides a structured
 
 | Data Models | Purpose & Applications |
 |---|---|
-| Physical Topology - Campus Network | |
+| Physical Topology - Campus Network |  |
 | Physical Topology - Management Network | |
 | Logical Topology | |
 
