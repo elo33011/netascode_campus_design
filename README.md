@@ -80,9 +80,9 @@ This design is constructed from a set of data models which provides a structured
 ### Platform Specific Models
 | Data Models | Purpose & Applications |
 |---|---|
-| WAN Routers Baseline | |
-| Core & Agg Switches Baseline | |
-| Access Switches Baseline | |
+| WAN Router Platform Config Baseline | |
+| Core & Agg Switch Platform Config Baseline | |
+| Access Switch Platform Config Baseline | |
 
 ## Deployment Details
 
@@ -93,7 +93,6 @@ Device specific baseline configuration
 - Data model for each platform for baseline configuration, data model is schema only, data is pulled from the network source of truth, Jinja2 template per device platform to render, Ansible to deploy
 Design specific configuration
 - Use data model from physical topology and logical topology.
-
 
 ## References
 
