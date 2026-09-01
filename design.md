@@ -757,6 +757,23 @@ platform_wan_baseline:
     http_services:
       enable: false
       secure_only: true
+    ntp:
+      servers: []
+      source_interface: null
+    syslog:
+      servers: []
+      source_interface: null
+      severity_level: null
+    snmp:
+      enabled: false
+      contact: null
+      location: null
+      community_strings: []
+      trap_destinations: []
+    tacacs:
+      servers: []
+      source_interface: null
+      encryption_key: null
 
   infrastructure_protection:
     icmp_standards:
@@ -812,6 +829,23 @@ platform_core_agg_baseline:
     http_services:
       enable: false
       secure_only: true
+    ntp:
+      servers: []
+      source_interface: null
+    syslog:
+      servers: []
+      source_interface: null
+      severity_level: null
+    snmp:
+      enabled: false
+      contact: null
+      location: null
+      community_strings: []
+      trap_destinations: []
+    tacacs:
+      servers: []
+      source_interface: null
+      encryption_key: null
 
   infrastructure_protection:
     icmp_standards:
@@ -886,6 +920,23 @@ platform_access_baseline:
     http_services:
       enable: false
       secure_only: true
+    ntp:
+      servers: []
+      source_interface: null
+    syslog:
+      servers: []
+      source_interface: null
+      severity_level: null
+    snmp:
+      enabled: false
+      contact: null
+      location: null
+      community_strings: []
+      trap_destinations: []
+    tacacs:
+      servers: []
+      source_interface: null
+      encryption_key: null
 
   infrastructure_protection:
     icmp_standards:
