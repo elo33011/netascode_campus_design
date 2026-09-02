@@ -58,7 +58,7 @@ This section outlines the architectural framework and design principles for the 
 
 ### Control Plane & Overlay Architecture
 
-* Deploys a unified BGP and Segment Routing-based transport underlay.
+* Deploys a unified BGP Routing-based transport underlay.
 * Runs EVPN-VXLAN on top of the underlay to deliver flexible Layer 2/Layer 3 multi-tenant virtual overlay networks.
 
 ![Logical Network Diagram](./logical.svg)
