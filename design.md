@@ -4,7 +4,8 @@ This is a sample network design to demonstrate how an automation native network 
 
 Key takeaways:
 - Data model first, Every content is derived from data models written in yaml
-- This includes diagram, racking and stacking plan, cable patching matrix, device baseline configurations and design specific configurations.
+- Data model is mainly schema, parameters are not kept within the models but coming from another store (i.e. Netbox)
+- Generted conttents includes diagram, racking and stacking plan, cable patching matrix, device baseline configurations and design specific configurations
 - Diagram -> Render from data model to svg format (xml)
 - Racking and cable patching matrix -> Render from physical data model to table (md)
 - Device baseline configuration -> Render from platform data model, Network source of truth, platform specific Jinj2 template, deploy using Ansible
