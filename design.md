@@ -1,4 +1,4 @@
-# Automation Native Campus Network Design Explain
+# Automation Native Network Design Explain
 
 This is a sample network design to demonstrate how an automation native network design should look like. Automation native is a design approach which incorporates the elements required by network automation into design process. These elements are: Determinsitic Topology, Abstraction, Machine-Friendly interfaces & structured data, Unique source of truth, Declarative state and Streaming Telemetry.
 
@@ -20,6 +20,8 @@ Key takeaways:
     <img src="automation-native-data-model-pipeline.png" width="1200">
   </div>
 </div>
+
+---
 
 # Campus Network Design
 
