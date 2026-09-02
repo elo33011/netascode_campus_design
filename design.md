@@ -5,7 +5,7 @@ This is a sample network design to demonstrate how an automation native network 
 Key takeaways:
 - Data model first, Every content is derived from data models written in yaml
 - Data model is mainly schema, parameters are not kept within the models but coming from another store (i.e. Netbox)
-- Generted conttents includes diagram, racking and stacking plan, cable patching matrix, device baseline configurations and design specific configurations
+- Generted conttents includes diagram, racking and stacking plan, cable patching matrix, device baseline configurations and design specific configurations, automated test plan
 - Diagram -> Render from data model to svg format (xml)
 - Racking and cable patching matrix -> Render from physical data model to table (md)
 - Device baseline configuration -> Render from platform data model, Network source of truth, platform specific Jinj2 template, deploy using Ansible
@@ -103,12 +103,36 @@ The purpose of the Platform Baseline Data Model is to define a standardized, ven
 
 | Platform | Use Case | Data Model Name |
 |---|---| --- |
-| Cisco Catalyst 8000 | WAN Router | |
+| Cisco Catalyst 8000 | WAN Routers | |
 | Nexus 93240 | Core and Aggregation Switches | |
-| Nexus 93180 | Access Switche | |
+| Nexus 93180 | Access Switchs | |
 
 ## Deployment Details
 
+### A. Management Network Build
+
+Prerequisite:
+- 
+- 
+- Configure
+
+### B. Campus Network Build
+
+Prerequisite:
+- Management Network has been up and running so that devices are reachable by Ansible runners
+- Devices are physically racked and patched according to the patching scheme
+
+Build workflow:
+Apply the baseline template for each device -> Validate device local configuration -> Apply physical topology template -> Run point-to-point connectivity validation between devices -> Apply logical topology template -> Run layer 3 connectivity validation, endpoint vlan validation
+
+| Build | Playbook Name | j2 Template | Data model |
+|---|---|---|---|
+| Baseline config build | baseline-build playbook | J2 template name | Access Switch Platform Baseline |
+| Baseline validation | baseline-validation playbook | - | Corresponding platform baseline model |
+| Physical topology build | physical-build playbook | J2 template name | physical topology |
+| Physical validation | physical-validation playbook | - | physical topology |
+| Logical topology build | logical-build playbook | J2 template name | logical topology |
+| Logical validation | logical-validation playbook | - | logical topology |
 
 
 Physical data model to generate rack & stack, patching scheme. The data model also need to include rack information.
