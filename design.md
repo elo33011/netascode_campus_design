@@ -1,4 +1,4 @@
-# Automation Native Campus Network Design
+# Automation Native Campus Network Design Explain
 
 This is a sample network design to demonstrate how an automation native network design should look like. Automation native is a design approach which incorporates the elements required by network automation into design process. These elements are: Determinsitic Topology, Abstraction, Machine-Friendly interfaces & structured data, Unique source of truth, Declarative state and Streaming Telemetry.
 
@@ -10,6 +10,19 @@ Key takeaways:
 - Device baseline configuration -> Render from platform data model, Network source of truth, platform specific Jinj2 template, deploy using Ansible
 - Design specific configuration -> Render from physical topology data model, logical data model, deploy using Ansible
 - Access Switch endpoint facing interface configuration -> Render from the end-point service data model, deploy using Ansible
+
+<div style="display: flex; gap: 20px;">
+  <div style="flex: 1;">
+    <h3>Explanation</h3>
+    <p>This is the text that appears next to the diagram.</p>
+  </div>
+
+  <div style="flex: 1;">
+    <img src="diagram.png" width="300">
+  </div>
+</div>
+
+# Campus Network Design
 
 ## Business Requirement
 
