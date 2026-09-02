@@ -566,9 +566,8 @@ management_context:
 ```yaml
 
 # ============================================================================
-# Site Routing, BGP, & VXLAN EVPN Complete Data Model Contract
+# Site Routing, BGP, & VXLAN EVPN Complete Data Model Contract (Corrected: 2 Agg/FD)
 # Update: LAYER 3 ROUTED ACCESS VTEPS ONLY (Campus unified AS 65100)
-# Expanded EVPN Overlay VNI Mappings (Data, Voice, Wireless APs, IPTV, Critical)
 # ============================================================================
 
 site_context:
@@ -596,12 +595,10 @@ site_context:
   # 2. SERVICE OVERLAY (VXLAN EVPN VTEP)
   # ============================================================================
   evpn_overlay_design:
-    # Overlay is running exclusively on Access Tier
     vtep_parameters:
       nve_interface: "NVE1"
       vtep_source_interface: "Loopback1"
     vni_service_mappings:
-      # Logical services mapped to L3 access
       - vni_id: 10
         vlan_id: 10
         name: "Campus_Users"
@@ -664,54 +661,160 @@ site_context:
         global: { bgp_asn: 65100, router_id: "10.1.0.1" }
         loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.1/32", type: "management" }]
         interfaces:
-          - { interface: "HundredGigE0/1", ip_address: "10.18.1.1/31" } # to wan-01
-          - { interface: "HundredGigE1/1", ip_address: "10.9.1.0/31" } # to agg-01
+          - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.1/31" } # to wan-01
+          - { interface: "HundredGigE0/0/2", ip_address: "10.18.2.1/31" } # to cor-02
+          - { interface: "HundredGigE1/0/1", ip_address: "10.9.1.0/31" }  # to agg-01
+          - { interface: "HundredGigE1/0/2", ip_address: "10.9.2.0/31" }  # to agg-02
         bgp_peers:
           - { description: "iBGP Underlay to wan-01", peer_ip: "10.18.1.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to cor-02", peer_ip: "10.18.2.0", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to agg-01", peer_ip: "10.9.1.1", remote_as: 65100, type: "ibgp" }
-    # [...Other cores 02, 03, 04 omitted for brevity...]
+          - { description: "iBGP Underlay to agg-02", peer_ip: "10.9.2.1", remote_as: 65100, type: "ibgp" }
+
+    - name: "abc-hq-cor-02"
+      failure_domain: "FD-A"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.1.0.2" }
+        loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.2/32", type: "management" }]
+        interfaces:
+          - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.2/31" } # to wan-02 (Cross-FD)
+          - { interface: "HundredGigE0/0/2", ip_address: "10.18.2.0/31" } # to cor-01
+          - { interface: "HundredGigE1/0/1", ip_address: "10.9.3.0/31" }  # to agg-01
+          - { interface: "HundredGigE1/0/2", ip_address: "10.9.4.0/31" }  # to agg-02
+        bgp_peers:
+          - { description: "iBGP Underlay to wan-02", peer_ip: "10.18.1.3", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to cor-01", peer_ip: "10.18.2.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-01", peer_ip: "10.9.3.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-02", peer_ip: "10.9.4.1", remote_as: 65100, type: "ibgp" }
+
+    - name: "abc-hq-cor-03"
+      failure_domain: "FD-B"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.1.0.3" }
+        loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.3/32", type: "management" }]
+        interfaces:
+          - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.3/31" } # to wan-01 (Cross-FD)
+          - { interface: "HundredGigE0/0/2", ip_address: "10.18.3.1/31" } # to cor-04
+          - { interface: "HundredGigE1/0/1", ip_address: "10.9.5.0/31" }  # to agg-03
+          - { interface: "HundredGigE1/0/2", ip_address: "10.9.6.0/31" }  # to agg-04
+        bgp_peers:
+          - { description: "iBGP Underlay to wan-01", peer_ip: "10.18.1.2", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to cor-04", peer_ip: "10.18.3.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-03", peer_ip: "10.9.5.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-04", peer_ip: "10.9.6.1", remote_as: 65100, type: "ibgp" }
+
+    - name: "abc-hq-cor-04"
+      failure_domain: "FD-B"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.1.0.4" }
+        loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.4/32", type: "management" }]
+        interfaces:
+          - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.4/31" } # to wan-02
+          - { interface: "HundredGigE0/0/2", ip_address: "10.18.3.0/31" } # to cor-03
+          - { interface: "HundredGigE1/0/1", ip_address: "10.9.7.0/31" }  # to agg-03
+          - { interface: "HundredGigE1/0/2", ip_address: "10.9.8.0/31" }  # to agg-04
+        bgp_peers:
+          - { description: "iBGP Underlay to wan-02", peer_ip: "10.18.1.5", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to cor-03", peer_ip: "10.18.3.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-03", peer_ip: "10.9.7.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-04", peer_ip: "10.9.8.1", remote_as: 65100, type: "ibgp" }
 
     # --------------------------------------------------------------------------
-    # LAYER 3: AGGREGATION SWITCHES (PURE L3 UNDERLAY TRANSIT)
+    # LAYER 3: AGGREGATION SWITCHES (PURE L3 UNDERLAY TRANSIT - 2 PER FD)
     # --------------------------------------------------------------------------
     - name: "abc-hq-agg-01"
       failure_domain: "FD-A"
       role: "aggregation-transit"
-      # Pure Underlay Transit - No VTEP / No EVPN overlay termination
       routing:
         global: { bgp_asn: 65100, router_id: "10.2.0.1" }
         loopbacks:
           - { interface: "Loopback0", ip_address: "10.2.0.1/32", type: "management" }
         interfaces:
-          - { interface: "HundredGigE0/1", ip_address: "10.9.1.1/31" } # Up to cor-01
-          - { interface: "HundredGigE0/4", ip_address: "10.24.1.0/31" } # Down to f01-acc-01
+          - { interface: "HundredGigE0/1", ip_address: "10.9.0.1/31" } # Up to cor-01
+          - { interface: "HundredGigE0/2", ip_address: "10.9.2.1/31" } # Up to cor-02
+          - { interface: "HundredGigE0/48", ip_address: "10.15.0.0/31" } # Inter-agg to agg-02
+          - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.1.0/31" } # Down to f01-acc-01
         bgp_peers:
-          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.1.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.0.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-02", peer_ip: "10.9.2.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-02", peer_ip: "10.15.0.1", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay Down to f01-acc-01", peer_ip: "10.24.1.1", remote_as: 65100, type: "ibgp" }
-    # [...Other aggs 02, 03, 04 omitted for brevity...]
+
+    - name: "abc-hq-agg-02"
+      failure_domain: "FD-A"
+      role: "aggregation-transit"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.2.0.2" }
+        loopbacks:
+          - { interface: "Loopback0", ip_address: "10.2.0.2/32", type: "management" }
+        interfaces:
+          - { interface: "HundredGigE0/1", ip_address: "10.9.4.0/31" } # Up to cor-01
+          - { interface: "HundredGigE0/2", ip_address: "10.9.6.0/31" } # Up to cor-02
+          - { interface: "HundredGigE0/48", ip_address: "10.15.0.1/31" } # Inter-agg to agg-01
+          - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.1.2/31" } # Down to f01-acc-01 (cross)
+        bgp_peers:
+          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.4.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-02", peer_ip: "10.9.6.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-01", peer_ip: "10.15.0.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Down to f01-acc-01", peer_ip: "10.24.1.3", remote_as: 65100, type: "ibgp" }
+
+    - name: "abc-hq-agg-03"
+      failure_domain: "FD-B"
+      role: "aggregation-transit"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.2.0.3" }
+        loopbacks:
+          - { interface: "Loopback0", ip_address: "10.2.0.3/32", type: "management" }
+        interfaces:
+          - { interface: "HundredGigE0/1", ip_address: "10.9.8.0/31" } # Up to cor-03
+          - { interface: "HundredGigE0/2", ip_address: "10.9.10.0/31" } # Up to cor-04
+          - { interface: "HundredGigE0/48", ip_address: "10.15.2.0/31" } # Inter-agg to agg-04
+          - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.2.0/31" } # Down to f01-acc-02
+        bgp_peers:
+          - { description: "iBGP Underlay Up to cor-03", peer_ip: "10.9.8.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-04", peer_ip: "10.9.10.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-04", peer_ip: "10.15.2.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Down to f01-acc-02", peer_ip: "10.24.2.1", remote_as: 65100, type: "ibgp" }
+
+    - name: "abc-hq-agg-04"
+      failure_domain: "FD-B"
+      role: "aggregation-transit"
+      routing:
+        global: { bgp_asn: 65100, router_id: "10.2.0.4" }
+        loopbacks:
+          - { interface: "Loopback0", ip_address: "10.2.0.4/32", type: "management" }
+        interfaces:
+          - { interface: "HundredGigE0/1", ip_address: "10.9.12.0/31" } # Up to cor-03
+          - { interface: "HundredGigE0/2", ip_address: "10.9.14.0/31" } # Up to cor-04
+          - { interface: "HundredGigE0/48", ip_address: "10.15.2.1/31" } # Inter-agg to agg-03
+          - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.2.2/31" } # Down to f01-acc-02 (cross)
+        bgp_peers:
+          - { description: "iBGP Underlay Up to cor-03", peer_ip: "10.9.12.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-04", peer_ip: "10.9.14.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to agg-03", peer_ip: "10.15.2.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Down to f01-acc-02", peer_ip: "10.24.2.3", remote_as: 65100, type: "ibgp" }
 
     # --------------------------------------------------------------------------
     # LAYER 4: LAYER 3 ROUTED ACCESS VTEPS (Floors 1-10)
-    # Target Switch Type: e.g., Cisco Catalyst 9300 / Arista 720XP
     # --------------------------------------------------------------------------
     floors:
       - floor_number: 1
         access_vteps:
           - name: "abc-hq-f01-acc-01"
             failure_domain: "FD-A"
-            role: "access-vtep" # Defining Routed Access VTEP
+            role: "access-vtep"
             evpn_vtep:
               global: { bgp_asn: 65100, router_id: "10.3.0.1" }
               loopbacks:
                 - { interface: "Loopback0", ip_address: "10.3.0.1/32", type: "management" }
-                - { interface: "Loopback1", ip_address: "10.128.1.1/32", type: "vtep-source" } # Unique VTEP Source per Switch
+                - { interface: "Loopback1", ip_address: "10.128.1.1/32", type: "vtep-source" }
               interfaces:
                 - interface: "HundredGigabitEthernet1/1/1"
                   description: "FD-A L3 Underlay to agg-01"
-                  ip_address: "10.24.1.1/31" # FD-A Routed Access IPAM
+                  ip_address: "10.24.1.1/31"
                 - interface: "HundredGigabitEthernet1/1/2"
                   description: "Cross-Plane L3 Underlay to agg-02"
-                  ip_address: "10.24.1.3/31" # Cross-Plane Routed Access IPAM
+                  ip_address: "10.24.1.3/31"
               bgp_peers:
                 - description: "iBGP Underlay up to agg-01 (FD-A Master)"
                   peer_ip: "10.24.1.0"
@@ -733,7 +836,7 @@ site_context:
               interfaces:
                 - interface: "HundredGigabitEthernet1/1/1"
                   description: "FD-B L3 Underlay to agg-03"
-                  ip_address: "10.24.2.1/31" # FD-B Routed Access IPAM
+                  ip_address: "10.24.2.1/31"
                 - interface: "HundredGigabitEthernet1/1/2"
                   description: "Cross-Plane L3 Underlay to agg-04"
                   ip_address: "10.24.2.3/31"
@@ -746,8 +849,6 @@ site_context:
                   peer_ip: "10.24.2.2"
                   remote_as: 65100
                   type: "ibgp"
-
-      # [...Floors 2-10 are repetitive using the acc-vtep schema shown above...]
 ```
 </details>
 
