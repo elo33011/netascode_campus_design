@@ -13,8 +13,7 @@ Key takeaways:
 
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
-    <h3>Automation Native Design</h3>
-    <p>This is the text that appears next to the diagram.</p>
+    <h3>Automation Native Design Approach</h3>
   </div>
 
   <div style="flex: 1;">
