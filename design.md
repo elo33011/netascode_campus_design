@@ -18,7 +18,7 @@ Key takeaways:
   </div>
 
   <div style="flex: 1;">
-    <img src="data_model_first.png" width="600">
+    <img src="data_model_first.png" width="800">
   </div>
 </div>
 
