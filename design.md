@@ -110,6 +110,7 @@ The purpose of the Platform Baseline Data Model is to define a standardized, ven
 ## Deployment Details
 
 
+
 Physical data model to generate rack & stack, patching scheme. The data model also need to include rack information.
 Onsite facility team complete the rack and stack, patching, preconfigure with mgmt IP so that Ansible runner is reachable.
 Device build steps.
