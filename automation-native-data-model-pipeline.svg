@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 790" role="img" aria-label="Schematic titled Automation-Native Data Model Pipeline. NetBox, the network's single source of truth, holds every parameter — device inventory, IPAM, cabling, sites. YAML data models are extracted from NetBox, never hand-authored, and feed three domains: a static-artifacts domain that renders a topology diagram and a racking and cable-patching matrix into the repo; a device-deployment domain that renders baseline, design-specific, and access-switch endpoint configuration through Jinja2 templates, deployed to the network fabric by Ansible; and a validation domain that renders an Ansible test playbook from the same models and runs it against the fabric after the build, producing a test report.">
+          
+  <style>
+    text{ font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; }
+    .sd-title{ font-weight:700; font-size:19px; letter-spacing:0.03em; fill:#F3F6FB; }
+    .sd-subtitle{ font-size:12.5px; fill:#8CA0C4; }
+    .sd-divider{ stroke:rgba(255,255,255,0.14); stroke-width:1; }
+    .sd-colhead{ font-family:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-size:10.5px; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; fill:#7488AA; }
+    .sd-gold{ fill:url(#gradGold); stroke:#FFE7A8; stroke-width:1.3; filter:url(#glowGold); }
+    .sd-cyan{ fill:url(#gradCyan); stroke:#7FD8FF; stroke-width:1.3; filter:url(#glowCyan); }
+    .sd-purple{ fill:url(#gradPurple); stroke:#C9A6F5; stroke-width:1.3; filter:url(#glowPurple); }
+    .sd-orange{ fill:url(#gradOrange); stroke:#FFC98A; stroke-width:1.3; filter:url(#glowOrange); }
+    .sd-red{ fill:url(#gradRed); stroke:#FF9B95; stroke-width:1.3; filter:url(#glowRed); }
+    .sd-blue{ fill:url(#gradBlueMed); stroke:#9DC4FF; stroke-width:1.3; filter:url(#glowBlue); }
+    .sd-green{ fill:url(#gradGreen); stroke:#9BE8B8; stroke-width:1.3; filter:url(#glowGreen); }
+    .sd-domain-red{ fill:rgba(229,83,80,0.08); stroke:rgba(229,83,80,0.55); stroke-width:1.5; }
+    .sd-domain-blue{ fill:rgba(46,111,219,0.08); stroke:rgba(46,111,219,0.55); stroke-width:1.5; }
+    .sd-domain-teal{ fill:rgba(45,212,191,0.08); stroke:rgba(45,212,191,0.55); stroke-width:1.5; }
+    .sd-pill-red{ fill:#D6473F; }
+    .sd-pill-blue{ fill:#2E6FDB; }
+    .sd-pill-teal{ fill:#0F9C8C; }
+    .sd-panel-label{ font-family:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-weight:700; font-size:10px; letter-spacing:0.06em; fill:#FFFFFF; }
+    .sd-line-orange{ stroke:#F2994A; stroke-width:2.2; fill:none; }
+    .sd-line-blue{ stroke:#4F8FEA; stroke-width:2.2; fill:none; }
+    .sd-line-green{ stroke:#3CCB7F; stroke-width:2.2; fill:none; }
+    .sd-line-dashed{ stroke:#2DD4BF; stroke-width:2; fill:none; stroke-dasharray:6 4; }
+    .mk-orange{ fill:#F2994A; }
+    .mk-blue{ fill:#4F8FEA; }
+    .mk-green{ fill:#3CCB7F; }
+    .mk-teal{ fill:#2DD4BF; }
+    .sd-file{ font-family:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-size:10.5px; fill:#D9E7FF; }
+    .sd-caption{ font-family:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-size:10px; fill:#8CA0C4; }
+    .sd-dot{ fill:rgba(255,255,255,0.55); }
+    .sd-node-title{ font-weight:700; font-size:13px; fill:#FFFFFF; }
+    .sd-node-mono{ font-family:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-size:12px; font-weight:600; fill:#FFFFFF; }
+    .sd-node-sub{ font-size:10.5px; fill:rgba(255,255,255,0.82); }
+  </style>
+  
+  <rect x="0" y="0" width="1300" height="790" fill="#0B1220"/>
+  <defs>
+            <linearGradient id="gradGold" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFD873"/><stop offset="100%" stop-color="#C77F17"/>
+            </linearGradient>
+            <linearGradient id="gradCyan" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#5DD5FF"/><stop offset="100%" stop-color="#0E7FBF"/>
+            </linearGradient>
+            <linearGradient id="gradPurple" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#C08CF0"/><stop offset="100%" stop-color="#7A2FC4"/>
+            </linearGradient>
+            <linearGradient id="gradOrange" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFB255"/><stop offset="100%" stop-color="#D9660A"/>
+            </linearGradient>
+            <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FF6B63"/><stop offset="100%" stop-color="#C41E1E"/>
+            </linearGradient>
+            <linearGradient id="gradBlueMed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6FB3FF"/><stop offset="100%" stop-color="#1E5FC4"/>
+            </linearGradient>
+            <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7BE0A0"/><stop offset="100%" stop-color="#1F8F4E"/>
+            </linearGradient>
+
+            <filter id="glowGold" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#E0A526" flood-opacity="0.6"/></filter>
+            <filter id="glowCyan" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#29ABE2" flood-opacity="0.55"/></filter>
+            <filter id="glowPurple" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#9B59B6" flood-opacity="0.55"/></filter>
+            <filter id="glowOrange" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#E67E22" flood-opacity="0.55"/></filter>
+            <filter id="glowRed" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#E53935" flood-opacity="0.55"/></filter>
+            <filter id="glowBlue" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#2E6FDB" flood-opacity="0.55"/></filter>
+            <filter id="glowGreen" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#33B36B" flood-opacity="0.55"/></filter>
+
+            <marker id="arrowOrange" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+              <path class="mk-orange" d="M0,0 L8,4 L0,8 Z"/>
+            </marker>
+            <marker id="arrowBlue" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+              <path class="mk-blue" d="M0,0 L8,4 L0,8 Z"/>
+            </marker>
+            <marker id="arrowGreen" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+              <path class="mk-green" d="M0,0 L8,4 L0,8 Z"/>
+            </marker>
+            <marker id="arrowTeal" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+              <path class="mk-teal" d="M0,0 L8,4 L0,8 Z"/>
+            </marker>
+          </defs>
+
+          <!-- title block -->
+          <text x="650" y="34" text-anchor="middle" class="sd-title">AUTOMATION-NATIVE DATA MODEL PIPELINE</text>
+          <text x="650" y="54" text-anchor="middle" class="sd-subtitle">NetBox → Extracted YAML Models → Rendered Documentation &amp; Ansible-Deployed Configuration</text>
+          <line x1="40" y1="68" x2="1260" y2="68" class="sd-divider"/>
+
+          <!-- column headers -->
+          <text x="95" y="86" text-anchor="middle" class="sd-colhead">Source of truth</text>
+          <text x="315" y="86" text-anchor="middle" class="sd-colhead">Extracted models</text>
+          <text x="570" y="86" text-anchor="middle" class="sd-colhead">Render</text>
+          <text x="790" y="86" text-anchor="middle" class="sd-colhead">Artifact</text>
+          <text x="1080" y="86" text-anchor="middle" class="sd-colhead">Outcome</text>
+
+          <!-- NetBox: the actual single source of truth -->
+          <rect class="sd-gold" x="20" y="293" width="150" height="140" rx="12"/>
+          <rect x="75" y="304" width="40" height="5" rx="2" fill="rgba(255,255,255,0.55)"/>
+          <rect x="75" y="312" width="40" height="5" rx="2" fill="rgba(255,255,255,0.55)"/>
+          <rect x="75" y="320" width="40" height="5" rx="2" fill="rgba(255,255,255,0.55)"/>
+          <text x="95" y="349" text-anchor="middle" class="sd-node-title">NetBox</text>
+          <text x="95" y="366" text-anchor="middle" class="sd-node-sub">network source of truth</text>
+          <text x="95" y="384" text-anchor="middle" class="sd-file" style="font-size:9.5px">devices · IPAM · cabling</text>
+
+          <text x="190" y="352" text-anchor="middle" class="sd-caption" style="font-size:9px">extract</text>
+          <line x1="170" y1="363" x2="210" y2="363" class="sd-line-orange" marker-end="url(#arrowOrange)"/>
+
+          <!-- trunk: YAML data models, extracted from NetBox — never hand-authored -->
+          <rect class="sd-cyan" x="210" y="104" width="210" height="518" rx="12"/>
+          <text x="315" y="150" text-anchor="middle" class="sd-node-title">YAML</text>
+          <text x="315" y="170" text-anchor="middle" class="sd-node-title">Data Models</text>
+          <line x1="230" y1="186" x2="400" y2="186" class="sd-divider"/>
+          <text x="230" y="214" class="sd-file">● topology.yaml</text>
+          <text x="230" y="244" class="sd-file">● logical.yaml</text>
+          <text x="230" y="274" class="sd-file">● platform.yaml</text>
+          <text x="230" y="304" class="sd-file">● endpoints.yaml</text>
+          <circle cx="315" cy="332" r="1.6" class="sd-dot"/>
+          <circle cx="315" cy="350" r="1.6" class="sd-dot"/>
+          <circle cx="315" cy="368" r="1.6" class="sd-dot"/>
+          <line x1="230" y1="388" x2="400" y2="388" class="sd-divider"/>
+          <text x="315" y="480" text-anchor="middle" class="sd-node-sub">extracted from</text>
+          <text x="315" y="496" text-anchor="middle" class="sd-node-sub">NetBox</text>
+
+          <!-- spine: source of truth bus -->
+          <line x1="420" y1="363" x2="440" y2="363" class="sd-line-orange"/>
+          <line x1="440" y1="150" x2="440" y2="700" class="sd-line-orange"/>
+
+          <!-- domain panels -->
+          <rect class="sd-domain-red" x="462" y="98" width="630" height="202" rx="14"/>
+          <rect class="sd-pill-red" x="480" y="88" width="172" height="22" rx="11"/>
+          <text x="566" y="103" text-anchor="middle" class="sd-panel-label">STATIC ARTIFACTS</text>
+
+          <rect class="sd-domain-blue" x="462" y="310" width="558" height="302" rx="14"/>
+          <rect class="sd-pill-blue" x="480" y="300" width="196" height="22" rx="11"/>
+          <text x="578" y="315" text-anchor="middle" class="sd-panel-label">DEVICE DEPLOYMENT</text>
+
+          <!-- ===== Row 1 : Diagram ===== -->
+          <line x1="440" y1="150" x2="480" y2="150" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="116" text-anchor="middle" class="sd-caption">topology.yaml + logical.yaml</text>
+          <rect class="sd-purple" x="480" y="122" width="180" height="56" rx="8"/>
+          <text x="570" y="155" text-anchor="middle" class="sd-node-title">SVG Renderer</text>
+          <line x1="660" y1="150" x2="700" y2="150" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="122" width="180" height="56" rx="8"/>
+          <text x="790" y="147" text-anchor="middle" class="sd-node-mono">diagram.svg</text>
+          <text x="790" y="165" text-anchor="middle" class="sd-node-sub">rendered diagram · XML</text>
+          <line x1="880" y1="150" x2="910" y2="150" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-red" x="910" y="122" width="160" height="56" rx="8"/>
+          <text x="990" y="147" text-anchor="middle" class="sd-node-title">Repo / Docs</text>
+          <text x="990" y="165" text-anchor="middle" class="sd-node-sub">network diagrams</text>
+
+          <!-- ===== Row 2 : Racking &amp; patching ===== -->
+          <line x1="440" y1="254" x2="480" y2="254" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="220" text-anchor="middle" class="sd-caption">topology.yaml</text>
+          <rect class="sd-purple" x="480" y="226" width="180" height="56" rx="8"/>
+          <text x="570" y="259" text-anchor="middle" class="sd-node-title">MD Table Renderer</text>
+          <line x1="660" y1="254" x2="700" y2="254" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="226" width="180" height="56" rx="8"/>
+          <text x="790" y="251" text-anchor="middle" class="sd-node-mono">patching-matrix.md</text>
+          <text x="790" y="269" text-anchor="middle" class="sd-node-sub">rack &amp; cabling table</text>
+          <line x1="880" y1="254" x2="910" y2="254" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-red" x="910" y="226" width="160" height="56" rx="8"/>
+          <text x="990" y="251" text-anchor="middle" class="sd-node-title">Repo / Docs</text>
+          <text x="990" y="269" text-anchor="middle" class="sd-node-sub">racking &amp; patching</text>
+
+          <!-- ===== Row 3 : Device baseline config ===== -->
+          <line x1="440" y1="358" x2="480" y2="358" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="324" text-anchor="middle" class="sd-caption">platform.yaml</text>
+          <rect class="sd-purple" x="480" y="330" width="180" height="56" rx="8"/>
+          <text x="570" y="363" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
+          <line x1="660" y1="358" x2="700" y2="358" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="330" width="180" height="56" rx="8"/>
+          <text x="790" y="355" text-anchor="middle" class="sd-node-mono">baseline-config.cfg</text>
+          <text x="790" y="373" text-anchor="middle" class="sd-node-sub">device baseline</text>
+          <line x1="880" y1="358" x2="910" y2="358" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-blue" x="910" y="330" width="90" height="56" rx="8"/>
+          <text x="955" y="363" text-anchor="middle" class="sd-node-title">Ansible</text>
+
+          <!-- ===== Row 4 : Design-specific config ===== -->
+          <line x1="440" y1="462" x2="480" y2="462" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="428" text-anchor="middle" class="sd-caption">topology.yaml + logical.yaml</text>
+          <rect class="sd-purple" x="480" y="434" width="180" height="56" rx="8"/>
+          <text x="570" y="467" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
+          <line x1="660" y1="462" x2="700" y2="462" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="434" width="180" height="56" rx="8"/>
+          <text x="790" y="459" text-anchor="middle" class="sd-node-mono">design-config.cfg</text>
+          <text x="790" y="477" text-anchor="middle" class="sd-node-sub">design-specific</text>
+          <line x1="880" y1="462" x2="910" y2="462" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-blue" x="910" y="434" width="90" height="56" rx="8"/>
+          <text x="955" y="467" text-anchor="middle" class="sd-node-title">Ansible</text>
+
+          <!-- ===== Row 5 : Access-switch endpoint config ===== -->
+          <line x1="440" y1="566" x2="480" y2="566" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="532" text-anchor="middle" class="sd-caption">endpoints.yaml</text>
+          <rect class="sd-purple" x="480" y="538" width="180" height="56" rx="8"/>
+          <text x="570" y="571" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
+          <line x1="660" y1="566" x2="700" y2="566" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="538" width="180" height="56" rx="8"/>
+          <text x="790" y="563" text-anchor="middle" class="sd-node-mono">iface-config.cfg</text>
+          <text x="790" y="581" text-anchor="middle" class="sd-node-sub">access-switch ports</text>
+          <line x1="880" y1="566" x2="910" y2="566" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-blue" x="910" y="538" width="90" height="56" rx="8"/>
+          <text x="955" y="571" text-anchor="middle" class="sd-node-title">Ansible</text>
+
+          <!-- right fan-in bus: Ansible -> Network Fabric (rows 3-5) -->
+          <line x1="1000" y1="358" x2="1030" y2="358" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <line x1="1000" y1="462" x2="1030" y2="462" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <line x1="1000" y1="566" x2="1030" y2="566" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <line x1="1030" y1="358" x2="1030" y2="566" class="sd-line-green"/>
+          <line x1="1030" y1="462" x2="1050" y2="462" class="sd-line-green"/>
+
+          <rect class="sd-green" x="1050" y="330" width="200" height="264" rx="14"/>
+          <text x="1150" y="452" text-anchor="middle" class="sd-node-title">NETWORK</text>
+          <text x="1150" y="472" text-anchor="middle" class="sd-node-title">FABRIC</text>
+          <text x="1150" y="498" text-anchor="middle" class="sd-node-sub">baseline + design +</text>
+          <text x="1150" y="514" text-anchor="middle" class="sd-node-sub">endpoint config, deployed</text>
+
+          <!-- domain panel: post-build validation -->
+          <rect class="sd-domain-teal" x="462" y="652" width="558" height="96" rx="14"/>
+          <rect class="sd-pill-teal" x="480" y="642" width="188" height="22" rx="11"/>
+          <text x="574" y="657" text-anchor="middle" class="sd-panel-label">POST-BUILD VALIDATION</text>
+
+          <!-- ===== Row 6 : Ansible test suite, run after the build ===== -->
+          <line x1="440" y1="700" x2="480" y2="700" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="666" text-anchor="middle" class="sd-caption">topology.yaml + logical.yaml + endpoints.yaml</text>
+          <rect class="sd-purple" x="480" y="672" width="180" height="56" rx="8"/>
+          <text x="570" y="705" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
+          <line x1="660" y1="700" x2="700" y2="700" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="672" width="180" height="56" rx="8"/>
+          <text x="790" y="697" text-anchor="middle" class="sd-node-mono">test-tasks.yml</text>
+          <text x="790" y="715" text-anchor="middle" class="sd-node-sub">Ansible test playbook</text>
+          <line x1="880" y1="700" x2="910" y2="700" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-blue" x="910" y="672" width="90" height="56" rx="8"/>
+          <text x="955" y="705" text-anchor="middle" class="sd-node-title">Ansible</text>
+
+          <!-- Ansible test run validates the already-built fabric (dashed = read/verify, not deploy) -->
+          <line x1="955" y1="672" x2="955" y2="630" class="sd-line-dashed"/>
+          <line x1="955" y1="630" x2="1150" y2="630" class="sd-line-dashed"/>
+          <line x1="1150" y1="630" x2="1150" y2="596" class="sd-line-dashed" marker-end="url(#arrowTeal)"/>
+          <text x="1052" y="622" text-anchor="middle" class="sd-caption" style="font-size:9.5px">tests · after build</text>
+
+          <!-- Ansible test run produces a report -->
+          <line x1="1000" y1="700" x2="1050" y2="700" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-red" x="1050" y="668" width="200" height="64" rx="12"/>
+          <text x="1150" y="694" text-anchor="middle" class="sd-node-title">TEST REPORT</text>
+          <text x="1150" y="712" text-anchor="middle" class="sd-node-sub">pass / fail per assertion</text>
+        </svg>
