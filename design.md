@@ -13,12 +13,12 @@ Key takeaways:
 
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
-    <h3>Explanation</h3>
+    <h3>Automation Native Design</h3>
     <p>This is the text that appears next to the diagram.</p>
   </div>
 
   <div style="flex: 1;">
-    <img src="data_model_first.png" width="300">
+    <img src="data_model_first.png" width="600">
   </div>
 </div>
 
