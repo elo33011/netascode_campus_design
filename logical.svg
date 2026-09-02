@@ -43,7 +43,7 @@
   </defs>
 
   <!-- TITLE BLOCK -->
-  <text x="625" y="32" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">ABC HQ - LOGICAL BGP, UNDERLAY &amp; VXLAN EVPN TOPOLOGY</text>
+  <text x="625" y="32" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">ABC HQ - LOGICAL BGP, UNDERLAY &amp; VXLAN EVPN TOPOLOGY (2 AGG / FD)</text>
   <text x="625" y="55" text-anchor="middle" fill="#94a3b8" font-size="13">Unified Campus AS 65100 | Pure L3 Underlay Transit | EVPN Overlay Exclusively at Access VTEPs</text>
 
   <!-- FAILURE DOMAIN CONTAINERS -->
@@ -61,144 +61,167 @@
   <!-- ==================== LOGICAL CONNECTIONS (UNDERLAY BGP & EVPN) ==================== -->
 
   <!-- External eBGP connections -->
-  <path d="M 240,195 L 140,245" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
-  <path d="M 1010,195 L 1110,245" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+  <path d="M 140,195 L 90,245" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+  <path d="M 1110,195 L 1160,245" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
 
   <!-- WAN to Core iBGP Underlay Links -->
-  <path d="M 190,270 L 190,390" stroke="#10b981" stroke-width="3"/>
-  <path d="M 1060,270 L 1060,390" stroke="#10b981" stroke-width="3"/>
+  <path d="M 140,270 L 140,390" stroke="#10b981" stroke-width="2.5"/>
+  <path d="M 1110,270 L 1110,390" stroke="#10b981" stroke-width="2.5"/>
   
   <!-- Cross-Domain iBGP Core Mesh -->
-  <path d="M 270,425 L 980,425" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,6"/>
+  <path d="M 240,430 L 1010,430" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,6"/>
 
-  <!-- Core to Aggregation Underlay Links (FD-A & FD-B) -->
-  <path d="M 190,460 L 190,600" stroke="#10b981" stroke-width="2.5"/>
-  <path d="M 1060,460 L 1060,600" stroke="#10b981" stroke-width="2.5"/>
+  <!-- Core to Aggregation Underlay Links (FD-A & FD-B, 2 Cores to 2 Aggs per FD) -->
+  <path d="M 115,500 L 115,600" stroke="#10b981" stroke-width="2"/>
+  <path d="M 165,500 L 335,600" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <path d="M 215,500 L 165,600" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <path d="M 265,500 L 385,600" stroke="#10b981" stroke-width="2"/>
+
+  <path d="M 985,500 L 865,600" stroke="#10b981" stroke-width="2"/>
+  <path d="M 1035,500 L 1085,600" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <path d="M 1085,500 L 915,600" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <path d="M 1135,500 L 1135,600" stroke="#10b981" stroke-width="2"/>
 
   <!-- Aggregation to Access VTEP Underlay Links (Direct & Cross-Plane) -->
-  <path d="M 155,670 L 155,810" stroke="#10b981" stroke-width="2"/>
-  <path d="M 225,670 L 485,810" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <path d="M 115,710 L 115,810" stroke="#10b981" stroke-width="2"/>
+  <path d="M 385,710 L 205,810" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
   
-  <path d="M 1025,670 L 765,810" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
-  <path d="M 1095,670 L 1095,810" stroke="#10b981" stroke-width="2"/>
+  <path d="M 865,710 L 1045,810" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <path d="M 1135,710 L 1135,810" stroke="#10b981" stroke-width="2"/>
 
   <!-- VXLAN EVPN Overlay Virtual Tunnel Connections (Mesh between Access VTEPs) -->
-  <path d="M 225,845 L 735,845" stroke="#ec4899" stroke-width="2.5" stroke-dasharray="8,6"/>
-  <path d="M 225,865 L 485,865" stroke="#ec4899" stroke-width="2" stroke-dasharray="8,6"/>
-  <path d="M 765,865 L 1025,865" stroke="#ec4899" stroke-width="2" stroke-dasharray="8,6"/>
+  <path d="M 205,865 L 1045,865" stroke="#ec4899" stroke-width="2.5" stroke-dasharray="8,6"/>
+  <path d="M 205,885 L 445,885" stroke="#ec4899" stroke-width="2" stroke-dasharray="8,6"/>
+  <path d="M 805,885 L 1045,885" stroke="#ec4899" stroke-width="2" stroke-dasharray="8,6"/>
 
 
   <!-- ==================== NETWORK NODES ==================== -->
 
   <!-- LAYER 1: WAN ROUTERS -->
   <g id="wan-01" filter="url(#shadow)">
-    <rect x="90" y="150" width="200" height="120" rx="8" fill="url(#wan-grad)"/>
-    <text x="190" y="175" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-wan-01</text>
-    <text x="190" y="195" text-anchor="middle" fill="#fef3c7" font-size="11">AS 65100 | ID: 10.0.0.1</text>
-    <line x1="105" y1="205" x2="275" y2="205" stroke="#d97706" stroke-width="1"/>
-    <text x="105" y="222" fill="#ffffff" font-size="10">• Lo0: 10.0.0.1/32 (Mgmt)</text>
-    <text x="105" y="238" fill="#ffffff" font-size="10">• eBGP: ISP-A (AS 65530)</text>
-    <text x="105" y="254" fill="#ffffff" font-size="10">• iBGP: core-01, core-03</text>
+    <rect x="40" y="150" width="200" height="120" rx="8" fill="url(#wan-grad)"/>
+    <text x="140" y="175" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-wan-01</text>
+    <text x="140" y="195" text-anchor="middle" fill="#fef3c7" font-size="11">AS 65100 | ID: 10.0.0.1</text>
+    <line x1="55" y1="205" x2="225" y2="205" stroke="#d97706" stroke-width="1"/>
+    <text x="55" y="222" fill="#ffffff" font-size="10">• Lo0: 10.0.0.1/32 (Mgmt)</text>
+    <text x="55" y="238" fill="#ffffff" font-size="10">• eBGP: ISP-A (AS 65530)</text>
+    <text x="55" y="254" fill="#ffffff" font-size="10">• iBGP: core-01, core-03</text>
   </g>
 
   <g id="wan-02" filter="url(#shadow)">
-    <rect x="960" y="150" width="200" height="120" rx="8" fill="url(#wan-grad)"/>
-    <text x="1060" y="175" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-wan-02</text>
-    <text x="1060" y="195" text-anchor="middle" fill="#fef3c7" font-size="11">AS 65100 | ID: 10.0.0.2</text>
-    <line x1="975" y1="205" x2="1145" y2="205" stroke="#d97706" stroke-width="1"/>
-    <text x="975" y="222" fill="#ffffff" font-size="10">• Lo0: 10.0.0.2/32 (Mgmt)</text>
-    <text x="975" y="238" fill="#ffffff" font-size="10">• eBGP: ISP-B (AS 65531)</text>
-    <text x="975" y="254" fill="#ffffff" font-size="10">• iBGP: core-02, core-04</text>
+    <rect x="1010" y="150" width="200" height="120" rx="8" fill="url(#wan-grad)"/>
+    <text x="1110" y="175" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-wan-02</text>
+    <text x="1110" y="195" text-anchor="middle" fill="#fef3c7" font-size="11">AS 65100 | ID: 10.0.0.2</text>
+    <line x1="1025" y1="205" x2="1195" y2="205" stroke="#d97706" stroke-width="1"/>
+    <text x="1025" y="222" fill="#ffffff" font-size="10">• Lo0: 10.0.0.2/32 (Mgmt)</text>
+    <text x="1025" y="238" fill="#ffffff" font-size="10">• eBGP: ISP-B (AS 65531)</text>
+    <text x="1025" y="254" fill="#ffffff" font-size="10">• iBGP: core-02, core-04</text>
   </g>
 
 
-  <!-- LAYER 2: CORE ROUTERS -->
+  <!-- LAYER 2: CORE ROUTERS (2 per FD) -->
   <g id="core-01" filter="url(#shadow)">
-    <rect x="90" y="390" width="200" height="110" rx="8" fill="url(#core-a-grad)"/>
-    <text x="190" y="415" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-cor-01</text>
-    <text x="190" y="433" text-anchor="middle" fill="#fca5a5" font-size="11">AS 65100 | ID: 10.1.0.1</text>
-    <line x1="105" y1="443" x2="275" y2="443" stroke="#b91c1c" stroke-width="1"/>
-    <text x="105" y="460" fill="#ffffff" font-size="10">• Lo0: 10.1.0.1/32</text>
-    <text x="105" y="476" fill="#ffffff" font-size="10">• P2P /31 Underlay to agg-01</text>
+    <rect x="40" y="390" width="240" height="110" rx="8" fill="url(#core-a-grad)"/>
+    <text x="160" y="415" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-cor-01 / cor-02</text>
+    <text x="160" y="433" text-anchor="middle" fill="#fca5a5" font-size="11">AS 65100 | IDs: 10.1.0.1 / .2</text>
+    <line x1="55" y1="443" x2="265" y2="443" stroke="#b91c1c" stroke-width="1"/>
+    <text x="55" y="460" fill="#ffffff" font-size="10">• Loopbacks: 10.1.0.1/2 /32</text>
+    <text x="55" y="476" fill="#ffffff" font-size="10">• P2P /31 Underlay to agg-01/02</text>
   </g>
 
-  <g id="core-02" filter="url(#shadow)">
-    <rect x="960" y="390" width="200" height="110" rx="8" fill="url(#core-b-grad)"/>
-    <text x="1060" y="415" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-cor-02</text>
-    <text x="1060" y="433" text-anchor="middle" fill="#93c5fd" font-size="11">AS 65100 | ID: 10.1.0.2</text>
-    <line x1="975" y1="443" x2="1145" y2="443" stroke="#1d4ed8" stroke-width="1"/>
-    <text x="975" y="460" fill="#ffffff" font-size="10">• Lo0: 10.1.0.2/32</text>
-    <text x="975" y="476" fill="#ffffff" font-size="10">• P2P /31 Underlay to agg-02</text>
+  <g id="core-03" filter="url(#shadow)">
+    <rect x="970" y="390" width="240" height="110" rx="8" fill="url(#core-b-grad)"/>
+    <text x="1090" y="415" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-cor-03 / cor-04</text>
+    <text x="1090" y="433" text-anchor="middle" fill="#93c5fd" font-size="11">AS 65100 | IDs: 10.1.0.3 / .4</text>
+    <line x1="985" y1="443" x2="1195" y2="443" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="985" y="460" fill="#ffffff" font-size="10">• Loopbacks: 10.1.0.3/4 /32</text>
+    <text x="985" y="476" fill="#ffffff" font-size="10">• P2P /31 Underlay to agg-03/04</text>
   </g>
 
 
-  <!-- LAYER 3: AGGREGATION SWITCHES (PURE L3 TRANSIT) -->
+  <!-- LAYER 3: AGGREGATION SWITCHES (PURE L3 TRANSIT - 2 PER FD) -->
   <g id="agg-01" filter="url(#shadow)">
-    <rect x="90" y="600" width="200" height="110" rx="8" fill="url(#agg-grad)"/>
-    <text x="190" y="625" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-agg-01</text>
-    <text x="190" y="643" text-anchor="middle" fill="#cbd5e1" font-size="11">Role: aggregation-transit</text>
-    <line x1="105" y1="653" x2="275" y2="653" stroke="#475569" stroke-width="1"/>
-    <text x="105" y="670" fill="#ffffff" font-size="10">• Lo0: 10.2.0.1/32</text>
-    <text x="105" y="686" fill="#e2e8f0" font-size="9" font-weight="600">Pure Underlay / No VTEP / No EVPN</text>
+    <rect x="45" y="600" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="115" y="625" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-01</text>
+    <text x="115" y="643" text-anchor="middle" fill="#cbd5e1" font-size="10">Transit (FD-A)</text>
+    <line x1="55" y1="653" x2="175" y2="653" stroke="#475569" stroke-width="1"/>
+    <text x="55" y="670" fill="#ffffff" font-size="10">• Lo0: 10.2.0.1/32</text>
+    <text x="55" y="686" fill="#e2e8f0" font-size="9" font-weight="600">Pure Underlay</text>
   </g>
 
   <g id="agg-02" filter="url(#shadow)">
-    <rect x="960" y="600" width="200" height="110" rx="8" fill="url(#agg-grad)"/>
-    <text x="1060" y="625" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-agg-02</text>
-    <text x="1060" y="643" text-anchor="middle" fill="#cbd5e1" font-size="11">Role: aggregation-transit</text>
-    <line x1="975" y1="653" x2="1145" y2="653" stroke="#475569" stroke-width="1"/>
-    <text x="975" y="670" fill="#ffffff" font-size="10">• Lo0: 10.2.0.2/32</text>
-    <text x="975" y="686" fill="#e2e8f0" font-size="9" font-weight="600">Pure Underlay / No VTEP / No EVPN</text>
+    <rect x="315" y="600" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="385" y="625" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-02</text>
+    <text x="385" y="643" text-anchor="middle" fill="#cbd5e1" font-size="10">Transit (FD-A)</text>
+    <line x1="325" y1="653" x2="445" y2="653" stroke="#475569" stroke-width="1"/>
+    <text x="325" y="670" fill="#ffffff" font-size="10">• Lo0: 10.2.0.2/32</text>
+    <text x="325" y="686" fill="#e2e8f0" font-size="9" font-weight="600">Pure Underlay</text>
+  </g>
+
+  <g id="agg-03" filter="url(#shadow)">
+    <rect x="795" y="600" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="865" y="625" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-03</text>
+    <text x="865" y="643" text-anchor="middle" fill="#cbd5e1" font-size="10">Transit (FD-B)</text>
+    <line x1="805" y1="653" x2="925" y2="653" stroke="#475569" stroke-width="1"/>
+    <text x="805" y="670" fill="#ffffff" font-size="10">• Lo0: 10.2.0.3/32</text>
+    <text x="805" y="686" fill="#e2e8f0" font-size="9" font-weight="600">Pure Underlay</text>
+  </g>
+
+  <g id="agg-04" filter="url(#shadow)">
+    <rect x="1065" y="600" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="1135" y="625" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-04</text>
+    <text x="1135" y="643" text-anchor="middle" fill="#cbd5e1" font-size="10">Transit (FD-B)</text>
+    <line x1="1075" y1="653" x2="1195" y2="653" stroke="#475569" stroke-width="1"/>
+    <text x="1075" y="670" fill="#ffffff" font-size="10">• Lo0: 10.2.0.4/32</text>
+    <text x="1075" y="686" fill="#e2e8f0" font-size="9" font-weight="600">Pure Underlay</text>
   </g>
 
 
   <!-- LAYER 4: ACCESS VTEPS (FLOOR 1) -->
   <g id="acc-01" filter="url(#shadow)">
-    <rect x="55" y="810" width="200" height="155" rx="8" fill="url(#vtep-a-grad)"/>
-    <text x="155" y="835" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f01-acc-01</text>
-    <text x="155" y="853" text-anchor="middle" fill="#fecdd3" font-size="10">Role: access-vtep (Floor 1)</text>
-    <line x1="70" y1="863" x2="240" y2="863" stroke="#9f1239" stroke-width="1"/>
-    <text x="70" y="880" fill="#ffffff" font-size="10">• Lo0 (Mgmt): 10.3.0.1/32</text>
-    <text x="70" y="896" fill="#ffffff" font-size="10">• Lo1 (VTEP): 10.128.1.1/32</text>
-    <text x="70" y="912" fill="#fecdd3" font-size="9">• NVE1 / BGP EVPN Active</text>
-    <text x="70" y="928" fill="#fecdd3" font-size="9">• P2P Underlay to agg-01</text>
-    <text x="70" y="944" fill="#fecdd3" font-size="9">• Cross-plane P2P to agg-02</text>
+    <rect x="55" y="810" width="150" height="155" rx="8" fill="url(#vtep-a-grad)"/>
+    <text x="130" y="835" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">abc-hq-f01-acc-01</text>
+    <text x="130" y="853" text-anchor="middle" fill="#fecdd3" font-size="10">Access VTEP (FD-A)</text>
+    <line x1="65" y1="863" x2="195" y2="863" stroke="#9f1239" stroke-width="1"/>
+    <text x="65" y="880" fill="#ffffff" font-size="9">• Lo0: 10.3.0.1/32</text>
+    <text x="65" y="896" fill="#ffffff" font-size="9">• Lo1: 10.128.1.1/32</text>
+    <text x="65" y="912" fill="#fecdd3" font-size="9">• NVE1 / EVPN Active</text>
+    <text x="65" y="928" fill="#fecdd3" font-size="9">• Underlay to agg-01</text>
+    <text x="65" y="944" fill="#fecdd3" font-size="9">• Cross-P to agg-02</text>
   </g>
 
   <g id="acc-02" filter="url(#shadow)">
-    <rect x="385" y="810" width="200" height="155" rx="8" fill="url(#vtep-a-grad)"/>
-    <text x="485" y="835" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f01-acc-02</text>
-    <text x="485" y="853" text-anchor="middle" fill="#fecdd3" font-size="10">Role: access-vtep (Floor 1)</text>
-    <line x1="400" y1="863" x2="570" y2="863" stroke="#9f1239" stroke-width="1"/>
-    <text x="400" y="880" fill="#ffffff" font-size="10">• Lo0 (Mgmt): 10.3.0.2/32</text>
-    <text x="400" y="896" fill="#ffffff" font-size="10">• Lo1 (VTEP): 10.128.1.2/32</text>
-    <text x="400" y="912" fill="#fecdd3" font-size="9">• NVE1 / BGP EVPN Active</text>
-    <text x="400" y="928" fill="#fecdd3" font-size="9">• P2P Underlay to agg-03</text>
-    <text x="400" y="944" fill="#fecdd3" font-size="9">• Cross-plane P2P to agg-04</text>
+    <rect x="345" y="810" width="150" height="155" rx="8" fill="url(#vtep-a-grad)"/>
+    <text x="420" y="835" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Floor 2-10 Acc</text>
+    <text x="420" y="853" text-anchor="middle" fill="#fecdd3" font-size="10">Access VTEP (FD-A)</text>
+    <line x1="355" y1="863" x2="485" y2="863" stroke="#9f1239" stroke-width="1"/>
+    <text x="355" y="880" fill="#ffffff" font-size="9">• Scaled Topology</text>
+    <text x="355" y="896" fill="#ffffff" font-size="9">• Multi-Floor Design</text>
+    <text x="355" y="912" fill="#fecdd3" font-size="9">• NVE1 / EVPN Active</text>
+    <text x="355" y="928" fill="#fecdd3" font-size="9">• Dual-Homed to Agg</text>
   </g>
 
   <g id="acc-03" filter="url(#shadow)">
-    <rect x="665" y="810" width="200" height="155" rx="8" fill="url(#vtep-b-grad)"/>
-    <text x="765" y="835" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f01-acc-03</text>
-    <text x="765" y="853" text-anchor="middle" fill="#e0f2fe" font-size="10">Role: access-vtep (Floor 1)</text>
-    <line x1="680" y1="863" x2="850" y2="863" stroke="#0284c7" stroke-width="1"/>
-    <text x="680" y="880" fill="#ffffff" font-size="10">• Lo0 (Mgmt): 10.3.0.3/32</text>
-    <text x="680" y="896" fill="#ffffff" font-size="10">• Lo1 (VTEP): 10.128.1.3/32</text>
-    <text x="680" y="912" fill="#e0f2fe" font-size="9">• NVE1 / BGP EVPN Active</text>
-    <text x="680" y="928" fill="#e0f2fe" font-size="9">• P2P Underlay to agg-03</text>
-    <text x="680" y="944" fill="#e0f2fe" font-size="9">• Cross-plane P2P to agg-02</text>
+    <rect x="735" y="810" width="150" height="155" rx="8" fill="url(#vtep-b-grad)"/>
+    <text x="810" y="835" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Floor 2-10 Acc</text>
+    <text x="810" y="853" text-anchor="middle" fill="#e0f2fe" font-size="10">Access VTEP (FD-B)</text>
+    <line x1="745" y1="863" x2="875" y2="863" stroke="#0284c7" stroke-width="1"/>
+    <text x="745" y="880" fill="#ffffff" font-size="9">• Scaled Topology</text>
+    <text x="745" y="896" fill="#ffffff" font-size="9">• Multi-Floor Design</text>
+    <text x="745" y="912" fill="#e0f2fe" font-size="9">• NVE1 / EVPN Active</text>
+    <text x="745" y="928" fill="#e0f2fe" font-size="9">• Dual-Homed to Agg</text>
   </g>
 
   <g id="acc-04" filter="url(#shadow)">
-    <rect x="995" y="810" width="200" height="155" rx="8" fill="url(#vtep-b-grad)"/>
-    <text x="1095" y="835" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-f01-acc-04</text>
-    <text x="1095" y="853" text-anchor="middle" fill="#e0f2fe" font-size="10">Role: access-vtep (Floor 1)</text>
-    <line x1="1010" y1="863" x2="1180" y2="863" stroke="#0284c7" stroke-width="1"/>
-    <text x="1010" y="880" fill="#ffffff" font-size="10">• Lo0 (Mgmt): 10.3.0.4/32</text>
-    <text x="1010" y="896" fill="#ffffff" font-size="10">• Lo1 (VTEP): 10.128.1.4/32</text>
-    <text x="1010" y="912" fill="#e0f2fe" font-size="9">• NVE1 / BGP EVPN Active</text>
-    <text x="1010" y="928" fill="#e0f2fe" font-size="9">• P2P Underlay to agg-04</text>
-    <text x="1010" y="944" fill="#e0f2fe" font-size="9">• Cross-plane P2P to agg-01</text>
+    <rect x="1035" y="810" width="150" height="155" rx="8" fill="url(#vtep-b-grad)"/>
+    <text x="1110" y="835" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">abc-hq-f01-acc-02</text>
+    <text x="1110" y="853" text-anchor="middle" fill="#e0f2fe" font-size="10">Access VTEP (FD-B)</text>
+    <line x1="1045" y1="863" x2="1175" y2="863" stroke="#0284c7" stroke-width="1"/>
+    <text x="1045" y="880" fill="#ffffff" font-size="9">• Lo0: 10.3.0.2/32</text>
+    <text x="1045" y="896" fill="#ffffff" font-size="9">• Lo1: 10.128.1.2/32</text>
+    <text x="1045" y="912" fill="#e0f2fe" font-size="9">• NVE1 / EVPN Active</text>
+    <text x="1045" y="928" fill="#e0f2fe" font-size="9">• Underlay to agg-03</text>
+    <text x="1045" y="944" fill="#e0f2fe" font-size="9">• Cross-P to agg-04</text>
   </g>
 
 
