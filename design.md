@@ -18,7 +18,7 @@ Key takeaways:
   </div>
 
   <div style="flex: 1;">
-    <img src="automation-native-data-model-pipeline.png" width="1200">
+    <img src="automation-native-data-model-pipeline.svg" width="1200">
   </div>
 </div>
 
