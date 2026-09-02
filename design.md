@@ -125,7 +125,7 @@ Prerequisite:
 Build workflow:
 Apply the baseline template for each device -> Validate device local configuration -> Apply physical topology template -> Run point-to-point connectivity validation between devices -> Apply logical topology template -> Run layer 3 connectivity validation, endpoint vlan validation
 
-| Build | Playbook Name | j2 Template | Data model |
+| Build | Playbook Name | j2 Template Used | Data model Adopted |
 |---|---|---|---|
 | Baseline config build | baseline-build playbook | J2 template name | Access Switch Platform Baseline |
 | Baseline validation | baseline-validation playbook | - | Corresponding platform baseline model |
