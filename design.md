@@ -1135,3 +1135,12 @@ platform_access_baseline:
         mode: "active"
 ```
 </details>
+
+### Jinja2 Templates
+
+### Ansible Playbooks
+
+### Config Output
+
+### Validation Reports
+
