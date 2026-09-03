@@ -43,6 +43,10 @@ The business requirements can be summarized as:
 | Segment voice/data/wireless/camera/IPTV so one domain can't degrade or expose another | - ​Macro-Segmentation (VRF Isolation) to separate differnt business nature of devices into different tenants <br> - ​Micro-Segmentation & QoS Policies to restrict communication between devices within the same tenant |
 | BAU Change is fast, low-risk, and auditable | ​- Single Source of Truth (SSoT) & Infrastructure-as-Code (IaC) <br> - ​CI/CD Pipeline with Automated Validation <br> - ​Streaming Telemetry & Closed-Loop Auditing |
 
+## Scope
+
+For the sake of demonstration, the implementation details of management and WIFI network are not covered.
+
 ## Network Design
 
 This section outlines the architectural framework and design principles for the campus network:
