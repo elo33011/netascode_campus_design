@@ -631,11 +631,26 @@ site_context:
     vtep_parameters:
       nve_interface: "NVE1"
       vtep_source_interface: "Loopback1"
+    # This is still the one place vni_service_mappings is defined --
+    # endpoint_services.yaml references vlan_id values from here rather
+    # than redefining them, so there's still a single source of truth.
     vni_service_mappings:
       - vni_id: 10
         vlan_id: 10
         name: "Campus_Users"
         description: "Primary user network segment"
+        anycast_gateway_ip: "10.10.10.1/24"
+        vrf_name: "VRF-CAMPUS-USERS"
+        route_distinguisher: "10.3.0.x:10" # x = last octet of the originating access-VTEP's Loopback0
+        route_targets:
+          import: ["65100:10"]
+          export: ["65100:10"]
+        dhcp_server: "10.10.100.1"
+      # NOTE: VNIs 20, 30, 40, 50, and 999 below only carry the fields
+      # originally supplied (vni_id, vlan_id, name, description).
+      # anycast_gateway_ip / vrf_name / route_distinguisher / route_targets /
+      # dhcp_server were only ever provided for VNI 10 -- not fabricated
+      # here for the other five, they still need to be supplied.
       - vni_id: 20
         vlan_id: 20
         name: "Security_Cameras"
@@ -665,6 +680,7 @@ site_context:
     # --------------------------------------------------------------------------
     # LAYER 1: WAN ROUTERS
     # --------------------------------------------------------------------------
+    wan_routers:
     - name: "abc-hq-wan-01"
       failure_domain: "FD-A"
       routing:
@@ -688,6 +704,7 @@ site_context:
     # --------------------------------------------------------------------------
     # LAYER 2: CORE ROUTERS
     # --------------------------------------------------------------------------
+    core_routers:
     - name: "abc-hq-cor-01"
       failure_domain: "FD-A"
       routing:
@@ -755,6 +772,7 @@ site_context:
     # --------------------------------------------------------------------------
     # LAYER 3: AGGREGATION SWITCHES (PURE L3 UNDERLAY TRANSIT - 2 PER FD)
     # --------------------------------------------------------------------------
+    aggregation_switches:
     - name: "abc-hq-agg-01"
       failure_domain: "FD-A"
       role: "aggregation-transit"
@@ -882,6 +900,114 @@ site_context:
                   peer_ip: "10.24.2.2"
                   remote_as: 65100
                   type: "ibgp"
+```
+</details>
+
+<details>
+<summary>Endpoint Service</summary>
+
+```yaml
+# ============================================================================
+# Site Endpoint Interface Provisioning Data Model
+# Layer 1/2/AAA policy applied to end-user-facing access ports.
+#
+# Changes made from the version you pasted:
+#   1. evpn_overlay_design (vtep_parameters + vni_service_mappings) removed --
+#      it duplicated logical_topology.yaml's copy and is now the single
+#      table in service_overlay.yaml. This file already referenced VLANs
+#      by ID everywhere else (native_vlan, voice_vlan, access_vlan), so no
+#      other change was needed to keep that pattern.
+#   2. access_switch_baseline.quality_of_service.ingress_policy renamed to
+#      ingress_policy_map, to match the field name used in the more
+#      detailed endpoint_interfaces.quality_of_service section below --
+#      same setting, was two different key names for it.
+# ============================================================================
+
+site_context:
+  site_code: "abc-hq"
+  site_name: "Company ABC Main Campus"
+
+  # ----------------------------------------------------------------------
+  # 1. LAYER 1/2 ENDPOINT INTERFACE BASELINE (switch-wide defaults)
+  # ----------------------------------------------------------------------
+  interface_provisioning:
+    access_switch_baseline:
+      authentication:
+        mac_authentication_bypass: true
+        dot1x_enabled: true
+        fallback_vlan: 999
+        guest_vlan: 999
+      quality_of_service:
+        voice_vlan_trust: true
+        ingress_policy_map: "VOICE-PRIORITIZATION"
+      spanning_tree:
+        bpdu_guard: true
+        portfast: true
+      ip_dhcp_snooping:
+        untrusted_ports_default: true
+        mac_address_validation: true
+
+  # ----------------------------------------------------------------------
+  # 2. FINE-GRAINED ENDPOINT INTERFACE SPECIFICATIONS (applied profile)
+  # ----------------------------------------------------------------------
+  endpoint_interfaces:
+    default_profile:
+      interface_range: "GigabitEthernet1/0/1-48"
+      mode: "access"
+      native_vlan: 10
+      voice_vlan: 30
+      administrative_state: true
+
+    first_hop_security:
+      dhcp_snooping:
+        enabled: true
+        trust: false
+        rate_limit_pps: 15
+      ip_source_guard:
+        enabled: true
+        binding_check: "ip-mac"
+      dai_inspect:
+        enabled: true
+        logging: "log-buffer"
+
+    authentication_profile:
+      dot1x_enabled: true
+      mac_authentication_bypass: true
+      host_mode: "multi-domain"
+      auth_order: ["dot1x", "mab"]
+      reauthentication_timer_seconds: 10800
+      inactivity_timer_seconds: 3600
+      fallback_targets:
+        guest_vlan: 999
+        auth_fail_vlan: 999
+        no_response_vlan: 999
+
+    quality_of_service:
+      trust_boundary: "dscp"
+      voice_vlan_trust: true
+      ingress_policy_map: "VOICE-PRIORITIZATION"
+      storm_control:
+        unicast_level_percent: 10.0
+        multicast_level_percent: 5.0
+        broadcast_level_percent: 1.0
+        action: "shutdown"
+
+    port_overrides:
+      - interface: "GigabitEthernet1/0/1"
+        description: "Dedicated Security Camera Access"
+        access_vlan: 20
+        voice_vlan: null
+        dot1x_enabled: false
+        mab_enabled: true
+      - interface: "GigabitEthernet1/0/48"
+        description: "WLC/Access Point Trunk Link"
+        mode: "trunk"
+        native_vlan: 40
+        allowed_vlans: "10,20,30,40,50"
+        dot1x_enabled: false
+        spanning_tree:
+          portfast: false
+          bpdu_guard: false
 ```
 </details>
 
