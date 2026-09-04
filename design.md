@@ -25,7 +25,7 @@ Key takeaways:
 
 ---
 
-# Campus Network Design
+# Campus Network Design (HLD)
 
 ## Business Requirement
 
@@ -101,22 +101,22 @@ Device role model define a standardized, platform-agnostic set of foundational h
 
 | Data Model | Purpose |
 |---|---|
-| Physical Topology - Campus Network | Define the precise real-world composition and interconnection of network hardware, including devices, modules, ports, and cables, providing the ground-truth asset and connectivity inventory for the network |
-| Physical Topology - Management Network | Define the precise real-world composition and interconnection of the dedicated out-of-band (OOB) hardware—including management switches, terminal servers, console/management ports, and all associated cabling |
-| Logical Topology | Define the abstract, software-defined architecture of the network—including routing domains (BGP AS), overlay networks (VXLAN EVPN), virtual network functions, and service paths—that operates independently of the underlying physical hardware, detailing how traffic is controlled, isolated, and forwarded |
-| Endpoint Service | Define the granular physical port configurations, Layer 2 loop protections, First-Hop Security (FHS) controls, 802.1X/MAB identity profiles, and edge QoS policies facing client devices, establishing a standardized, secure link-level baseline across all endpoint switchports |
+| Physical Topology - Campus Network | Ground-truth inventory of campus network hardware and cabling — devices, ports, and interconnects. |
+| Physical Topology - Management Network | Ground-truth inventory of the OOB management network — terminal servers, management switches, and console cabling. |
+| Logical Topology | Defines the campus's BGP underlay and VXLAN EVPN overlay — how traffic is forwarded and isolated, independent of physical hardware. |
+| Endpoint Service | Standardized security and QoS baseline for endpoint switchports — loop protection, 802.1X/MAB, FHS, and edge QoS |
 
 ### Device Role Models
 
-| Data Model | Platform |
+| Data Model | Platform adopted in Design|
 |---|---|
 | WAN Edge Role | Catalyst 8000 |
 | Core & Agg Role | Nexus 93240 |
 | Access Role | Catalyst 9000 |
 
-## Deployment Details
+## Design Deployment (LLD)
 
-### A. Baseline Build
+### Step 1. Baseline Build
 
 Prerequisite:
 - Management Network has been up and running so that devices are reachable by Ansible runners
@@ -125,25 +125,7 @@ Prerequisite:
 Build workflow:
 Apply the baseline template for each device -> Validate device local configuration -> Apply physical topology template -> Run point-to-point connectivity validation between devices -> Apply logical topology template -> Run layer 3 connectivity validation, endpoint vlan validation
 
-
-
-| Task | Playbook Name | j2 Template Used | Data model Adopted |
-|---|---|---|---|
-| Baseline config build | baseline-build playbook | J2 template name | Access Switch Platform Baseline |
-| Baseline validation | baseline-validation playbook | - | Corresponding platform baseline model |
-| Physical topology build | physical-build playbook | J2 template name | physical topology |
-| Physical validation | physical-validation playbook | - | physical topology |
-| Logical topology build | logical-build playbook | J2 template name | logical topology |
-| Logical validation | logical-validation playbook | - | logical topology |
-
-
-Physical data model to generate rack & stack, patching scheme. The data model also need to include rack information.
-Onsite facility team complete the rack and stack, patching, preconfigure with mgmt IP so that Ansible runner is reachable.
-Device build steps.
-Device specific baseline configuration
-- Data model for each platform for baseline configuration, data model is schema only, data is pulled from the network source of truth, Jinja2 template per device platform to render, Ansible to deploy
-Design specific configuration
-- Use data model from physical topology and logical topology.
+## Validation
 
 ## References
 
@@ -2001,6 +1983,28 @@ control-plane
 ! render for link aggregation at this stage.
 !
 end
+```
+</details>
+
+<details>
+<summary>Jinja2 template - Physical Topology Deployment</summary>
+
+```jinja2
+
+```
+</details>
+
+<summary>Jinja2 template - Logical Topology Deployment</summary>
+
+```jinja2
+
+```
+</details>
+
+<summary>Jinja2 template - Service Deployment</summary>
+
+```jinja2
+
 ```
 </details>
 
