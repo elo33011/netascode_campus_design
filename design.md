@@ -907,22 +907,6 @@ site_context:
 <summary>Endpoint Service</summary>
 
 ```yaml
-# ============================================================================
-# Site Endpoint Interface Provisioning Data Model
-# Layer 1/2/AAA policy applied to end-user-facing access ports.
-#
-# Changes made from the version you pasted:
-#   1. evpn_overlay_design (vtep_parameters + vni_service_mappings) removed --
-#      it duplicated logical_topology.yaml's copy and is now the single
-#      table in service_overlay.yaml. This file already referenced VLANs
-#      by ID everywhere else (native_vlan, voice_vlan, access_vlan), so no
-#      other change was needed to keep that pattern.
-#   2. access_switch_baseline.quality_of_service.ingress_policy renamed to
-#      ingress_policy_map, to match the field name used in the more
-#      detailed endpoint_interfaces.quality_of_service section below --
-#      same setting, was two different key names for it.
-# ============================================================================
-
 site_context:
   site_code: "abc-hq"
   site_name: "Company ABC Main Campus"
