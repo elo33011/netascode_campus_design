@@ -129,7 +129,7 @@ Apply the baseline template for each device -> Validate device local configurati
 
 ## References
 
-### Data Models
+### Data Models (Value ingested)
 <details>
 <summary>Physical Topology - Campus Network </summary>
   
