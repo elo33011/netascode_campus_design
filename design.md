@@ -1039,11 +1039,7 @@ site_context:
 <summary>Device Model - Edge Device</summary>
   
 ```yaml
-# ============================================================================
-# PLATFORM BASELINE DATA MODEL: WAN ROUTER (Vendor-Agnostic)
-# ============================================================================
 platform_wan_baseline:
-
   management_plane:
     banner_login: "Authorized Use Only. System activity is logged."
     ssh_version: "2"
@@ -1057,18 +1053,18 @@ platform_wan_baseline:
       enable: false
       secure_only: true
     ntp:
-      servers: []
-      source_interface: null
+      servers: ["10.254.1.10", "10.254.1.11"]   # DEMO values -- example internal time sources on the OOB mgmt range, not real servers
+      source_interface: "Loopback0"
     syslog:
       servers: []
       source_interface: null
       severity_level: null
     snmp:
-      enabled: false
-      contact: null
-      location: null
-      community_strings: []
-      trap_destinations: []
+      enabled: true
+      contact: "netops@campus.example.net"       # DEMO value
+      location: "abc-hq"                         # DEMO value
+      community_strings: ["CAMPUS-MONITORING-RO"] # DEMO value -- placeholder name, not "public"; replace with a real, generated string before deploying
+      trap_destinations: ["10.254.1.20"]          # DEMO value -- example NMS host on the OOB mgmt range
     tacacs:
       servers: []
       source_interface: null
@@ -1115,7 +1111,6 @@ platform_wan_baseline:
 # PLATFORM BASELINE DATA MODEL: CORE & AGGREGATION SWITCHES (Vendor-Agnostic)
 # ============================================================================
 platform_core_agg_baseline:
-
   management_plane:
     banner_login: "Authorized Use Only. System activity is logged."
     ssh_version: "2"
@@ -1145,7 +1140,6 @@ platform_core_agg_baseline:
       servers: []
       source_interface: null
       encryption_key: null
-
   infrastructure_protection:
     icmp_standards:
       unreachable_rate_limit: 100
@@ -1156,7 +1150,6 @@ platform_core_agg_baseline:
       - "proxy_arp"
     ipv6_hardening:
       ra_suppress: true
-
   high_availability_and_transit:
     bidirectional_forwarding_detection:
       enable: true
@@ -1168,7 +1161,6 @@ platform_core_agg_baseline:
     discovery_protocols:
       cdp_enabled: true
       lldp_enabled: true
-
   routing_baseline:
     bgp_security:
       md5_authentication: true
@@ -1179,11 +1171,9 @@ platform_core_agg_baseline:
         routing_updates: "medium"
         management_access: "low"
         transit_traffic: "high"
-
   hardware_integrity:
     secure_boot_verification: true
     environmental_monitoring: true
-
   interface_baseline:
     fabric_and_transit_links:
       mtu: 9192
@@ -1206,7 +1196,6 @@ platform_core_agg_baseline:
 # PLATFORM BASELINE DATA MODEL: ACCESS SWITCH (Vendor-Agnostic)
 # ============================================================================
 platform_access_baseline:
-
   management_plane:
     banner_login: "Authorized Use Only. System activity is logged."
     ssh_version: "2"
@@ -1236,7 +1225,6 @@ platform_access_baseline:
       servers: []
       source_interface: null
       encryption_key: null
-
   infrastructure_protection:
     icmp_standards:
       unreachable_rate_limit: 100
@@ -1247,7 +1235,6 @@ platform_access_baseline:
       - "proxy_arp"
     ipv6_hardening:
       ra_suppress: true
-
   endpoint_access_security:
     dot1x_authentication:
       enable: true
@@ -1269,7 +1256,6 @@ platform_access_baseline:
       broadcast_pps: 500
       multicast_pps: 500
       action: "trap_and_log"
-
   routing_baseline:
     control_plane_policing:
       enable: true
@@ -1277,11 +1263,9 @@ platform_access_baseline:
         routing_updates: "medium"
         management_access: "low"
         transit_traffic: "high"
-
   hardware_integrity:
     secure_boot_verification: true
     environmental_monitoring: true
-
   interface_baseline:
     unused_edge_ports:
       mode: "access"
@@ -1297,47 +1281,42 @@ platform_access_baseline:
 ### Jinja2 Templates
 
 <details>
+
 <summary>Jinja2 template - Catalyst 8000</summary>
 
 ```jinja2
 {# ============================================================================
-   Cisco Catalyst 8000 (IOS XE) -- WAN Router Role Configuration Template
+   Cisco Catalyst 8000 (IOS XE) -- WAN Router Role Baseline Configuration
    ============================================================================
-   Expects two top-level context variables:
+   Stage 1: baseline-only. Renders purely from platform_wan_baseline.yaml --
+   management plane, infrastructure protection, routing/CoPP baseline,
+   hardware integrity, and the WAN ACL skeleton. No device/topology data is
+   expected or used here.
 
-     platform_wan_baseline  -- the role data model (platform_wan_baseline.yaml)
-     device                 -- per-device instance data, shaped like:
-       name: "abc-hq-wan-01"
-       routing:
-         global: { bgp_asn: 65100, router_id: "10.0.0.1" }
-         loopbacks: [ { interface, ip_address, type } ]
-         interfaces:                      # this device's OWN interfaces + IPs
-           - { interface, ip_address, description, kind: external|internal }
-         bgp_peers: [ { description, peer_ip, remote_as, type: ebgp|ibgp } ]
+   Deliberately NOT rendered yet, since it depends on physical_topology.yaml
+   / logical_topology.yaml rather than the role baseline:
+     - hostname
+     - interface stanzas (Loopback0, external ISP circuit, internal fabric
+       links) and the per-interface hardening (no ip redirects/unreachables/
+       proxy-arp/mask-reply) and ACL application (ip access-group ... in)
+       that attach to them
+     - router bgp (neighbors, router-id, ASN, MD5, ttl-security) -- all of
+       it keys off device-specific peer/interface data
+   Those will come from a second template (or a second pass merging this
+   baseline with per-device topology data) once that stage is ready. The two
+   items still needing your confirmation before that stage -- ttl_security_
+   hops and passive_routing_interface -- live in platform_wan_baseline.yaml
+   itself and will matter once the BGP/interface sections are added back.
 
-   NOTE: logical_topology.yaml's wan_routers entries do not currently carry
-   an explicit `interfaces` list the way core_routers/aggregation_switches
-   do -- only bgp_peers (which give the *peer's* IP, not this router's own).
-   This template assumes that gap has been filled in (device.routing.
-   interfaces), since a real config can't be rendered without this router's
-   own addressing. See examples/abc-hq-wan-01_vars.yaml for how that was
-   reconstructed for the demo by cross-referencing peer_ip values recorded
-   on the other end of each link -- recommend adding this list to
-   logical_topology.yaml directly so it doesn't have to be reverse-engineered
-   by every consumer of the model.
-
-   Fields with no confident, standard IOS-XE CLI equivalent are rendered as
-   "! NOTE" comments rather than guessed at -- see hardware_integrity below
-   and the passive_routing_interface warning.
+   Fields with no confident, standard IOS-XE CLI equivalent are still
+   rendered as "! NOTE" comments rather than guessed at -- see
+   hardware_integrity below.
    ============================================================================ #}
 {% set mp = platform_wan_baseline.management_plane %}
 {% set ip_prot = platform_wan_baseline.infrastructure_protection %}
 {% set rb = platform_wan_baseline.routing_baseline %}
 {% set hw = platform_wan_baseline.hardware_integrity %}
 {% set wan_if = platform_wan_baseline.interface_baseline.wan_interfaces %}
-{% set g = device.routing.global %}
-!
-hostname {{ device.name }}
 !
 banner login ^C
 {{ mp.banner_login }}
@@ -1438,55 +1417,28 @@ aaa authorization exec default group TACACS-GROUP local
 ! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
 {% endif %}
 !
-{# -------------------------- Infrastructure protection (global) -------------------------- #}
+{# -------------------------- Infrastructure protection (device-wide) -------------------------- #}
 {% if 'ip_source_routing' in ip_prot.disabled_ip_services %}
 no ip source-route
 {% endif %}
 ip icmp rate-limit unreachable {{ ip_prot.icmp_standards.unreachable_rate_limit }}
 !
-{# ============================================================================
-   Interface hardening macro -- applied to every configured interface
-   ============================================================================ #}
-{% macro harden_interface() %}
-{% if not ip_prot.icmp_standards.accept_redirects %}
- no ip redirects
-{% endif %}
- no ip unreachables
-{% if 'proxy_arp' in ip_prot.disabled_ip_services %}
- no ip proxy-arp
-{% endif %}
-{% if not ip_prot.icmp_standards.mask_requests %}
- no ip mask-reply
-{% endif %}
-{%- endmacro %}
+! NOTE: the remaining infrastructure_protection settings (accept_redirects,
+! proxy_arp, mask_requests) and ipv6_hardening.ra_suppress are applied
+! per-interface (no ip redirects / no ip proxy-arp / no ip mask-reply /
+! ipv6 nd ra suppress all) -- deferred to the interface-stage template,
+! since there are no interfaces to attach them to yet.
 !
-{# -------------------------- Loopback(s) -------------------------- #}
-{% for lo in device.routing.loopbacks %}
-interface {{ lo.interface }}
- description {{ lo.type | upper }} loopback
- ip address {{ lo.ip_address.split('/')[0] }} 255.255.255.255
-{% endfor %}
-!
-{# -------------------------- Physical interfaces -------------------------- #}
-{% for iface in device.routing.interfaces %}
-interface {{ iface.interface }}
- description {{ iface.description | default('Link') }}
-{% if iface.ip_address %}
-{% set parts = iface.ip_address.split('/') %}
- ip address {{ parts[0] }} {{ {'31': '255.255.255.254', '30': '255.255.255.252', '24': '255.255.255.0'}[parts[1]] | default('255.255.255.252') }}
-{% endif %}
-{% if iface.kind == 'external' %}
- ip access-group {{ wan_if.ingress_acl_name }} in
-{% endif %}
-{{ harden_interface() }}
- no shutdown
-!
-{% endfor %}
 {# -------------------------- WAN ingress ACL skeleton -------------------------- #}
 ip access-list extended {{ wan_if.ingress_acl_name }}
  remark TODO: define real permit/deny entries for the WAN-facing ACL -- not present in the data model
  remark Placeholder only -- do not deploy as-is
  deny   ip any any log
+!
+! NOTE: this ACL is defined here as a baseline object but not yet applied to
+! an interface (ip access-group {{ wan_if.ingress_acl_name }} in) -- that
+! application, and wan_interfaces.passive_routing_interface, happen at the
+! interface stage.
 !
 {# -------------------------- Control Plane Policing skeleton -------------------------- #}
 {% if rb.control_plane_policing.enable %}
@@ -1507,6 +1459,16 @@ control-plane
  service-policy input CONTROL-PLANE-POLICY
 !
 {% endif %}
+{# -------------------------- BGP baseline (ASN-independent security policy) -------------------------- #}
+! NOTE: bgp_security (md5_authentication: {{ rb.bgp_security.md5_authentication }},
+! ttl_security_hops: {{ rb.bgp_security.ttl_security_hops }}) is a per-neighbor
+! setting applied under "router bgp <asn>" once the ASN and neighbor list are
+! known from logical_topology.yaml -- deferred to that stage. Still flagged
+! from the earlier review: confirm ttl_security_hops (physical_topology.yaml
+! shows a single-hop ISP circuit, which would argue for 1, not 2) and confirm
+! whether wan_interfaces.passive_routing_interface is meant to apply anywhere,
+! since BGP has no native passive-interface concept.
+!
 {# -------------------------- Hardware integrity -------------------------- #}
 {% if hw.secure_boot_verification %}
 ! NOTE: secure_boot_verification -- Secure Boot on Catalyst 8000 is a
@@ -1522,32 +1484,529 @@ control-plane
 ! rather than assuming a command exists here.
 {% endif %}
 !
-{# -------------------------- BGP -------------------------- #}
-router bgp {{ g.bgp_asn }}
- bgp router-id {{ g.router_id }}
- bgp log-neighbor-changes
-{% for peer in device.routing.bgp_peers %}
- neighbor {{ peer.peer_ip }} remote-as {{ peer.remote_as }}
- neighbor {{ peer.peer_ip }} description {{ peer.description }}
-{% if rb.bgp_security.md5_authentication %}
- neighbor {{ peer.peer_ip }} password {{ bgp_md5_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+end
+
+```
+</details>
+
+<details>
+<summary>Jinja2 template - Nexus 93240</summary>
+
+```jinja2
+{# ============================================================================
+   Cisco Nexus 93240 (NX-OS) -- Core/Aggregation Role Baseline Configuration
+   ============================================================================
+   Stage 1: baseline-only, same scope as wan_router_cat8000_iosxe.j2. Renders
+   purely from platform_core_agg_baseline.yaml. No device/topology data
+   (hostname, interfaces, BGP neighbors, port-channel membership) is
+   expected or used here -- those come from physical_topology.yaml /
+   logical_topology.yaml at a later stage.
+
+   NX-OS vs IOS-XE differences that matter for this template:
+     - Most NX-OS functionality is off until enabled with `feature X` --
+       these ARE device-wide (not per-interface), so they're rendered now
+       even though the interfaces/protocols they support aren't configured
+       yet.
+     - Several IOS-style global knobs either don't exist on NX-OS or work
+       differently (no `ip source-route` toggle, no direct `ip icmp
+       rate-limit unreachable` equivalent -- NX-OS handles this class of
+       thing through CoPP instead). Rendered as "! NOTE" rather than
+       guessed at, same policy as the WAN template.
+     - CoPP on NX-OS is normally applied via a system profile
+       (`copp profile <strict|moderate|lenient|dense>`) layered with
+       optional custom classes, not built from scratch the way IOS-XE's
+       class-map/policy-map is. Both are rendered: a profile as the
+       practical baseline, plus the three named custom classes from the
+       data model for finer control.
+
+   Also unresolved from the original review of this data model, restated
+   here since it's about to become code: first_hop_redundancy_protocols
+   doesn't have anywhere to attach in this design -- the access-VTEP layer
+   already provides a distributed anycast gateway via EVPN, which is what
+   FHRP (HSRP/VRRP) exists to replace. No SVI/HSRP group is configured
+   anywhere in physical_topology.yaml or logical_topology.yaml for core/agg
+   devices (they're pure L3 underlay transit, per "LAYER 3 ROUTED ACCESS
+   VTEPS ONLY"), so this renders as a note, not commands.
+   ============================================================================ #}
+{% set mp = platform_core_agg_baseline.management_plane %}
+{% set ip_prot = platform_core_agg_baseline.infrastructure_protection %}
+{% set ha = platform_core_agg_baseline.high_availability_and_transit %}
+{% set rb = platform_core_agg_baseline.routing_baseline %}
+{% set hw = platform_core_agg_baseline.hardware_integrity %}
+{% set ib = platform_core_agg_baseline.interface_baseline %}
+!
+banner motd #
+{{ mp.banner_login }}
+#
+!
+{# -------------------------- DNS -------------------------- #}
+ip domain-name {{ mp.dns.domain_name }}
+{% if mp.dns.source_interface %}
+! NOTE: DNS source-interface pinning on NX-OS is release/platform-dependent
+! (not a single universally-documented "ip domain-lookup source-interface"
+! knob the way IOS-XE has one) -- verify the exact command for your NX-OS
+! version before relying on {{ mp.dns.source_interface }} here.
 {% endif %}
-{% if peer.type == 'ebgp' %}
- neighbor {{ peer.peer_ip }} ttl-security hops {{ rb.bgp_security.ttl_security_hops }}
+!
+{# -------------------------- SSH / lines -------------------------- #}
+feature ssh
+! NOTE: NX-OS's SSH server only supports SSHv2 (no SSHv1 fallback exists
+! to disable), so there's no separate "ssh version {{ mp.ssh_version }}"
+! command to emit -- feature ssh above is the full equivalent.
+!
+line console
+ exec-timeout {{ mp.console_timeout_minutes }}
+!
+line vty
+ exec-timeout {{ mp.vty_timeout_minutes }}
+!
+{# login_retries -> NX-OS AAA lockout on repeated failures #}
+aaa authentication rejected {{ mp.login_retries }} in 180 ban 60
+! NOTE: the "180" (window, seconds) and "60" (ban duration, seconds) above
+! aren't in the data model -- only login_retries ({{ mp.login_retries }})
+! is. Placeholders; tune per site policy.
+!
+{# -------------------------- HTTP services -------------------------- #}
+{% if not mp.http_services.enable %}
+no feature http-server
+{% elif mp.http_services.secure_only %}
+feature http-server
+! NOTE: NX-OS's http-server feature serves both HTTP and HTTPS once
+! enabled -- there isn't a clean single-command "HTTPS only" equivalent to
+! IOS-XE's "ip http secure-server" (secure_only: true in the model).
+! Restrict HTTP access via a management ACL/VRF if plain HTTP must stay
+! fully off, rather than assuming a toggle exists here.
+{% else %}
+feature http-server
+{% endif %}
+!
+{# -------------------------- NTP -------------------------- #}
+{% for server in mp.ntp.servers %}
+ntp server {{ server }}
+{% endfor %}
+{% if mp.ntp.source_interface %}
+ntp source-interface {{ mp.ntp.source_interface }}
+{% endif %}
+{% if not mp.ntp.servers %}
+! NOTE: no NTP servers defined in platform_core_agg_baseline.management_plane.ntp.servers -- add before deploying
+{% endif %}
+!
+{# -------------------------- Syslog -------------------------- #}
+{% for server in mp.syslog.servers %}
+{% if mp.syslog.severity_level %}
+logging server {{ server }} {{ mp.syslog.severity_level }}
+{% else %}
+logging server {{ server }}
 {% endif %}
 {% endfor %}
-!
-{% if wan_if.passive_routing_interface %}
-! WARNING: platform_wan_baseline.interface_baseline.wan_interfaces.
-! passive_routing_interface is TRUE. BGP has no native "passive interface"
-! concept the way IGPs do -- no corresponding command has been emitted here.
-! If this flag was meant to suppress the eBGP/iBGP adjacencies above, doing
-! so would prevent this router from ever peering. This still needs your
-! confirmation (flagged since the WAN role file was first reviewed) before
-! this template's BGP section can be considered final.
+{% if mp.syslog.source_interface %}
+logging source-interface {{ mp.syslog.source_interface }}
+{% endif %}
+{% if not mp.syslog.servers %}
+! NOTE: no syslog servers defined -- add before deploying
 {% endif %}
 !
-end  
+{# -------------------------- SNMP -------------------------- #}
+{% if mp.snmp.enabled %}
+{% for community in mp.snmp.community_strings %}
+snmp-server community {{ community }} ro
+{% endfor %}
+{% if mp.snmp.contact %}
+snmp-server contact {{ mp.snmp.contact }}
+{% endif %}
+{% if mp.snmp.location %}
+snmp-server location {{ mp.snmp.location }}
+{% endif %}
+{% for host in mp.snmp.trap_destinations %}
+snmp-server host {{ host }} traps
+{% endfor %}
+{% else %}
+! SNMP disabled per platform_core_agg_baseline.management_plane.snmp.enabled
+{% endif %}
+!
+{# -------------------------- TACACS+ -------------------------- #}
+{% if mp.tacacs.servers %}
+feature tacacs+
+{% for server in mp.tacacs.servers %}
+tacacs-server host {{ server }} key {{ mp.tacacs.encryption_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+{% endfor %}
+{% if mp.tacacs.source_interface %}
+ip tacacs source-interface {{ mp.tacacs.source_interface }}
+{% endif %}
+aaa group server tacacs+ TACACS-GROUP
+{% for server in mp.tacacs.servers %}
+ server {{ server }}
+{% endfor %}
+aaa authentication login default group TACACS-GROUP
+{% else %}
+! NOTE: no TACACS+ servers defined -- falling back to local-only authentication
+{% endif %}
+!
+{# -------------------------- Infrastructure protection (device-wide) -------------------------- #}
+! NOTE: ip_source_routing (disabled_ip_services) has no corresponding global
+! toggle on NX-OS -- the "no ip source-route" command IOS-XE uses doesn't
+! exist here; NX-OS's forwarding architecture doesn't process source-routed
+! packets via a config knob to disable.
+! NOTE: icmp_standards.unreachable_rate_limit ({{ ip_prot.icmp_standards.unreachable_rate_limit }}ms)
+! has no direct "ip icmp rate-limit unreachable" equivalent on NX-OS either
+! -- this class of protection is normally handled through CoPP (see below)
+! rather than a standalone global command. Not rendered as a fabricated
+! command.
+! NOTE: accept_redirects, proxy_arp, and mask_requests are per-interface
+! settings (no ip redirects / no ip proxy-arp / no ip mask-reply-equivalent)
+! -- deferred to the interface-stage template, same as ipv6_hardening.ra_suppress.
+!
+{# -------------------------- High availability & transit (device-wide features) -------------------------- #}
+{% if ha.bidirectional_forwarding_detection.enable %}
+feature bfd
+bfd interval {{ ha.bidirectional_forwarding_detection.default_interval_ms }} min_rx {{ ha.bidirectional_forwarding_detection.default_interval_ms }} multiplier {{ ha.bidirectional_forwarding_detection.multiplier }}
+! NOTE: the timers above are the global BFD default; they still need to be
+! applied per-neighbor under each routing protocol (e.g. "neighbor <ip> bfd"
+! under router bgp) once neighbors are known -- deferred to that stage.
+{% endif %}
+!
+! NOTE: first_hop_redundancy_protocols (preempt: {{ ha.first_hop_redundancy_protocols.preempt }},
+! advertisement_interval_seconds: {{ ha.first_hop_redundancy_protocols.advertisement_interval_seconds }})
+! has no HSRP/VRRP group to attach to anywhere in this design -- see the
+! header note. Not rendered as commands.
+!
+{% if ha.discovery_protocols.lldp_enabled %}
+feature lldp
+{% else %}
+no feature lldp
+{% endif %}
+! NOTE: CDP on NX-OS is enabled by default without a global "feature cdp"
+! command; cdp_enabled ({{ ha.discovery_protocols.cdp_enabled }}) is
+! controlled per-interface ("cdp enable" / "no cdp enable") -- deferred to
+! the interface-stage template.
+!
+{# -------------------------- Routing baseline (device-wide enablement) -------------------------- #}
+feature bgp
+! NOTE: bgp_security (md5_authentication: {{ rb.bgp_security.md5_authentication }},
+! ttl_security_hops: {{ rb.bgp_security.ttl_security_hops }}) is applied
+! per-neighbor under "router bgp <asn>" once the ASN and neighbor list are
+! known from logical_topology.yaml -- deferred to that stage.
+!
+{# -------------------------- Control Plane Policing -------------------------- #}
+{% if rb.control_plane_policing.enable %}
+! Baseline system CoPP profile -- NX-OS's idiomatic starting point.
+! "strict" chosen as a reasonable default matching this baseline's
+! generally hardened posture; revisit per site if it proves too aggressive
+! for legitimate control-plane traffic.
+copp profile strict
+!
+! Custom classes for the three named categories in the data model, layered
+! on top of the profile for finer-grained handling than the profile alone
+! provides.
+{% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+class-map type control-plane match-any COPP-{{ class_name | upper }}
+ remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+!
+{% endfor %}
+policy-map type control-plane COPP-CUSTOM-POLICY
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+ class COPP-{{ class_name | upper }}
+  police cir {{ copp_rate[priority] }} bps conform transmit violate drop
+  ! priority tier from platform_core_agg_baseline: "{{ priority }}" -- rate above is a starting-point placeholder, tune per site
+{% endfor %}
+!
+control-plane
+ service-policy input copp-system-policy
+! NOTE: NX-OS applies CoPP via "service-policy input copp-system-policy"
+! referencing the active copp profile; merging the custom
+! COPP-CUSTOM-POLICY classes above into that active policy is a
+! platform/release-specific step (typically done by editing the generated
+! copp-system-policy policy-map, not simply substituting a different policy
+! name) -- verify the merge procedure for your NX-OS release before deploying.
+{% endif %}
+!
+{# -------------------------- Interface baseline -------------------------- #}
+{% if ib.fabric_and_transit_links.link_aggregation.protocol == 'lacp' %}
+feature lacp
+{% endif %}
+! NOTE: fabric_and_transit_links.mtu ({{ ib.fabric_and_transit_links.mtu }}),
+! link_aggregation mode ({{ ib.fabric_and_transit_links.link_aggregation.mode }}),
+! unused_ports (mode: {{ ib.unused_ports.mode }}, shutdown: {{ ib.unused_ports.shutdown }}),
+! and qos_baseline.trust_state ({{ ib.qos_baseline.trust_state }}) are all
+! per-interface -- deferred to the interface-stage template. feature lacp
+! above is the one device-wide prerequisite from this section.
+!
+{# -------------------------- Hardware integrity -------------------------- #}
+{% if hw.secure_boot_verification %}
+! NOTE: secure_boot_verification -- Secure Boot on Nexus 9000 platforms is a
+! hardware-anchored feature verified automatically at boot; there is no
+! single confirmed NX-OS enable/disable CLI command for it. Verify via your
+! platform's system-integrity/secure-boot show commands for the specific
+! N9K model and NX-OS release in use, rather than assuming a command name here.
+{% endif %}
+{% if hw.environmental_monitoring %}
+! NOTE: environmental_monitoring -- fan/power/temperature monitoring runs
+! by default in hardware on Nexus 9000 (visible via "show environment");
+! there's no single "enable" command for the monitoring itself. The
+! actionable equivalent of this flag is usually enabling SNMP environmental
+! traps (e.g. "snmp-server enable traps entity") so threshold events
+! actually notify someone -- not rendered here since it depends on the SNMP
+! trap_destinations configured above; add explicitly if wanted.
+{% endif %}
+!
+end
+```
+</details>
+
+<details>
+<summary>Jinja2 template - Catalyst 9000</summary>
+
+```jinja2
+{# ============================================================================
+   Cisco Catalyst 9300 (IOS XE) -- Access Switch Role Baseline Configuration
+   ============================================================================
+   Stage 1: baseline-only, same scope as the WAN and core/agg templates.
+   Renders purely from platform_access_baseline.yaml. No device/topology
+   data (hostname, interfaces, VLANs, access-VTEP BGP config) is used here.
+
+   Findings from checking this data model against the others before
+   building this, worth resolving regardless of template stage:
+
+   1. restricted_vlan: 998 does not exist anywhere in the site's VLAN/VNI
+      catalog (logical_topology.yaml's evpn_overlay_design.vni_service_
+      mappings only defines 10, 20, 30, 40, 50, 999). If a dot1x fallback
+      ever assigns a port to VLAN 998, that VLAN has no VNI mapping, no
+      anycast gateway, nothing -- it doesn't exist on the fabric. Compare
+      against endpoint_services.yaml, which uses VLAN 999 (Critical_
+      Services, which IS defined) for the equivalent guest_vlan/auth_fail_
+      vlan/no_response_vlan fields. This looks like it should also be 999,
+      not a second, undefined restricted VLAN.
+
+   2. storm_control here (broadcast_pps/multicast_pps: 500, action:
+      "trap_and_log") uses different units and a different action than
+      endpoint_services.yaml's storm_control (percent-of-bandwidth
+      thresholds, action: "shutdown") for what appears to be the same
+      concept on the same access ports. Two data models now define storm
+      control for the access layer differently -- one of them should be
+      the single source of truth, same issue as the evpn_overlay_design
+      duplication resolved earlier.
+
+   3. Unlike platform_wan_baseline.yaml and platform_core_agg_baseline.yaml,
+      this file has no routing_baseline.bgp_security section -- yet
+      access-VTEPs DO speak BGP per logical_topology.yaml (evpn_vtep.
+      bgp_peers). Worth confirming whether that omission is intentional
+      (e.g. access-tier iBGP considered lower-risk) or a gap to fill in.
+
+   Neither #1 nor #2 blocks rendering this baseline-only stage (both are
+   per-interface/per-VLAN settings deferred below regardless), but both
+   will matter as soon as the interface stage is built, so they're flagged
+   here rather than silently carried into rendered config later.
+   ============================================================================ #}
+{% set mp = platform_access_baseline.management_plane %}
+{% set ip_prot = platform_access_baseline.infrastructure_protection %}
+{% set eas = platform_access_baseline.endpoint_access_security %}
+{% set rb = platform_access_baseline.routing_baseline %}
+{% set hw = platform_access_baseline.hardware_integrity %}
+{% set ib = platform_access_baseline.interface_baseline %}
+!
+banner login ^C
+{{ mp.banner_login }}
+^C
+!
+{# -------------------------- DNS -------------------------- #}
+ip domain-name {{ mp.dns.domain_name }}
+{% if mp.dns.source_interface %}
+ip domain lookup source-interface {{ mp.dns.source_interface }}
+{% endif %}
+!
+{# -------------------------- SSH / lines -------------------------- #}
+ip ssh version {{ mp.ssh_version }}
+!
+line con 0
+ exec-timeout {{ mp.console_timeout_minutes }} 0
+ login local
+!
+line vty 0 15
+ exec-timeout {{ mp.vty_timeout_minutes }} 0
+ transport input ssh
+ login local
+!
+aaa local authentication attempts max-fail {{ mp.login_retries }}
+!
+{# -------------------------- HTTP services -------------------------- #}
+{% if not mp.http_services.enable %}
+no ip http server
+no ip http secure-server
+{% elif mp.http_services.secure_only %}
+no ip http server
+ip http secure-server
+{% else %}
+ip http server
+{% endif %}
+!
+{# -------------------------- NTP -------------------------- #}
+{% for server in mp.ntp.servers %}
+ntp server {{ server }}
+{% endfor %}
+{% if mp.ntp.source_interface %}
+ntp source {{ mp.ntp.source_interface }}
+{% endif %}
+{% if not mp.ntp.servers %}
+! NOTE: no NTP servers defined in platform_access_baseline.management_plane.ntp.servers -- add before deploying
+{% endif %}
+!
+{# -------------------------- Syslog -------------------------- #}
+{% for server in mp.syslog.servers %}
+logging host {{ server }}
+{% endfor %}
+{% if mp.syslog.source_interface %}
+logging source-interface {{ mp.syslog.source_interface }}
+{% endif %}
+{% if mp.syslog.severity_level %}
+logging trap {{ mp.syslog.severity_level }}
+{% endif %}
+{% if not mp.syslog.servers %}
+! NOTE: no syslog servers defined -- add before deploying
+{% endif %}
+!
+{# -------------------------- SNMP -------------------------- #}
+{% if mp.snmp.enabled %}
+{% for community in mp.snmp.community_strings %}
+snmp-server community {{ community }} RO
+{% endfor %}
+{% if mp.snmp.contact %}
+snmp-server contact {{ mp.snmp.contact }}
+{% endif %}
+{% if mp.snmp.location %}
+snmp-server location {{ mp.snmp.location }}
+{% endif %}
+{% for host in mp.snmp.trap_destinations %}
+snmp-server host {{ host }} traps
+{% endfor %}
+{% else %}
+! SNMP disabled per platform_access_baseline.management_plane.snmp.enabled
+{% endif %}
+!
+{# -------------------------- TACACS+ -------------------------- #}
+{% if mp.tacacs.servers %}
+{% for server in mp.tacacs.servers %}
+tacacs server TACACS-{{ loop.index }}
+ address ipv4 {{ server }}
+ key {{ mp.tacacs.encryption_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+{% endfor %}
+{% if mp.tacacs.source_interface %}
+ip tacacs source-interface {{ mp.tacacs.source_interface }}
+{% endif %}
+aaa group server tacacs+ TACACS-GROUP
+{% for server in mp.tacacs.servers %}
+ server name TACACS-{{ loop.index }}
+{% endfor %}
+aaa authentication login default group TACACS-GROUP local
+aaa authorization exec default group TACACS-GROUP local
+{% else %}
+! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
+{% endif %}
+!
+{# -------------------------- Infrastructure protection (device-wide) -------------------------- #}
+{% if 'ip_source_routing' in ip_prot.disabled_ip_services %}
+no ip source-route
+{% endif %}
+ip icmp rate-limit unreachable {{ ip_prot.icmp_standards.unreachable_rate_limit }}
+!
+! NOTE: accept_redirects, proxy_arp, mask_requests, and ipv6_hardening.
+! ra_suppress are per-interface -- deferred to the interface-stage template.
+!
+{# -------------------------- Endpoint access security (device-wide enablement) -------------------------- #}
+{% if eas.dot1x_authentication.enable %}
+dot1x system-auth-control
+{% if eas.dot1x_authentication.fallback_mechanism.enabled %}
+dot1x critical eapol
+! NOTE: fallback restricted_vlan ({{ eas.dot1x_authentication.fallback_mechanism.restricted_vlan }})
+! is applied per-interface ("authentication event fail action authorize
+! vlan <n>" / "authentication event no-response action authorize vlan <n>")
+! once interfaces exist -- but see the header finding: VLAN
+! {{ eas.dot1x_authentication.fallback_mechanism.restricted_vlan }} isn't in
+! the site's VLAN catalog. Confirm the correct value (999?) before this is
+! wired into the interface stage.
+{% endif %}
+dot1x timeout reauth-period {{ eas.dot1x_authentication.fallback_mechanism.reinitialize_timer_seconds }}
+! NOTE: this sets the global default reauth timer; host_mode ("{{ eas.dot1x_authentication.host_mode }}")
+! itself is a per-interface setting, deferred.
+{% else %}
+no dot1x system-auth-control
+{% endif %}
+!
+! NOTE: port_security (max {{ eas.port_security.max_mac_addresses_per_port }} MAC(s)/port,
+! violation action "{{ eas.port_security.violation_action }}") has no global
+! enable on IOS-XE -- "switchport port-security ..." only exists under
+! interface config. Fully deferred to the interface stage.
+!
+{% if eas.dhcp_snooping.enable %}
+ip dhcp snooping
+! NOTE: "ip dhcp snooping vlan <list>" also needs the site's VLAN list
+! (logical_topology.yaml's vni_service_mappings: 10,20,30,40,50,999) --
+! not rendered here since this stage has no topology data. trust_uplinks_
+! to_transit ({{ eas.dhcp_snooping.trust_uplinks_to_transit }}) is per-interface
+! ("ip dhcp snooping trust"), deferred.
+{% endif %}
+!
+{% if eas.dynamic_arp_inspection.enable %}
+! NOTE: "ip arp inspection vlan <list>" needs the same site VLAN list as
+! DHCP snooping above -- not rendered here for the same reason.
+{% endif %}
+!
+! NOTE: storm_control (broadcast_pps/multicast_pps: {{ eas.storm_control.broadcast_pps }}/{{ eas.storm_control.multicast_pps }},
+! action: "{{ eas.storm_control.action }}") is entirely per-interface on
+! IOS-XE ("storm-control broadcast level pps ...") -- deferred. See header
+! finding #2: reconcile against endpoint_services.yaml's conflicting
+! percent-based storm_control before this reaches the interface stage.
+!
+{# -------------------------- Control Plane Policing -------------------------- #}
+{% if rb.control_plane_policing.enable %}
+{% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+class-map match-any COPP-{{ class_name | upper }}
+ remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+!
+{% endfor %}
+policy-map CONTROL-PLANE-POLICY
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+ class COPP-{{ class_name | upper }}
+  police {{ copp_rate[priority] }} conform-action transmit exceed-action drop
+  ! priority tier from platform_access_baseline: "{{ priority }}" -- rate above is a starting-point placeholder, tune per site
+{% endfor %}
+!
+control-plane
+ service-policy input CONTROL-PLANE-POLICY
+!
+! NOTE: this baseline has no routing_baseline.bgp_security section (see
+! header finding #3), even though access-VTEPs speak BGP per
+! logical_topology.yaml -- nothing to render here as a result; confirm
+! whether that's intentional before the BGP/interface stage is built.
+{% endif %}
+!
+{# -------------------------- Hardware integrity -------------------------- #}
+{% if hw.secure_boot_verification %}
+! NOTE: secure_boot_verification -- Secure Boot on Catalyst 9300 is a
+! hardware-anchored (SUDI-based) feature verified automatically at boot;
+! there is no standard IOS-XE enable/disable command for it, so no CLI is
+! emitted here. Confirm via 'show platform sudi certificate' post-deploy.
+{% endif %}
+{% if hw.environmental_monitoring %}
+! NOTE: environmental_monitoring -- fan/power/temperature monitoring runs
+! by default in hardware (visible via 'show environment all'); there's no
+! single enable command for the monitoring itself. If threshold alerting is
+! wanted, that's normally SNMP environmental traps, which depend on the
+! snmp trap_destinations configured above -- not rendered here since it's
+! a separate decision from "monitoring exists."
+{% endif %}
+!
+{# -------------------------- Interface baseline -------------------------- #}
+! NOTE: unused_edge_ports (mode: {{ ib.unused_edge_ports.mode }}, default_vlan:
+! {{ ib.unused_edge_ports.default_vlan }}, shutdown: {{ ib.unused_edge_ports.shutdown }})
+! and underlay_uplinks.link_aggregation (protocol: {{ ib.underlay_uplinks.link_aggregation.protocol }},
+! mode: {{ ib.underlay_uplinks.link_aggregation.mode }}) are both per-interface
+! -- deferred to the interface-stage template. Unlike NX-OS, IOS-XE needs no
+! global "feature lacp"-style command, so there is nothing device-wide to
+! render for link aggregation at this stage.
+!
+end
 ```
 </details>
 
@@ -1558,148 +2017,7 @@ end
 <summary>abc-hq-wan-01.cfg</summary>
   
 ```code
-!
-hostname abc-hq-wan-01
-!
-banner login ^C
-Authorized Use Only. System activity is logged.
-^C
-!
-ip domain name campus.example.net
-ip domain lookup source-interface Loopback0
-!
-ip ssh version 2
-!
-line con 0
- exec-timeout 10 0
- login local
-!
-line vty 0 15
- exec-timeout 15 0
- transport input ssh
- login local
-!
-aaa local authentication attempts max-fail 3
-!
-no ip http server
-no ip http secure-server
-!
-! NOTE: no NTP servers defined in platform_wan_baseline.management_plane.ntp.servers -- add before deploying
-!
-! NOTE: no syslog servers defined -- add before deploying
-!
-! SNMP disabled per platform_wan_baseline.management_plane.snmp.enabled
-!
-! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
-!
-no ip source-route
-ip icmp rate-limit unreachable 100
-!
-!
-interface Loopback0
- description MANAGEMENT loopback
- ip address 10.0.0.1 255.255.255.255
-!
-interface TenGigabitEthernet0/0/0
- description Service Provider A 10Gbps Ethernet Line
- ip access-group fw-in-wan-interface-acl in
- no ip redirects
- no ip unreachables
- no ip proxy-arp
- no ip mask-reply
 
- no shutdown
-!
-interface HundredGigE0/1/0
- description Horizontal WAN Interconnect to abc-hq-wan-02
- no ip redirects
- no ip unreachables
- no ip proxy-arp
- no ip mask-reply
-
- no shutdown
-!
-interface HundredGigE0/2/0
- description to cor-01
- ip address 10.18.1.0 255.255.255.254
- no ip redirects
- no ip unreachables
- no ip proxy-arp
- no ip mask-reply
-
- no shutdown
-!
-interface HundredGigE0/2/1
- description to cor-03 (Cross-FD)
- ip address 10.18.1.2 255.255.255.254
- no ip redirects
- no ip unreachables
- no ip proxy-arp
- no ip mask-reply
-
- no shutdown
-!
-ip access-list extended fw-in-wan-interface-acl
- remark TODO: define real permit/deny entries for the WAN-facing ACL -- not present in the data model
- remark Placeholder only -- do not deploy as-is
- deny   ip any any log
-!
-class-map match-any COPP-ROUTING_UPDATES
- remark TODO: add real match statements (ACL/protocol) for routing_updates
-!
-class-map match-any COPP-MANAGEMENT_ACCESS
- remark TODO: add real match statements (ACL/protocol) for management_access
-!
-class-map match-any COPP-TRANSIT_TRAFFIC
- remark TODO: add real match statements (ACL/protocol) for transit_traffic
-!
-policy-map CONTROL-PLANE-POLICY
- class COPP-ROUTING_UPDATES
-  police 32000 conform-action transmit exceed-action drop
-  ! priority tier from platform_wan_baseline: "medium" -- rate above is a starting-point placeholder, tune per site
- class COPP-MANAGEMENT_ACCESS
-  police 8000 conform-action transmit exceed-action drop
-  ! priority tier from platform_wan_baseline: "low" -- rate above is a starting-point placeholder, tune per site
- class COPP-TRANSIT_TRAFFIC
-  police 128000 conform-action transmit exceed-action drop
-  ! priority tier from platform_wan_baseline: "high" -- rate above is a starting-point placeholder, tune per site
-!
-control-plane
- service-policy input CONTROL-PLANE-POLICY
-!
-! NOTE: secure_boot_verification -- Secure Boot on Catalyst 8000 is a
-! hardware-anchored (SUDI-based) feature verified automatically at boot;
-! there is no standard IOS-XE enable/disable command for it, so no CLI is
-! emitted here. Confirm via 'show platform sudi certificate' post-deploy.
-! NOTE: hardware_crypto_acceleration -- hardware crypto engine use on
-! Catalyst 8000 is governed by the installed throughput/security license
-! and platform hardware, not a single confirmed IOS-XE CLI toggle. Verify
-! via 'show platform hardware qfp active feature crypto' post-deploy
-! rather than assuming a command exists here.
-!
-router bgp 65100
- bgp router-id 10.0.0.1
- bgp log-neighbor-changes
- neighbor 192.168.10.1 remote-as 65530
- neighbor 192.168.10.1 description eBGP to ISP-A
- neighbor 192.168.10.1 password !! VAULT-REFERENCE-REQUIRED !!
- neighbor 192.168.10.1 ttl-security hops 2
- neighbor 10.18.1.1 remote-as 65100
- neighbor 10.18.1.1 description iBGP to core-01 (FD-A)
- neighbor 10.18.1.1 password !! VAULT-REFERENCE-REQUIRED !!
- neighbor 10.18.1.3 remote-as 65100
- neighbor 10.18.1.3 description iBGP Cross-FD to core-03
- neighbor 10.18.1.3 password !! VAULT-REFERENCE-REQUIRED !!
-!
-! WARNING: platform_wan_baseline.interface_baseline.wan_interfaces.
-! passive_routing_interface is TRUE. BGP has no native "passive interface"
-! concept the way IGPs do -- no corresponding command has been emitted here.
-! If this flag was meant to suppress the eBGP/iBGP adjacencies above, doing
-! so would prevent this router from ever peering. This still needs your
-! confirmation (flagged since the WAN role file was first reviewed) before
-! this template's BGP section can be considered final.
-!
-end
 ```
 
 ### Validation Reports
