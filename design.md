@@ -4,7 +4,7 @@ This is a sample network design to demonstrate how an automation native network 
 
 Key takeaways:
 - Data model first, every content is generated from data models written in yaml
-- Data model is mainly schema, parameters are not kept within the models but coming from another store (i.e. Netbox)
+- In this example, Data model has already included value. In real world, this should be further broken down to a JSON schema (data model without value). 
 - Generated contents includes diagram, racking and stacking plan, cable patching matrix, device baseline configurations and design specific configurations, automated test plan
 - Diagram -> Render from data model to svg format (xml)
 - Racking and cable patching matrix -> Render from physical data model to table (md)
