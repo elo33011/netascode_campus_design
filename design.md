@@ -103,17 +103,17 @@ This design is constructed from a set of data models which provides a structure 
 | Logical Topology | Define the abstract, software-defined architecture of the network—including routing domains (BGP AS), overlay networks (VXLAN EVPN), virtual network functions, and service paths—that operates independently of the underlying physical hardware, detailing how traffic is controlled, isolated, and forwarded |
 | Endpoint Service | Define the granular physical port configurations, Layer 2 loop protections, First-Hop Security (FHS) controls, 802.1X/MAB identity profiles, and edge QoS policies facing client devices, establishing a standardized, secure link-level baseline across all endpoint switchports |
 
-### Device Baseline Models
+### Device Role Models
 
-Device Baseline Data Model is to define a standardized, vendor-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device, regardless of its specific role or placement within the network architecture. This model will be used in conjunction with a platform specific template to render the configuration output required by the platform.
+Device role model define a standardized, platform-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device. This model will be used in conjunction with a platform specific jinja2 template to render the configuration output required by the platform acting as that role.
 
-Based on the platform of choices, the following models will be used by this design.
+This Campus network design will use the following device role models and jinja2 templates.
 
-| Model | Platform | Use Case |
+| Data Model | Platform | Use Case |
 |---|---|---|
-| Edge Device Model | Vendor A xxx | Campus WAN routers |
-| Core Device Model | Vendor B xxx | Core & Aggregration switches |
-| Access Device Model | Vendor C xxx | Access switches |
+| Edge Device Role | Vendor A xxx | Campus WAN routers |
+| Core Device Role | Vendor B xxx | Core & Aggregration switches |
+| Access Device Role | Vendor C xxx | Access switches |
 
 ## Deployment Details
 
@@ -456,140 +456,180 @@ management_context:
   site_code: "abc-hq"
   site_name: "Company ABC Main Campus OOB"
 
-  # ============================================================================
-  # 1. FAILURE DOMAIN & RACK INFRASTRUCTURE DEFINITIONS
-  # ============================================================================
+  # ----------------------------------------------------------------------
+  # 1. FAILURE DOMAIN & RACK INFRASTRUCTURE DEFINITIONS (MER-level gear only;
+  #    floor-level OOB nodes are declared under management_tier.floors below,
+  #    same split used in physical_topology.yaml)
+  # ----------------------------------------------------------------------
   failure_domains:
-    - domain_id: "FD-MGT"
-      description: "Out-of-Band Management Redundancy Plane"
-      rack_group: "Suite-MGT / OOB Rack Room"
+    - domain_id: "FD-MGT-A"
+      description: "Out-of-Band Management Plane for Production FD-A"
+      rack_group: "Suite-A / Left-IDF (co-located with production FD-A racks)"
       racks:
-        - rack_id: "RACK-MGT01"
-          location: "Main Equipment Room - Row MGT, Rack 1"
+        - rack_id: "RACK-MGT-A01"
+          location: "Main Equipment Room - Row A, Rack 3"
           u_space_total: 42
           mounted_devices:
-            - name: "abc-hq-mgt-wan-01"
-              u_position_start: 40
-              u_height: 2
-            - name: "abc-hq-mgt-cor-01"
-              u_position_start: 36
-              u_height: 2
-            - name: "abc-hq-mgt-ts-idf-main-01"
-              u_position_start: 32
-              u_height: 2
-            - name: "abc-hq-mgt-acc-idf-main-01"
-              u_position_start: 30
-              u_height: 2
+            - { name: "abc-hq-mgt-wan-01", u_position_start: 40, u_height: 1 }
+            - { name: "abc-hq-mgt-cor-01", u_position_start: 38, u_height: 1 }
+            - { name: "abc-hq-mgt-ts-main-01", u_position_start: 36, u_height: 1 }
+            - { name: "abc-hq-mgt-acc-main-01", u_position_start: 34, u_height: 1 }
 
-  # ============================================================================
+    - domain_id: "FD-MGT-B"
+      description: "Out-of-Band Management Plane for Production FD-B"
+      rack_group: "Suite-B / Right-IDF (co-located with production FD-B racks)"
+      racks:
+        - rack_id: "RACK-MGT-B01"
+          location: "Main Equipment Room - Row B, Rack 3"
+          u_space_total: 42
+          mounted_devices:
+            - { name: "abc-hq-mgt-wan-02", u_position_start: 40, u_height: 1 }
+            - { name: "abc-hq-mgt-cor-02", u_position_start: 38, u_height: 1 }
+            - { name: "abc-hq-mgt-ts-main-02", u_position_start: 36, u_height: 1 }
+            - { name: "abc-hq-mgt-acc-main-02", u_position_start: 34, u_height: 1 }
+
+  # ----------------------------------------------------------------------
   # 2. MANAGEMENT LINK SPEED STANDARDS
-  # ============================================================================
+  # ----------------------------------------------------------------------
   link_standards:
-    mgt_wan_circuit:
-      speed: "1Gbps"
-      media: "1000BASE-T_Copper"
-      description: "Dedicated management WAN connection (console/SSH access)"
-    mgt_backbone:
-      speed: "10Gbps"
-      media: "10GBASE-SR_Fiber"
-      description: "Connections between Management Core/Agg/Access switches"
-    mgt_ethernet:
-      speed: "1Gbps"
-      media: "1000BASE-T_Copper"
-      description: "Production device Management GigE port to MGT Switch (SSH)"
-    mgt_console:
-      speed: "115200bps"
-      media: "Serial-RJ45"
-      description: "Production device Console port to Terminal Server"
+    mgt_wan_circuit: { speed: "1Gbps", media: "1000BASE-T_Copper", description: "Dedicated management WAN connection (console/SSH access)" }
+    mgt_backbone: { speed: "10Gbps", media: "10GBASE-SR_Fiber", description: "Connections between Management Core/Access nodes" }
+    mgt_ethernet: { speed: "1Gbps", media: "1000BASE-T_Copper", description: "Production device Management GigE port to MGT Switch (SSH)" }
+    mgt_console: { speed: "115200bps", media: "Serial-RJ45", description: "Production device Console port to Terminal Server" }
 
-  # ============================================================================
+  # ----------------------------------------------------------------------
   # 3. MANAGEMENT IPAM SCHEMA
-  # ============================================================================
+  # ----------------------------------------------------------------------
   ipam_schema:
-    oob_wan_subnet: "192.168.100.0/30" # Dedicated WAN IP space
-    oob_management_loopbacks: "10.254.0.0/19" # Loopbacks for OOB switches
-    oob_console_servers: "10.254.32.0/24" # Specific for TS nodes
+    oob_wan_subnet_fd_a: "192.168.100.0/30"   # Dedicated WAN IP space, plane A
+    oob_wan_subnet_fd_b: "192.168.100.4/30"   # Dedicated WAN IP space, plane B
+    oob_management_loopbacks: "10.254.0.0/19" # Loopbacks for OOB switches, both planes
+    oob_console_servers: "10.254.32.0/24"     # Specific for TS/combo nodes, both planes
 
-  # ============================================================================
-  # 4. SEPARATE MANAGEMENT INVENTORY (Out-of-Band Network)
-  # ============================================================================
+  # ----------------------------------------------------------------------
+  # 4. MANAGEMENT INVENTORY (MER-level: WAN/Core/Access-to-production tier)
+  # ----------------------------------------------------------------------
   management_tier:
 
-    # --- MANAGEMENT WAN LAYER ---
     mgt_wan_routers:
       - name: "abc-hq-mgt-wan-01"
-        failure_domain: "FD-MGT"
-        rack_location: "RACK-MGT01"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
         external_links:
-          - interface: "GigabitEthernet0/0/0"
-            type: "mgt_wan_circuit"
-            description: "Dedicated Management WAN line (OOB Access)"
+          - { interface: "GigabitEthernet0/0/0", type: "mgt_wan_circuit", description: "Dedicated Management WAN line, Plane A" }
         internal_links:
-          - local_port: "TenGigabitEthernet0/1/0"
-            remote_device: "abc-hq-mgt-cor-01"
-            remote_port: "TenGigabitEthernet1/1"
-            type: "mgt_backbone"
+          - { local_port: "TenGigabitEthernet0/1/0", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
 
-    # --- MANAGEMENT CORE LAYER ---
+      - name: "abc-hq-mgt-wan-02"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        external_links:
+          - { interface: "GigabitEthernet0/0/0", type: "mgt_wan_circuit", description: "Dedicated Management WAN line, Plane B" }
+        internal_links:
+          - { local_port: "TenGigabitEthernet0/1/0", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+
     mgt_core_switches:
       - name: "abc-hq-mgt-cor-01"
-        failure_domain: "FD-MGT"
-        rack_location: "RACK-MGT01"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
         links:
-          # Uplink to MGT WAN
-          - local_port: "TenGigabitEthernet1/1"
-            remote_device: "abc-hq-mgt-wan-01"
-            remote_port: "TenGigabitEthernet0/1/0"
-            type: "mgt_backbone"
-          # Fiber Backbone down to Management switches in IDFs
-          - local_port: "TenGigabitEthernet1/2"
-            remote_device: "abc-hq-mgt-acc-idf-main-01" # MGT-Switch (SSH)
-            remote_port: "TenGigabitEthernet1/1"
-            type: "mgt_backbone"
-          - local_port: "TenGigabitEthernet1/3"
-            remote_device: "abc-hq-mgt-ts-idf-main-01" # Terminal-Server (Console)
-            remote_port: "TenGigabitEthernet1/1"
-            type: "mgt_backbone"
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-wan-01", remote_port: "TenGigabitEthernet0/1/0", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/2", remote_device: "abc-hq-mgt-ts-main-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/3", remote_device: "abc-hq-mgt-acc-main-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/4", remote_device: "abc-hq-mgt-oob-f01-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" } # Floor 1, FD-A; TenGig1/5-1/12 -> floors 2-10, identical pattern
 
-    # --- MANAGEMENT ACCESS LAYER (OOB Gateways) ---
+      - name: "abc-hq-mgt-cor-02"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-wan-02", remote_port: "TenGigabitEthernet0/1/0", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/2", remote_device: "abc-hq-mgt-ts-main-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/3", remote_device: "abc-hq-mgt-acc-main-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/4", remote_device: "abc-hq-mgt-oob-f01-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" } # Floor 1, FD-B; TenGig1/5-1/12 -> floors 2-10, identical pattern
+
+    # --- MER-LEVEL ACCESS NODES: console + SSH for WAN/Core/Agg tiers ---
     mgt_access_nodes:
-      # Terminal Servers for Serial Console access
-      - name: "abc-hq-mgt-ts-idf-main-01"
+      - name: "abc-hq-mgt-ts-main-01"
         type: "terminal_server"
-        failure_domain: "FD-MGT"
-        rack_location: "RACK-MGT01"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
         links:
-          - local_port: "TenGigabitEthernet1/1"
-            remote_device: "abc-hq-mgt-cor-01"
-            remote_port: "TenGigabitEthernet1/3"
-            type: "mgt_backbone"
-        # Definition of physical Async ports connecting to production device Console ports
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/2", type: "mgt_backbone" }
         async_console_mappings:
-          - async_port: "Async1"
-            description: "Console to wan-01"
-            target_device: "abc-hq-wan-01"
-          - async_port: "Async2"
-            description: "Console to cor-01"
-            target_device: "abc-hq-cor-01"
+          - { async_port: "Async1", description: "Console to wan-01", target_device: "abc-hq-wan-01" }
+          - { async_port: "Async2", description: "Console to cor-01", target_device: "abc-hq-cor-01" }
+          - { async_port: "Async3", description: "Console to cor-02", target_device: "abc-hq-cor-02" }
+          - { async_port: "Async4", description: "Console to agg-01", target_device: "abc-hq-agg-01" }
+          - { async_port: "Async5", description: "Console to agg-02", target_device: "abc-hq-agg-02" }
 
-      # Management Switches for GigE SSH access
-      - name: "abc-hq-mgt-acc-idf-main-01"
+      - name: "abc-hq-mgt-acc-main-01"
         type: "mgt_switch"
-        failure_domain: "FD-MGT"
-        rack_location: "RACK-MGT01"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
         links:
-          - local_port: "TenGigabitEthernet1/1"
-            remote_device: "abc-hq-mgt-cor-01"
-            remote_port: "TenGigabitEthernet1/2"
-            type: "mgt_backbone"
-        # Definition of physical GigE ports connecting to production device Management ports
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/3", type: "mgt_backbone" }
         mgt_ethernet_mappings:
-          - mgt_port: "GigabitEthernet1/1"
-            description: "SSH to wan-01 Management0"
-            target_device: "abc-hq-wan-01"
-          - mgt_port: "GigabitEthernet1/2"
-            description: "SSH to cor-01 GigabitEthernet0"
-            target_device: "abc-hq-cor-01"
+          - { mgt_port: "GigabitEthernet1/1", description: "SSH to wan-01 Management0", target_device: "abc-hq-wan-01" }
+          - { mgt_port: "GigabitEthernet1/2", description: "SSH to cor-01 mgmt0", target_device: "abc-hq-cor-01" }
+          - { mgt_port: "GigabitEthernet1/3", description: "SSH to cor-02 mgmt0", target_device: "abc-hq-cor-02" }
+          - { mgt_port: "GigabitEthernet1/4", description: "SSH to agg-01 mgmt0", target_device: "abc-hq-agg-01" }
+          - { mgt_port: "GigabitEthernet1/5", description: "SSH to agg-02 mgmt0", target_device: "abc-hq-agg-02" }
+
+      - name: "abc-hq-mgt-ts-main-02"
+        type: "terminal_server"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/2", type: "mgt_backbone" }
+        async_console_mappings:
+          - { async_port: "Async1", description: "Console to wan-02", target_device: "abc-hq-wan-02" }
+          - { async_port: "Async2", description: "Console to cor-03", target_device: "abc-hq-cor-03" }
+          - { async_port: "Async3", description: "Console to cor-04", target_device: "abc-hq-cor-04" }
+          - { async_port: "Async4", description: "Console to agg-03", target_device: "abc-hq-agg-03" }
+          - { async_port: "Async5", description: "Console to agg-04", target_device: "abc-hq-agg-04" }
+
+      - name: "abc-hq-mgt-acc-main-02"
+        type: "mgt_switch"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/3", type: "mgt_backbone" }
+        mgt_ethernet_mappings:
+          - { mgt_port: "GigabitEthernet1/1", description: "SSH to wan-02 Management0", target_device: "abc-hq-wan-02" }
+          - { mgt_port: "GigabitEthernet1/2", description: "SSH to cor-03 mgmt0", target_device: "abc-hq-cor-03" }
+          - { mgt_port: "GigabitEthernet1/3", description: "SSH to cor-04 mgmt0", target_device: "abc-hq-cor-04" }
+          - { mgt_port: "GigabitEthernet1/4", description: "SSH to agg-03 mgmt0", target_device: "abc-hq-agg-03" }
+          - { mgt_port: "GigabitEthernet1/5", description: "SSH to agg-04 mgmt0", target_device: "abc-hq-agg-04" }
+
+    # --- FLOOR-LEVEL OOB NODES: one combo console+switch node per FD per
+    #     floor, racked alongside the access switch it manages (mirrors
+    #     physical_topology.yaml's floors: pattern). Only floor 1 shown;
+    #     floors 2-10 follow the identical pattern with cor uplink ports
+    #     TenGig1/5 through TenGig1/12.
+    floors:
+      - floor_number: 1
+        oob_nodes:
+          - name: "abc-hq-mgt-oob-f01-01"
+            type: "combo_console_switch"
+            failure_domain: "FD-MGT-A"
+            rack_location: "Floor-01 IDF-A Rack 1" # co-located with abc-hq-f01-acc-01
+            uplink:
+              - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/4", type: "mgt_backbone" }
+            async_console_mappings:
+              - { async_port: "Async1", description: "Console to f01-acc-01", target_device: "abc-hq-f01-acc-01" }
+            mgt_ethernet_mappings:
+              - { mgt_port: "GigabitEthernet1/1", description: "SSH to f01-acc-01 mgmt0", target_device: "abc-hq-f01-acc-01" }
+
+          - name: "abc-hq-mgt-oob-f01-02"
+            type: "combo_console_switch"
+            failure_domain: "FD-MGT-B"
+            rack_location: "Floor-01 IDF-B Rack 1" # co-located with abc-hq-f01-acc-02
+            uplink:
+              - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/4", type: "mgt_backbone" }
+            async_console_mappings:
+              - { async_port: "Async1", description: "Console to f01-acc-02", target_device: "abc-hq-f01-acc-02" }
+            mgt_ethernet_mappings:
+              - { mgt_port: "GigabitEthernet1/1", description: "SSH to f01-acc-02 mgmt0", target_device: "abc-hq-f01-acc-02" }
 ```
 </details>
 
@@ -1255,7 +1295,258 @@ platform_access_baseline:
 </details>
 
 ### Jinja2 Templates
+<details>
+<summary>Jinj2 template - Catalyst 8000</summary>
+```jinja2
+{# ============================================================================
+   Cisco Catalyst 8000 (IOS XE) -- WAN Router Role Configuration Template
+   ============================================================================
+   Expects two top-level context variables:
 
+     platform_wan_baseline  -- the role data model (platform_wan_baseline.yaml)
+     device                 -- per-device instance data, shaped like:
+       name: "abc-hq-wan-01"
+       routing:
+         global: { bgp_asn: 65100, router_id: "10.0.0.1" }
+         loopbacks: [ { interface, ip_address, type } ]
+         interfaces:                      # this device's OWN interfaces + IPs
+           - { interface, ip_address, description, kind: external|internal }
+         bgp_peers: [ { description, peer_ip, remote_as, type: ebgp|ibgp } ]
+
+   NOTE: logical_topology.yaml's wan_routers entries do not currently carry
+   an explicit `interfaces` list the way core_routers/aggregation_switches
+   do -- only bgp_peers (which give the *peer's* IP, not this router's own).
+   This template assumes that gap has been filled in (device.routing.
+   interfaces), since a real config can't be rendered without this router's
+   own addressing. See examples/abc-hq-wan-01_vars.yaml for how that was
+   reconstructed for the demo by cross-referencing peer_ip values recorded
+   on the other end of each link -- recommend adding this list to
+   logical_topology.yaml directly so it doesn't have to be reverse-engineered
+   by every consumer of the model.
+
+   Fields with no confident, standard IOS-XE CLI equivalent are rendered as
+   "! NOTE" comments rather than guessed at -- see hardware_integrity below
+   and the passive_routing_interface warning.
+   ============================================================================ #}
+{% set mp = platform_wan_baseline.management_plane %}
+{% set ip_prot = platform_wan_baseline.infrastructure_protection %}
+{% set rb = platform_wan_baseline.routing_baseline %}
+{% set hw = platform_wan_baseline.hardware_integrity %}
+{% set wan_if = platform_wan_baseline.interface_baseline.wan_interfaces %}
+{% set g = device.routing.global %}
+!
+hostname {{ device.name }}
+!
+banner login ^C
+{{ mp.banner_login }}
+^C
+!
+{# -------------------------- DNS -------------------------- #}
+ip domain name {{ mp.dns.domain_name }}
+{% if mp.dns.source_interface %}
+ip domain lookup source-interface {{ mp.dns.source_interface }}
+{% endif %}
+!
+{# -------------------------- SSH / lines -------------------------- #}
+ip ssh version {{ mp.ssh_version }}
+!
+line con 0
+ exec-timeout {{ mp.console_timeout_minutes }} 0
+ login local
+!
+line vty 0 15
+ exec-timeout {{ mp.vty_timeout_minutes }} 0
+ transport input ssh
+ login local
+!
+{# login_retries -> local-authentication lockout threshold #}
+aaa local authentication attempts max-fail {{ mp.login_retries }}
+!
+{# -------------------------- HTTP services -------------------------- #}
+{% if not mp.http_services.enable %}
+no ip http server
+no ip http secure-server
+{% elif mp.http_services.secure_only %}
+no ip http server
+ip http secure-server
+{% else %}
+ip http server
+{% endif %}
+!
+{# -------------------------- NTP -------------------------- #}
+{% for server in mp.ntp.servers %}
+ntp server {{ server }}
+{% endfor %}
+{% if mp.ntp.source_interface %}
+ntp source {{ mp.ntp.source_interface }}
+{% endif %}
+{% if not mp.ntp.servers %}
+! NOTE: no NTP servers defined in platform_wan_baseline.management_plane.ntp.servers -- add before deploying
+{% endif %}
+!
+{# -------------------------- Syslog -------------------------- #}
+{% for server in mp.syslog.servers %}
+logging host {{ server }}
+{% endfor %}
+{% if mp.syslog.source_interface %}
+logging source-interface {{ mp.syslog.source_interface }}
+{% endif %}
+{% if mp.syslog.severity_level %}
+logging trap {{ mp.syslog.severity_level }}
+{% endif %}
+{% if not mp.syslog.servers %}
+! NOTE: no syslog servers defined -- add before deploying
+{% endif %}
+!
+{# -------------------------- SNMP -------------------------- #}
+{% if mp.snmp.enabled %}
+{% for community in mp.snmp.community_strings %}
+snmp-server community {{ community }} RO
+{% endfor %}
+{% if mp.snmp.contact %}
+snmp-server contact {{ mp.snmp.contact }}
+{% endif %}
+{% if mp.snmp.location %}
+snmp-server location {{ mp.snmp.location }}
+{% endif %}
+{% for host in mp.snmp.trap_destinations %}
+snmp-server host {{ host }} traps
+{% endfor %}
+{% else %}
+! SNMP disabled per platform_wan_baseline.management_plane.snmp.enabled
+{% endif %}
+!
+{# -------------------------- TACACS+ -------------------------- #}
+{% if mp.tacacs.servers %}
+{% for server in mp.tacacs.servers %}
+tacacs server TACACS-{{ loop.index }}
+ address ipv4 {{ server }}
+ key {{ mp.tacacs.encryption_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+{% endfor %}
+{% if mp.tacacs.source_interface %}
+ip tacacs source-interface {{ mp.tacacs.source_interface }}
+{% endif %}
+aaa group server tacacs+ TACACS-GROUP
+{% for server in mp.tacacs.servers %}
+ server name TACACS-{{ loop.index }}
+{% endfor %}
+aaa authentication login default group TACACS-GROUP local
+aaa authorization exec default group TACACS-GROUP local
+{% else %}
+! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
+{% endif %}
+!
+{# -------------------------- Infrastructure protection (global) -------------------------- #}
+{% if 'ip_source_routing' in ip_prot.disabled_ip_services %}
+no ip source-route
+{% endif %}
+ip icmp rate-limit unreachable {{ ip_prot.icmp_standards.unreachable_rate_limit }}
+!
+{# ============================================================================
+   Interface hardening macro -- applied to every configured interface
+   ============================================================================ #}
+{% macro harden_interface() %}
+{% if not ip_prot.icmp_standards.accept_redirects %}
+ no ip redirects
+{% endif %}
+ no ip unreachables
+{% if 'proxy_arp' in ip_prot.disabled_ip_services %}
+ no ip proxy-arp
+{% endif %}
+{% if not ip_prot.icmp_standards.mask_requests %}
+ no ip mask-reply
+{% endif %}
+{%- endmacro %}
+!
+{# -------------------------- Loopback(s) -------------------------- #}
+{% for lo in device.routing.loopbacks %}
+interface {{ lo.interface }}
+ description {{ lo.type | upper }} loopback
+ ip address {{ lo.ip_address.split('/')[0] }} 255.255.255.255
+{% endfor %}
+!
+{# -------------------------- Physical interfaces -------------------------- #}
+{% for iface in device.routing.interfaces %}
+interface {{ iface.interface }}
+ description {{ iface.description | default('Link') }}
+{% if iface.ip_address %}
+{% set parts = iface.ip_address.split('/') %}
+ ip address {{ parts[0] }} {{ {'31': '255.255.255.254', '30': '255.255.255.252', '24': '255.255.255.0'}[parts[1]] | default('255.255.255.252') }}
+{% endif %}
+{% if iface.kind == 'external' %}
+ ip access-group {{ wan_if.ingress_acl_name }} in
+{% endif %}
+{{ harden_interface() }}
+ no shutdown
+!
+{% endfor %}
+{# -------------------------- WAN ingress ACL skeleton -------------------------- #}
+ip access-list extended {{ wan_if.ingress_acl_name }}
+ remark TODO: define real permit/deny entries for the WAN-facing ACL -- not present in the data model
+ remark Placeholder only -- do not deploy as-is
+ deny   ip any any log
+!
+{# -------------------------- Control Plane Policing skeleton -------------------------- #}
+{% if rb.control_plane_policing.enable %}
+{% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+class-map match-any COPP-{{ class_name | upper }}
+ remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+!
+{% endfor %}
+policy-map CONTROL-PLANE-POLICY
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+ class COPP-{{ class_name | upper }}
+  police {{ copp_rate[priority] }} conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "{{ priority }}" -- rate above is a starting-point placeholder, tune per site
+{% endfor %}
+!
+control-plane
+ service-policy input CONTROL-PLANE-POLICY
+!
+{% endif %}
+{# -------------------------- Hardware integrity -------------------------- #}
+{% if hw.secure_boot_verification %}
+! NOTE: secure_boot_verification -- Secure Boot on Catalyst 8000 is a
+! hardware-anchored (SUDI-based) feature verified automatically at boot;
+! there is no standard IOS-XE enable/disable command for it, so no CLI is
+! emitted here. Confirm via 'show platform sudi certificate' post-deploy.
+{% endif %}
+{% if hw.hardware_crypto_acceleration %}
+! NOTE: hardware_crypto_acceleration -- hardware crypto engine use on
+! Catalyst 8000 is governed by the installed throughput/security license
+! and platform hardware, not a single confirmed IOS-XE CLI toggle. Verify
+! via 'show platform hardware qfp active feature crypto' post-deploy
+! rather than assuming a command exists here.
+{% endif %}
+!
+{# -------------------------- BGP -------------------------- #}
+router bgp {{ g.bgp_asn }}
+ bgp router-id {{ g.router_id }}
+ bgp log-neighbor-changes
+{% for peer in device.routing.bgp_peers %}
+ neighbor {{ peer.peer_ip }} remote-as {{ peer.remote_as }}
+ neighbor {{ peer.peer_ip }} description {{ peer.description }}
+{% if rb.bgp_security.md5_authentication %}
+ neighbor {{ peer.peer_ip }} password {{ bgp_md5_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+{% endif %}
+{% if peer.type == 'ebgp' %}
+ neighbor {{ peer.peer_ip }} ttl-security hops {{ rb.bgp_security.ttl_security_hops }}
+{% endif %}
+{% endfor %}
+!
+{% if wan_if.passive_routing_interface %}
+! WARNING: platform_wan_baseline.interface_baseline.wan_interfaces.
+! passive_routing_interface is TRUE. BGP has no native "passive interface"
+! concept the way IGPs do -- no corresponding command has been emitted here.
+! If this flag was meant to suppress the eBGP/iBGP adjacencies above, doing
+! so would prevent this router from ever peering. This still needs your
+! confirmation (flagged since the WAN role file was first reviewed) before
+! this template's BGP section can be considered final.
+{% endif %}
+!
+end
+```
 ### Ansible Playbooks
 
 ### Config Output
