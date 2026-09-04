@@ -92,7 +92,7 @@ This section outlines the architectural framework and design principles for the 
 
 ## Data Models
 
-This design is constructed from a set of data models which provides a structured "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows.
+This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows.
 
 ### Design Specific Models
 
@@ -101,16 +101,19 @@ This design is constructed from a set of data models which provides a structured
 | Physical Topology - Campus Network | Define the precise real-world composition and interconnection of network hardware, including devices, modules, ports, and cables, providing the ground-truth asset and connectivity inventory for the network |
 | Physical Topology - Management Network | Define the precise real-world composition and interconnection of the dedicated out-of-band (OOB) hardware—including management switches, terminal servers, console/management ports, and all associated cabling |
 | Logical Topology | Define the abstract, software-defined architecture of the network—including routing domains (BGP AS), overlay networks (VXLAN EVPN), virtual network functions, and service paths—that operates independently of the underlying physical hardware, detailing how traffic is controlled, isolated, and forwarded |
+| Endpoint Service | Define the granular physical port configurations, Layer 2 loop protections, First-Hop Security (FHS) controls, 802.1X/MAB identity profiles, and edge QoS policies facing client devices, establishing a standardized, secure link-level baseline across all endpoint switchports |
 
 ### Platform Specific Models
 
-The purpose of the Platform Baseline Data Model is to define a standardized, vendor-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device, regardless of its specific role or placement within the network architecture. This model establishes the "Day-Zero" security posture and manageability framework, ensuring configuration consistency, regulatory compliance, and robust administrative control across the entire infrastructure.
+Platform Baseline Data Model is to define a standardized, vendor-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device, regardless of its specific role or placement within the network architecture. This model will be used in conjunction with a platform specific template to render the configuration output required by the platform.
 
-| Platform | Use Case | Data Model Name |
-|---|---| --- |
-| Cisco Catalyst 8000 | WAN Routers | |
-| Nexus 93240 | Core and Aggregation Switches | |
-| Nexus 93180 | Access Switchs | |
+Based on the platform of choices, the following models will be used by this design.
+
+| Model | Platform | Use Case |
+|---|---|---|
+| Edge Device Model | Vendor A xxx | Campus WAN routers |
+| Core Device Model | Vendor B xxx | Core & Aggregration switches |
+| Access Device Model | Vendor C xxx | Access switches |
 
 ## Deployment Details
 
@@ -883,7 +886,7 @@ site_context:
 </details>
 
 <details>
-<summary>WAN Router Platform Baseline </summary>
+<summary>Vendor A Platform X Baseline </summary>
   
 ```yaml
 # ============================================================================
@@ -955,7 +958,7 @@ platform_wan_baseline:
 </details>
 
 <details>
-<summary>Core & Agg Switch Platform Baseline </summary>
+<summary>Vendor B Platform Y Baseline </summary>
   
 ```yaml
 # ============================================================================
@@ -1046,7 +1049,7 @@ platform_core_agg_baseline:
 </details>
 
 <details>
-<summary>Access Switch Platform Baseline </summary>
+<summary>Vendor C Platform Z Baseline </summary>
   
 ```yaml
 # ============================================================================
