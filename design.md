@@ -1297,7 +1297,7 @@ platform_access_baseline:
 ### Jinja2 Templates
 
 <details>
-<summary>Jinj2 template - Catalyst 8000</summary>
+<summary>Jinja2 template - Catalyst 8000</summary>
 
 ```jinja2
 {# ============================================================================
