@@ -1295,8 +1295,10 @@ platform_access_baseline:
 </details>
 
 ### Jinja2 Templates
+
 <details>
 <summary>Jinj2 template - Catalyst 8000</summary>
+
 ```jinja2
 {# ============================================================================
    Cisco Catalyst 8000 (IOS XE) -- WAN Router Role Configuration Template
@@ -1545,11 +1547,74 @@ router bgp {{ g.bgp_asn }}
 ! this template's BGP section can be considered final.
 {% endif %}
 !
-end
+end  
 ```
+</details>
+
 ### Ansible Playbooks
 
 ### Config Output
+<details>
+<summary>abc-hq-wan-01.cfg</summary>
+  
+```code
+# ============================================================================
+# Device instance data for abc-hq-wan-01, shaped for wan_router_cat8000_iosxe.j2
+# ============================================================================
+# Provenance of each value, since this fills a gap logical_topology.yaml
+# doesn't currently cover (wan_routers has no `interfaces` list, unlike
+# core_routers/aggregation_switches/access_vteps):
+#
+#   global, loopbacks, bgp_peers  -> taken directly from logical_topology.yaml
+#   interfaces[].interface        -> taken directly from physical_topology.yaml
+#   interfaces[].ip_address for the two core-facing links -> RECONSTRUCTED,
+#     not given directly. logical_topology.yaml never states wan-01's own IP
+#     on those /31s, but cor-01 and cor-03 each record it as the *peer_ip* in
+#     their own bgp_peers list:
+#       cor-01 bgp_peers: "iBGP Underlay to wan-01", peer_ip: 10.18.1.0
+#       cor-03 bgp_peers: "iBGP Underlay to wan-01", peer_ip: 10.18.1.2
+#     Cross-referenced against physical_topology.yaml's local_port/remote_port
+#     pairing to attach each address to the right interface.
+#   interfaces[].ip_address for the ISP circuit and the wan-01<->wan-02 link
+#     -> left null. Neither logical_topology.yaml nor physical_topology.yaml
+#     records an address for either link (the ISP would assign the WAN
+#     circuit address; the horizontal wan-01<->wan-02 link has no routing
+#     data at all in the logical model). Not fabricated here.
+#
+# Recommend adding an explicit `interfaces` list to wan_routers in
+# logical_topology.yaml directly, matching core_routers' shape, so this
+# reconstruction step isn't needed for every WAN router at every site.
+# ============================================================================
+device:
+  name: "abc-hq-wan-01"
+  routing:
+    global:
+      bgp_asn: 65100
+      router_id: "10.0.0.1"
+    loopbacks:
+      - { interface: "Loopback0", ip_address: "10.0.0.1/32", type: "management" }
+    interfaces:
+      - interface: "TenGigabitEthernet0/0/0"
+        description: "Service Provider A 10Gbps Ethernet Line"
+        ip_address: null   # ISP-assigned; not present in either data model
+        kind: "external"
+      - interface: "HundredGigE0/1/0"
+        description: "Horizontal WAN Interconnect to abc-hq-wan-02"
+        ip_address: null   # no L3/addressing data recorded for this link in logical_topology.yaml
+        kind: "internal"
+      - interface: "HundredGigE0/2/0"
+        description: "to cor-01"
+        ip_address: "10.18.1.0/31"   # reconstructed -- see header note
+        kind: "internal"
+      - interface: "HundredGigE0/2/1"
+        description: "to cor-03 (Cross-FD)"
+        ip_address: "10.18.1.2/31"   # reconstructed -- see header note
+        kind: "internal"
+    bgp_peers:
+      - { description: "eBGP to ISP-A", peer_ip: "192.168.10.1", remote_as: 65530, type: "ebgp" }
+      - { description: "iBGP to core-01 (FD-A)", peer_ip: "10.18.1.1", remote_as: 65100, type: "ibgp" }
+      - { description: "iBGP Cross-FD to core-03", peer_ip: "10.18.1.3", remote_as: 65100, type: "ibgp" }
+```
 
 ### Validation Reports
 
