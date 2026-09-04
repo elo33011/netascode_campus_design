@@ -103,9 +103,9 @@ This design is constructed from a set of data models which provides a structure 
 | Logical Topology | Define the abstract, software-defined architecture of the network—including routing domains (BGP AS), overlay networks (VXLAN EVPN), virtual network functions, and service paths—that operates independently of the underlying physical hardware, detailing how traffic is controlled, isolated, and forwarded |
 | Endpoint Service | Define the granular physical port configurations, Layer 2 loop protections, First-Hop Security (FHS) controls, 802.1X/MAB identity profiles, and edge QoS policies facing client devices, establishing a standardized, secure link-level baseline across all endpoint switchports |
 
-### Platform Specific Models
+### Device Baseline Models
 
-Platform Baseline Data Model is to define a standardized, vendor-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device, regardless of its specific role or placement within the network architecture. This model will be used in conjunction with a platform specific template to render the configuration output required by the platform.
+Device Baseline Data Model is to define a standardized, vendor-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device, regardless of its specific role or placement within the network architecture. This model will be used in conjunction with a platform specific template to render the configuration output required by the platform.
 
 Based on the platform of choices, the following models will be used by this design.
 
@@ -886,7 +886,7 @@ site_context:
 </details>
 
 <details>
-<summary>Vendor A Platform X Baseline </summary>
+<summary>Device Model - Edge Device</summary>
   
 ```yaml
 # ============================================================================
@@ -958,7 +958,7 @@ platform_wan_baseline:
 </details>
 
 <details>
-<summary>Vendor B Platform Y Baseline </summary>
+<summary>Device Model - Core Device</summary>
   
 ```yaml
 # ============================================================================
@@ -1049,7 +1049,7 @@ platform_core_agg_baseline:
 </details>
 
 <details>
-<summary>Vendor C Platform Z Baseline </summary>
+<summary>Device Model - Access Device</summary>
   
 ```yaml
 # ============================================================================
