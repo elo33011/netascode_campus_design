@@ -92,9 +92,12 @@ This section outlines the architectural framework and design principles for the 
 
 ## Data Models
 
-This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows.
+This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows. Design driven models manage the campus network design, while the device role model man
 
-### Design Specific Models
+Device role model define a standardized, platform-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device. This model will be used in conjunction with a platform specific jinja2 template to render the configuration output required by the platform acting as that role.
+
+
+### Design Driven Models
 
 | Data Model | Purpose |
 |---|---|
@@ -105,26 +108,15 @@ This design is constructed from a set of data models which provides a structure 
 
 ### Device Role Models
 
-Device role model define a standardized, platform-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device. This model will be used in conjunction with a platform specific jinja2 template to render the configuration output required by the platform acting as that role.
-
-This Campus network design will use the following device role models and jinja2 templates.
-
-| Data Model | Platform | Use Case |
-|---|---|---|
-| Edge Device Role | Vendor A xxx | Campus WAN routers |
-| Core Device Role | Vendor B xxx | Core & Aggregration switches |
-| Access Device Role | Vendor C xxx | Access switches |
+| Data Model | Platform |
+|---|---|
+| WAN Edge Role | Catalyst 8000 |
+| Core & Agg Role | Nexus 93240 |
+| Access Role | Catalyst 9000 |
 
 ## Deployment Details
 
-### A. Management Network Build
-
-Prerequisite:
-- 
-- 
-- Configure
-
-### B. Campus Network Build
+### A. Baseline Build
 
 Prerequisite:
 - Management Network has been up and running so that devices are reachable by Ansible runners
@@ -132,6 +124,8 @@ Prerequisite:
 
 Build workflow:
 Apply the baseline template for each device -> Validate device local configuration -> Apply physical topology template -> Run point-to-point connectivity validation between devices -> Apply logical topology template -> Run layer 3 connectivity validation, endpoint vlan validation
+
+
 
 | Task | Playbook Name | j2 Template Used | Data model Adopted |
 |---|---|---|---|
@@ -1036,7 +1030,7 @@ site_context:
 </details>
 
 <details>
-<summary>Device Model - Edge Device</summary>
+<summary>WAN Edge Role Device</summary>
   
 ```yaml
 platform_wan_baseline:
@@ -1104,7 +1098,7 @@ platform_wan_baseline:
 </details>
 
 <details>
-<summary>Device Model - Core Device</summary>
+<summary>Core & Aggregation Role Device</summary>
   
 ```yaml
 # ============================================================================
@@ -1189,7 +1183,7 @@ platform_core_agg_baseline:
 </details>
 
 <details>
-<summary>Device Model - Access Device</summary>
+<summary>Access Role Device</summary>
   
 ```yaml
 # ============================================================================
