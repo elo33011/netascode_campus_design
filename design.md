@@ -1994,6 +1994,7 @@ end
 ```
 </details>
 
+<details>
 <summary>Jinja2 template - Logical Topology Deployment</summary>
 
 ```jinja2
@@ -2001,6 +2002,7 @@ end
 ```
 </details>
 
+<details>
 <summary>Jinja2 template - Service Deployment</summary>
 
 ```jinja2
