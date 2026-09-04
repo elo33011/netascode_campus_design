@@ -1558,62 +1558,148 @@ end
 <summary>abc-hq-wan-01.cfg</summary>
   
 ```code
-# ============================================================================
-# Device instance data for abc-hq-wan-01, shaped for wan_router_cat8000_iosxe.j2
-# ============================================================================
-# Provenance of each value, since this fills a gap logical_topology.yaml
-# doesn't currently cover (wan_routers has no `interfaces` list, unlike
-# core_routers/aggregation_switches/access_vteps):
-#
-#   global, loopbacks, bgp_peers  -> taken directly from logical_topology.yaml
-#   interfaces[].interface        -> taken directly from physical_topology.yaml
-#   interfaces[].ip_address for the two core-facing links -> RECONSTRUCTED,
-#     not given directly. logical_topology.yaml never states wan-01's own IP
-#     on those /31s, but cor-01 and cor-03 each record it as the *peer_ip* in
-#     their own bgp_peers list:
-#       cor-01 bgp_peers: "iBGP Underlay to wan-01", peer_ip: 10.18.1.0
-#       cor-03 bgp_peers: "iBGP Underlay to wan-01", peer_ip: 10.18.1.2
-#     Cross-referenced against physical_topology.yaml's local_port/remote_port
-#     pairing to attach each address to the right interface.
-#   interfaces[].ip_address for the ISP circuit and the wan-01<->wan-02 link
-#     -> left null. Neither logical_topology.yaml nor physical_topology.yaml
-#     records an address for either link (the ISP would assign the WAN
-#     circuit address; the horizontal wan-01<->wan-02 link has no routing
-#     data at all in the logical model). Not fabricated here.
-#
-# Recommend adding an explicit `interfaces` list to wan_routers in
-# logical_topology.yaml directly, matching core_routers' shape, so this
-# reconstruction step isn't needed for every WAN router at every site.
-# ============================================================================
-device:
-  name: "abc-hq-wan-01"
-  routing:
-    global:
-      bgp_asn: 65100
-      router_id: "10.0.0.1"
-    loopbacks:
-      - { interface: "Loopback0", ip_address: "10.0.0.1/32", type: "management" }
-    interfaces:
-      - interface: "TenGigabitEthernet0/0/0"
-        description: "Service Provider A 10Gbps Ethernet Line"
-        ip_address: null   # ISP-assigned; not present in either data model
-        kind: "external"
-      - interface: "HundredGigE0/1/0"
-        description: "Horizontal WAN Interconnect to abc-hq-wan-02"
-        ip_address: null   # no L3/addressing data recorded for this link in logical_topology.yaml
-        kind: "internal"
-      - interface: "HundredGigE0/2/0"
-        description: "to cor-01"
-        ip_address: "10.18.1.0/31"   # reconstructed -- see header note
-        kind: "internal"
-      - interface: "HundredGigE0/2/1"
-        description: "to cor-03 (Cross-FD)"
-        ip_address: "10.18.1.2/31"   # reconstructed -- see header note
-        kind: "internal"
-    bgp_peers:
-      - { description: "eBGP to ISP-A", peer_ip: "192.168.10.1", remote_as: 65530, type: "ebgp" }
-      - { description: "iBGP to core-01 (FD-A)", peer_ip: "10.18.1.1", remote_as: 65100, type: "ibgp" }
-      - { description: "iBGP Cross-FD to core-03", peer_ip: "10.18.1.3", remote_as: 65100, type: "ibgp" }
+!
+hostname abc-hq-wan-01
+!
+banner login ^C
+Authorized Use Only. System activity is logged.
+^C
+!
+ip domain name campus.example.net
+ip domain lookup source-interface Loopback0
+!
+ip ssh version 2
+!
+line con 0
+ exec-timeout 10 0
+ login local
+!
+line vty 0 15
+ exec-timeout 15 0
+ transport input ssh
+ login local
+!
+aaa local authentication attempts max-fail 3
+!
+no ip http server
+no ip http secure-server
+!
+! NOTE: no NTP servers defined in platform_wan_baseline.management_plane.ntp.servers -- add before deploying
+!
+! NOTE: no syslog servers defined -- add before deploying
+!
+! SNMP disabled per platform_wan_baseline.management_plane.snmp.enabled
+!
+! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
+!
+no ip source-route
+ip icmp rate-limit unreachable 100
+!
+!
+interface Loopback0
+ description MANAGEMENT loopback
+ ip address 10.0.0.1 255.255.255.255
+!
+interface TenGigabitEthernet0/0/0
+ description Service Provider A 10Gbps Ethernet Line
+ ip access-group fw-in-wan-interface-acl in
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no ip mask-reply
+
+ no shutdown
+!
+interface HundredGigE0/1/0
+ description Horizontal WAN Interconnect to abc-hq-wan-02
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no ip mask-reply
+
+ no shutdown
+!
+interface HundredGigE0/2/0
+ description to cor-01
+ ip address 10.18.1.0 255.255.255.254
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no ip mask-reply
+
+ no shutdown
+!
+interface HundredGigE0/2/1
+ description to cor-03 (Cross-FD)
+ ip address 10.18.1.2 255.255.255.254
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no ip mask-reply
+
+ no shutdown
+!
+ip access-list extended fw-in-wan-interface-acl
+ remark TODO: define real permit/deny entries for the WAN-facing ACL -- not present in the data model
+ remark Placeholder only -- do not deploy as-is
+ deny   ip any any log
+!
+class-map match-any COPP-ROUTING_UPDATES
+ remark TODO: add real match statements (ACL/protocol) for routing_updates
+!
+class-map match-any COPP-MANAGEMENT_ACCESS
+ remark TODO: add real match statements (ACL/protocol) for management_access
+!
+class-map match-any COPP-TRANSIT_TRAFFIC
+ remark TODO: add real match statements (ACL/protocol) for transit_traffic
+!
+policy-map CONTROL-PLANE-POLICY
+ class COPP-ROUTING_UPDATES
+  police 32000 conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "medium" -- rate above is a starting-point placeholder, tune per site
+ class COPP-MANAGEMENT_ACCESS
+  police 8000 conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "low" -- rate above is a starting-point placeholder, tune per site
+ class COPP-TRANSIT_TRAFFIC
+  police 128000 conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "high" -- rate above is a starting-point placeholder, tune per site
+!
+control-plane
+ service-policy input CONTROL-PLANE-POLICY
+!
+! NOTE: secure_boot_verification -- Secure Boot on Catalyst 8000 is a
+! hardware-anchored (SUDI-based) feature verified automatically at boot;
+! there is no standard IOS-XE enable/disable command for it, so no CLI is
+! emitted here. Confirm via 'show platform sudi certificate' post-deploy.
+! NOTE: hardware_crypto_acceleration -- hardware crypto engine use on
+! Catalyst 8000 is governed by the installed throughput/security license
+! and platform hardware, not a single confirmed IOS-XE CLI toggle. Verify
+! via 'show platform hardware qfp active feature crypto' post-deploy
+! rather than assuming a command exists here.
+!
+router bgp 65100
+ bgp router-id 10.0.0.1
+ bgp log-neighbor-changes
+ neighbor 192.168.10.1 remote-as 65530
+ neighbor 192.168.10.1 description eBGP to ISP-A
+ neighbor 192.168.10.1 password !! VAULT-REFERENCE-REQUIRED !!
+ neighbor 192.168.10.1 ttl-security hops 2
+ neighbor 10.18.1.1 remote-as 65100
+ neighbor 10.18.1.1 description iBGP to core-01 (FD-A)
+ neighbor 10.18.1.1 password !! VAULT-REFERENCE-REQUIRED !!
+ neighbor 10.18.1.3 remote-as 65100
+ neighbor 10.18.1.3 description iBGP Cross-FD to core-03
+ neighbor 10.18.1.3 password !! VAULT-REFERENCE-REQUIRED !!
+!
+! WARNING: platform_wan_baseline.interface_baseline.wan_interfaces.
+! passive_routing_interface is TRUE. BGP has no native "passive interface"
+! concept the way IGPs do -- no corresponding command has been emitted here.
+! If this flag was meant to suppress the eBGP/iBGP adjacencies above, doing
+! so would prevent this router from ever peering. This still needs your
+! confirmation (flagged since the WAN role file was first reviewed) before
+! this template's BGP section can be considered final.
+!
+end
 ```
 
 ### Validation Reports
