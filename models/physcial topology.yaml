@@ -1,0 +1,287 @@
+site_physical_topology:
+  site_code: "abc-hq"
+  site_name: "Company ABC Main Campus"
+  building: "Main Building (10 Floors)"
+
+  # ============================================================================
+  # 1. FAILURE DOMAIN & RACK INFRASTRUCTURE DEFINITIONS
+  # ============================================================================
+  failure_domains:
+    - domain_id: "FD-A"
+      description: "Primary Redundancy Plane (Red Domain)"
+      rack_group: "Suite-A / Left-IDF"
+      racks:
+        - rack_id: "RACK-A01"
+          location: "Main Equipment Room - Row A, Rack 1"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-wan-01"
+              u_position_start: 40
+              u_height: 2
+            - name: "abc-hq-cor-01"
+              u_position_start: 36
+              u_height: 2
+            - name: "abc-hq-cor-02"
+              u_position_start: 34
+              u_height: 2
+            - name: "abc-hq-agg-01"
+              u_position_start: 30
+              u_height: 2
+        - rack_id: "RACK-A02"
+          location: "Main Equipment Room - Row A, Rack 2"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-agg-02"
+              u_position_start: 30
+              u_height: 2
+
+    - domain_id: "FD-B"
+      description: "Secondary Redundancy Plane (Blue Domain)"
+      rack_group: "Suite-B / Right-IDF"
+      racks:
+        - rack_id: "RACK-B01"
+          location: "Main Equipment Room - Row B, Rack 1"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-wan-02"
+              u_position_start: 40
+              u_height: 2
+            - name: "abc-hq-cor-03"
+              u_position_start: 36
+              u_height: 2
+            - name: "abc-hq-cor-04"
+              u_position_start: 34
+              u_height: 2
+            - name: "abc-hq-agg-03"
+              u_position_start: 30
+              u_height: 2
+        - rack_id: "RACK-B02"
+          location: "Main Equipment Room - Row B, Rack 2"
+          u_space_total: 42
+          mounted_devices:
+            - name: "abc-hq-agg-04"
+              u_position_start: 30
+              u_height: 2
+
+  # ============================================================================
+  # 2. GLOBAL LINK SPEED STANDARDS
+  # ============================================================================
+  link_standards:
+    wan_circuit:
+      speed: "10Gbps"
+      media: "10GBASE-SR_Fiber"
+    inter_device: # Same-layer horizontal links (WAN-to-WAN, Core-to-Core, Agg-to-Agg)
+      speed: "100Gbps"
+      media: "100GBASE-SR4_Fiber"
+    core_to_agg:
+      speed: "100Gbps"
+      media: "100GBASE-SR4_Fiber"
+    agg_to_access:
+      speed: "10Gbps"
+      media: "10GBASE-SR_Fiber"
+
+  # ============================================================================
+  # 3. DEVICE INVENTORY & PHYSICAL INTERCONNECTS
+  # ============================================================================
+
+  # --- WAN LAYER ---
+  wan_routers:
+    - name: "abc-hq-wan-01"
+      failure_domain: "FD-A"
+      rack_location: "RACK-A01"
+      external_links:
+        - interface: "TenGigabitEthernet0/0/0"
+          type: "wan_circuit"
+          description: "Service Provider A 10Gbps Ethernet Line"
+      internal_links:
+        - local_port: "HundredGigE0/1/0"
+          remote_device: "abc-hq-wan-02"       # Horizontal WAN Interconnect (FD-A to FD-B)
+          remote_port: "HundredGigE0/1/0"
+          type: "inter_device"
+        - local_port: "HundredGigE0/2/0"
+          remote_device: "abc-hq-cor-01"       # FD-A WAN to FD-A Core
+          remote_port: "HundredGigE0/0/1"
+          type: "inter_device"
+        - local_port: "HundredGigE0/2/1"
+          remote_device: "abc-hq-cor-03"       # Cross-FD: FD-A WAN to FD-B Core
+          remote_port: "HundredGigE0/0/1"
+          type: "inter_device"
+
+    - name: "abc-hq-wan-02"
+      failure_domain: "FD-B"
+      rack_location: "RACK-B01"
+      external_links:
+        - interface: "TenGigabitEthernet0/0/0"
+          type: "wan_circuit"
+          description: "Service Provider B 10Gbps Ethernet Line"
+      internal_links:
+        - local_port: "HundredGigE0/1/0"
+          remote_device: "abc-hq-wan-01"       # Horizontal WAN Interconnect (FD-B to FD-A)
+          remote_port: "HundredGigE0/1/0"
+          type: "inter_device"
+        - local_port: "HundredGigE0/2/0"
+          remote_device: "abc-hq-cor-04"       # FD-B WAN to FD-B Core
+          remote_port: "HundredGigE0/0/1"
+          type: "inter_device"
+        - local_port: "HundredGigE0/2/1"
+          remote_device: "abc-hq-cor-02"       # Cross-FD: FD-B WAN to FD-A Core
+          remote_port: "HundredGigE0/0/1"
+          type: "inter_device"
+
+  # --- CORE LAYER ---
+  core_routers:
+    # Failure Domain A Core Pair
+    - name: "abc-hq-cor-01"
+      failure_domain: "FD-A"
+      rack_location: "RACK-A01"
+      links:
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-01"       # Core-to-WAN Uplink
+          remote_port: "HundredGigE0/2/0"
+          type: "inter_device"
+        - local_port: "HundredGigE0/0/2"
+          remote_device: "abc-hq-cor-02"       # Core-to-Core (Intra-FD)
+          remote_port: "HundredGigE0/0/2"
+          type: "inter_device"
+        - local_port: "HundredGigE1/0/1"
+          remote_device: "abc-hq-agg-01"       # Core-to-Agg
+          remote_port: "HundredGigE0/1"
+          type: "core_to_agg"
+        - local_port: "HundredGigE1/0/2"
+          remote_device: "abc-hq-agg-02"       # Core-to-Agg
+          remote_port: "HundredGigE0/1"
+          type: "core_to_agg"
+
+    - name: "abc-hq-cor-02"
+      failure_domain: "FD-A"
+      rack_location: "RACK-A01"
+      links:
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-02"       # Core-to-WAN Uplink (Cross-FD)
+          remote_port: "HundredGigE0/2/1"
+          type: "inter_device"
+        - local_port: "HundredGigE0/0/2"
+          remote_device: "abc-hq-cor-01"       # Core-to-Core (Intra-FD)
+          remote_port: "HundredGigE0/0/2"
+          type: "inter_device"
+        - local_port: "HundredGigE1/0/1"
+          remote_device: "abc-hq-agg-01"       # Core-to-Agg
+          remote_port: "HundredGigE0/2"
+          type: "core_to_agg"
+        - local_port: "HundredGigE1/0/2"
+          remote_device: "abc-hq-agg-02"       # Core-to-Agg
+          remote_port: "HundredGigE0/2"
+          type: "core_to_agg"
+
+    # Failure Domain B Core Pair
+    - name: "abc-hq-cor-03"
+      failure_domain: "FD-B"
+      rack_location: "RACK-B01"
+      links:
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-01"       # Core-to-WAN Uplink (Cross-FD)
+          remote_port: "HundredGigE0/2/1"
+          type: "inter_device"
+        - local_port: "HundredGigE0/0/2"
+          remote_device: "abc-hq-cor-04"       # Core-to-Core (Intra-FD)
+          remote_port: "HundredGigE0/0/2"
+          type: "inter_device"
+        - local_port: "HundredGigE1/0/1"
+          remote_device: "abc-hq-agg-03"       # Core-to-Agg
+          remote_port: "HundredGigE0/1"
+          type: "core_to_agg"
+        - local_port: "HundredGigE1/0/2"
+          remote_device: "abc-hq-agg-04"       # Core-to-Agg
+          remote_port: "HundredGigE0/1"
+          type: "core_to_agg"
+
+    - name: "abc-hq-cor-04"
+      failure_domain: "FD-B"
+      rack_location: "RACK-B01"
+      links:
+        - local_port: "HundredGigE0/0/1"
+          remote_device: "abc-hq-wan-02"       # Core-to-WAN Uplink
+          remote_port: "HundredGigE0/2/0"
+          type: "inter_device"
+        - local_port: "HundredGigE0/0/2"
+          remote_device: "abc-hq-cor-03"       # Core-to-Core (Intra-FD)
+          remote_port: "HundredGigE0/0/2"
+          type: "inter_device"
+        - local_port: "HundredGigE1/0/1"
+          remote_device: "abc-hq-agg-03"       # Core-to-Agg
+          remote_port: "HundredGigE0/2"
+          type: "core_to_agg"
+        - local_port: "HundredGigE1/0/2"
+          remote_device: "abc-hq-agg-04"       # Core-to-Agg
+          remote_port: "HundredGigE0/2"
+          type: "core_to_agg"
+
+  # --- AGGREGATION LAYER ---
+  aggregation_switches:
+    - name: "abc-hq-agg-01"
+      failure_domain: "FD-A"
+      rack_location: "RACK-A01"
+      links:
+        - local_port: "HundredGigE0/48"
+          remote_device: "abc-hq-agg-02"       # Agg-to-Agg (Same FD)
+          remote_port: "HundredGigE0/48"
+          type: "inter_device"
+
+    - name: "abc-hq-agg-02"
+      failure_domain: "FD-A"
+      rack_location: "RACK-A02"
+      links:
+        - local_port: "HundredGigE0/48"
+          remote_device: "abc-hq-agg-01"       # Agg-to-Agg (Same FD)
+          remote_port: "HundredGigE0/48"
+          type: "inter_device"
+
+    - name: "abc-hq-agg-03"
+      failure_domain: "FD-B"
+      rack_location: "RACK-B01"
+      links:
+        - local_port: "HundredGigE0/48"
+          remote_device: "abc-hq-agg-04"       # Agg-to-Agg (Same FD)
+          remote_port: "HundredGigE0/48"
+          type: "inter_device"
+
+    - name: "abc-hq-agg-04"
+      failure_domain: "FD-B"
+      rack_location: "RACK-B02"
+      links:
+        - local_port: "HundredGigE0/48"
+          remote_device: "abc-hq-agg-03"       # Agg-to-Agg (Same FD)
+          remote_port: "HundredGigE0/48"
+          type: "inter_device"
+
+  # --- ACCESS LAYER GENERATOR (Floors 1-10) ---
+  floors:
+    - floor_number: 1
+      access_switches:
+        - name: "abc-hq-f01-acc-01"
+          failure_domain: "FD-A"
+          rack_location: "Floor-01 IDF-A Rack 1"
+          uplinks:
+            - local_port: "TenGigabitEthernet1/1/1"
+              remote_device: "abc-hq-agg-01"
+              remote_port: "TenGigabitEthernet1/0/1"
+              type: "agg_to_access"
+            - local_port: "TenGigabitEthernet1/1/2"
+              remote_device: "abc-hq-agg-02"
+              remote_port: "TenGigabitEthernet1/0/1"
+              type: "agg_to_access"
+
+        - name: "abc-hq-f01-acc-02"
+          failure_domain: "FD-B"
+          rack_location: "Floor-01 IDF-B Rack 1"
+          uplinks:
+            - local_port: "TenGigabitEthernet1/1/1"
+              remote_device: "abc-hq-agg-03"
+              remote_port: "TenGigabitEthernet1/0/1"
+              type: "agg_to_access"
+            - local_port: "TenGigabitEthernet1/1/2"
+              remote_device: "abc-hq-agg-04"
+              remote_port: "TenGigabitEthernet1/0/1"
+              type: "agg_to_access"
+
+    # [ Floors 2 to 10 follow the identical pattern for acc-01 and acc-02 ]
