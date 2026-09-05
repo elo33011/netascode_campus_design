@@ -15,18 +15,18 @@ platform_core_agg_baseline:
       enable: false
       secure_only: true
     ntp:
-      servers: []
-      source_interface: null
+      servers: ["10.254.1.10", "10.254.1.11"]   # DEMO value -- reuses the same OOB time source as platform_wan_baseline.yaml; no separate value was ever supplied for this platform
+      source_interface: "Loopback0"
     syslog:
       servers: []
       source_interface: null
       severity_level: null
     snmp:
-      enabled: false
-      contact: null
-      location: null
-      community_strings: []
-      trap_destinations: []
+      enabled: true
+      contact: "netops@campus.example.net"       # DEMO value -- reuses platform_wan_baseline.yaml's value; no separate value was ever supplied for this platform
+      location: "abc-hq"                         # DEMO value
+      community_strings: ["CAMPUS-MONITORING-RO"] # DEMO value -- placeholder name, not "public"; replace with a real, generated string before deploying
+      trap_destinations: ["10.254.1.20"]          # DEMO value -- example NMS host on the OOB mgmt range
     tacacs:
       servers: []
       source_interface: null
