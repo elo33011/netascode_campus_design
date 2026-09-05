@@ -115,15 +115,20 @@ A role is the function of the device performed in the design. Device role models
 | [Core & Agg Role](models/core%20agg%20role.yaml) | [Nexus 93240](templates/nexus%2093240.j2) | [core-agg-role.schema.json](schemas/core-agg-role.schema.json) |
 | [Access Role](models/access%20role.yaml) | [Catalyst 9000](templates/catalyst%2090000.j2) | [access-role.schema.json](schemas/access-role.schema.json) |
 
+## Design Validation
+
+The design has gone through data modeling, templating, rendering and deployment stages. It is important to ensure the outcome configuration matchs with the data model. A validation is added to pick up issues during templating, rendering or even deployment. This is done using the [validation playbook](ansible_resources/playbooks/00_validate_render.yml). 
+
+The script will produce the [validation report](validation_report.md)
 ## Design Deployment (a.k.a Low Level Design)
 
 Prerequisite:
 - Management Network has been up and running so that devices are reachable by Ansible runners
 - Devices are physically racked and patched according to the patching scheme
 
-### Step 1. Populate the schema in the network source of truth platform
+### Step 1. Populate the schema in the network source of truth platform (Already done)
 
-### Step 2. Ingest value into the schema to generate data models
+### Step 2. Ingest value into the schema to generate data models (Already done)
 
 ### Step 3. Setup management connectivity to device
 
@@ -137,6 +142,3 @@ Prerequisite:
 
 ### Step 6. Execute service deployment playbook using the script [Set endpoint port.py](scripts/set_endpoint_port.py) to apply interface configurations.
 
-## Validation
-
-## References
