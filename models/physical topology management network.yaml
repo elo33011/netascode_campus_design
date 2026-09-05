@@ -1,0 +1,178 @@
+management_context:
+  site_code: "abc-hq"
+  site_name: "Company ABC Main Campus OOB"
+
+  # ----------------------------------------------------------------------
+  # 1. FAILURE DOMAIN & RACK INFRASTRUCTURE DEFINITIONS (MER-level gear only;
+  #    floor-level OOB nodes are declared under management_tier.floors below,
+  #    same split used in physical_topology.yaml)
+  # ----------------------------------------------------------------------
+  failure_domains:
+    - domain_id: "FD-MGT-A"
+      description: "Out-of-Band Management Plane for Production FD-A"
+      rack_group: "Suite-A / Left-IDF (co-located with production FD-A racks)"
+      racks:
+        - rack_id: "RACK-MGT-A01"
+          location: "Main Equipment Room - Row A, Rack 3"
+          u_space_total: 42
+          mounted_devices:
+            - { name: "abc-hq-mgt-wan-01", u_position_start: 40, u_height: 1 }
+            - { name: "abc-hq-mgt-cor-01", u_position_start: 38, u_height: 1 }
+            - { name: "abc-hq-mgt-ts-main-01", u_position_start: 36, u_height: 1 }
+            - { name: "abc-hq-mgt-acc-main-01", u_position_start: 34, u_height: 1 }
+
+    - domain_id: "FD-MGT-B"
+      description: "Out-of-Band Management Plane for Production FD-B"
+      rack_group: "Suite-B / Right-IDF (co-located with production FD-B racks)"
+      racks:
+        - rack_id: "RACK-MGT-B01"
+          location: "Main Equipment Room - Row B, Rack 3"
+          u_space_total: 42
+          mounted_devices:
+            - { name: "abc-hq-mgt-wan-02", u_position_start: 40, u_height: 1 }
+            - { name: "abc-hq-mgt-cor-02", u_position_start: 38, u_height: 1 }
+            - { name: "abc-hq-mgt-ts-main-02", u_position_start: 36, u_height: 1 }
+            - { name: "abc-hq-mgt-acc-main-02", u_position_start: 34, u_height: 1 }
+
+  # ----------------------------------------------------------------------
+  # 2. MANAGEMENT LINK SPEED STANDARDS
+  # ----------------------------------------------------------------------
+  link_standards:
+    mgt_wan_circuit: { speed: "1Gbps", media: "1000BASE-T_Copper", description: "Dedicated management WAN connection (console/SSH access)" }
+    mgt_backbone: { speed: "10Gbps", media: "10GBASE-SR_Fiber", description: "Connections between Management Core/Access nodes" }
+    mgt_ethernet: { speed: "1Gbps", media: "1000BASE-T_Copper", description: "Production device Management GigE port to MGT Switch (SSH)" }
+    mgt_console: { speed: "115200bps", media: "Serial-RJ45", description: "Production device Console port to Terminal Server" }
+
+  # ----------------------------------------------------------------------
+  # 3. MANAGEMENT IPAM SCHEMA
+  # ----------------------------------------------------------------------
+  ipam_schema:
+    oob_wan_subnet_fd_a: "192.168.100.0/30"   # Dedicated WAN IP space, plane A
+    oob_wan_subnet_fd_b: "192.168.100.4/30"   # Dedicated WAN IP space, plane B
+    oob_management_loopbacks: "10.254.0.0/19" # Loopbacks for OOB switches, both planes
+    oob_console_servers: "10.254.32.0/24"     # Specific for TS/combo nodes, both planes
+
+  # ----------------------------------------------------------------------
+  # 4. MANAGEMENT INVENTORY (MER-level: WAN/Core/Access-to-production tier)
+  # ----------------------------------------------------------------------
+  management_tier:
+
+    mgt_wan_routers:
+      - name: "abc-hq-mgt-wan-01"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
+        external_links:
+          - { interface: "GigabitEthernet0/0/0", type: "mgt_wan_circuit", description: "Dedicated Management WAN line, Plane A" }
+        internal_links:
+          - { local_port: "TenGigabitEthernet0/1/0", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+
+      - name: "abc-hq-mgt-wan-02"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        external_links:
+          - { interface: "GigabitEthernet0/0/0", type: "mgt_wan_circuit", description: "Dedicated Management WAN line, Plane B" }
+        internal_links:
+          - { local_port: "TenGigabitEthernet0/1/0", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+
+    mgt_core_switches:
+      - name: "abc-hq-mgt-cor-01"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-wan-01", remote_port: "TenGigabitEthernet0/1/0", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/2", remote_device: "abc-hq-mgt-ts-main-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/3", remote_device: "abc-hq-mgt-acc-main-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/4", remote_device: "abc-hq-mgt-oob-f01-01", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" } # Floor 1, FD-A; TenGig1/5-1/12 -> floors 2-10, identical pattern
+
+      - name: "abc-hq-mgt-cor-02"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-wan-02", remote_port: "TenGigabitEthernet0/1/0", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/2", remote_device: "abc-hq-mgt-ts-main-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/3", remote_device: "abc-hq-mgt-acc-main-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" }
+          - { local_port: "TenGigabitEthernet1/4", remote_device: "abc-hq-mgt-oob-f01-02", remote_port: "TenGigabitEthernet1/1", type: "mgt_backbone" } # Floor 1, FD-B; TenGig1/5-1/12 -> floors 2-10, identical pattern
+
+    # --- MER-LEVEL ACCESS NODES: console + SSH for WAN/Core/Agg tiers ---
+    mgt_access_nodes:
+      - name: "abc-hq-mgt-ts-main-01"
+        type: "terminal_server"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/2", type: "mgt_backbone" }
+        async_console_mappings:
+          - { async_port: "Async1", description: "Console to wan-01", target_device: "abc-hq-wan-01" }
+          - { async_port: "Async2", description: "Console to cor-01", target_device: "abc-hq-cor-01" }
+          - { async_port: "Async3", description: "Console to cor-02", target_device: "abc-hq-cor-02" }
+          - { async_port: "Async4", description: "Console to agg-01", target_device: "abc-hq-agg-01" }
+          - { async_port: "Async5", description: "Console to agg-02", target_device: "abc-hq-agg-02" }
+
+      - name: "abc-hq-mgt-acc-main-01"
+        type: "mgt_switch"
+        failure_domain: "FD-MGT-A"
+        rack_location: "RACK-MGT-A01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/3", type: "mgt_backbone" }
+        mgt_ethernet_mappings:
+          - { mgt_port: "GigabitEthernet1/1", description: "SSH to wan-01 Management0", target_device: "abc-hq-wan-01" }
+          - { mgt_port: "GigabitEthernet1/2", description: "SSH to cor-01 mgmt0", target_device: "abc-hq-cor-01" }
+          - { mgt_port: "GigabitEthernet1/3", description: "SSH to cor-02 mgmt0", target_device: "abc-hq-cor-02" }
+          - { mgt_port: "GigabitEthernet1/4", description: "SSH to agg-01 mgmt0", target_device: "abc-hq-agg-01" }
+          - { mgt_port: "GigabitEthernet1/5", description: "SSH to agg-02 mgmt0", target_device: "abc-hq-agg-02" }
+
+      - name: "abc-hq-mgt-ts-main-02"
+        type: "terminal_server"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/2", type: "mgt_backbone" }
+        async_console_mappings:
+          - { async_port: "Async1", description: "Console to wan-02", target_device: "abc-hq-wan-02" }
+          - { async_port: "Async2", description: "Console to cor-03", target_device: "abc-hq-cor-03" }
+          - { async_port: "Async3", description: "Console to cor-04", target_device: "abc-hq-cor-04" }
+          - { async_port: "Async4", description: "Console to agg-03", target_device: "abc-hq-agg-03" }
+          - { async_port: "Async5", description: "Console to agg-04", target_device: "abc-hq-agg-04" }
+
+      - name: "abc-hq-mgt-acc-main-02"
+        type: "mgt_switch"
+        failure_domain: "FD-MGT-B"
+        rack_location: "RACK-MGT-B01"
+        links:
+          - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/3", type: "mgt_backbone" }
+        mgt_ethernet_mappings:
+          - { mgt_port: "GigabitEthernet1/1", description: "SSH to wan-02 Management0", target_device: "abc-hq-wan-02" }
+          - { mgt_port: "GigabitEthernet1/2", description: "SSH to cor-03 mgmt0", target_device: "abc-hq-cor-03" }
+          - { mgt_port: "GigabitEthernet1/3", description: "SSH to cor-04 mgmt0", target_device: "abc-hq-cor-04" }
+          - { mgt_port: "GigabitEthernet1/4", description: "SSH to agg-03 mgmt0", target_device: "abc-hq-agg-03" }
+          - { mgt_port: "GigabitEthernet1/5", description: "SSH to agg-04 mgmt0", target_device: "abc-hq-agg-04" }
+
+    # --- FLOOR-LEVEL OOB NODES: one combo console+switch node per FD per
+    #     floor, racked alongside the access switch it manages (mirrors
+    #     physical_topology.yaml's floors: pattern). Only floor 1 shown;
+    #     floors 2-10 follow the identical pattern with cor uplink ports
+    #     TenGig1/5 through TenGig1/12.
+    floors:
+      - floor_number: 1
+        oob_nodes:
+          - name: "abc-hq-mgt-oob-f01-01"
+            type: "combo_console_switch"
+            failure_domain: "FD-MGT-A"
+            rack_location: "Floor-01 IDF-A Rack 1" # co-located with abc-hq-f01-acc-01
+            uplink:
+              - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-01", remote_port: "TenGigabitEthernet1/4", type: "mgt_backbone" }
+            async_console_mappings:
+              - { async_port: "Async1", description: "Console to f01-acc-01", target_device: "abc-hq-f01-acc-01" }
+            mgt_ethernet_mappings:
+              - { mgt_port: "GigabitEthernet1/1", description: "SSH to f01-acc-01 mgmt0", target_device: "abc-hq-f01-acc-01" }
+
+          - name: "abc-hq-mgt-oob-f01-02"
+            type: "combo_console_switch"
+            failure_domain: "FD-MGT-B"
+            rack_location: "Floor-01 IDF-B Rack 1" # co-located with abc-hq-f01-acc-02
+            uplink:
+              - { local_port: "TenGigabitEthernet1/1", remote_device: "abc-hq-mgt-cor-02", remote_port: "TenGigabitEthernet1/4", type: "mgt_backbone" }
+            async_console_mappings:
+              - { async_port: "Async1", description: "Console to f01-acc-02", target_device: "abc-hq-f01-acc-02" }
+            mgt_ethernet_mappings:
+              - { mgt_port: "GigabitEthernet1/1", description: "SSH to f01-acc-02 mgmt0", target_device: "abc-hq-f01-acc-02" }
