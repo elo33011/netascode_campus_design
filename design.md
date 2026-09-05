@@ -132,6 +132,8 @@ Prerequisite:
 
 ### Step 3. Setup management connectivity to device
 
+* Submit [patching record](Rack
+* Complete the management network connect
 ### Step 4. Make sure the templates and playbooks are loaded onto the Ansible runners
 
 ### Step 5. Execute the [Site build master playbook](ansible_resources/playbooks/site.yml) which will execute the corresponding playbooks in sequence:
