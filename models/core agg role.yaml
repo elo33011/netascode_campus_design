@@ -1,0 +1,78 @@
+# ============================================================================
+# PLATFORM BASELINE DATA MODEL: CORE & AGGREGATION SWITCHES (Vendor-Agnostic)
+# ============================================================================
+platform_core_agg_baseline:
+  management_plane:
+    banner_login: "Authorized Use Only. System activity is logged."
+    ssh_version: "2"
+    console_timeout_minutes: 10
+    vty_timeout_minutes: 15
+    login_retries: 3
+    dns:
+      domain_name: "campus.example.net"
+      source_interface: "Loopback0"
+    http_services:
+      enable: false
+      secure_only: true
+    ntp:
+      servers: []
+      source_interface: null
+    syslog:
+      servers: []
+      source_interface: null
+      severity_level: null
+    snmp:
+      enabled: false
+      contact: null
+      location: null
+      community_strings: []
+      trap_destinations: []
+    tacacs:
+      servers: []
+      source_interface: null
+      encryption_key: null
+  infrastructure_protection:
+    icmp_standards:
+      unreachable_rate_limit: 100
+      accept_redirects: false
+      mask_requests: false
+    disabled_ip_services:
+      - "ip_source_routing"
+      - "proxy_arp"
+    ipv6_hardening:
+      ra_suppress: true
+  high_availability_and_transit:
+    bidirectional_forwarding_detection:
+      enable: true
+      default_interval_ms: 50
+      multiplier: 3
+    first_hop_redundancy_protocols:
+      preempt: true
+      advertisement_interval_seconds: 1
+    discovery_protocols:
+      cdp_enabled: true
+      lldp_enabled: true
+  routing_baseline:
+    bgp_security:
+      md5_authentication: true
+      ttl_security_hops: 1
+    control_plane_policing:
+      enable: true
+      protocols:
+        routing_updates: "medium"
+        management_access: "low"
+        transit_traffic: "high"
+  hardware_integrity:
+    secure_boot_verification: true
+    environmental_monitoring: true
+  interface_baseline:
+    fabric_and_transit_links:
+      mtu: 9192
+      link_aggregation:
+        protocol: "lacp"
+        mode: "active"
+    unused_ports:
+      mode: "routed"
+      shutdown: true
+    qos_baseline:
+      trust_state: "dscp"
