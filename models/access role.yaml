@@ -1,0 +1,83 @@
+# ============================================================================
+# PLATFORM BASELINE DATA MODEL: ACCESS SWITCH (Vendor-Agnostic)
+# ============================================================================
+platform_access_baseline:
+  management_plane:
+    banner_login: "Authorized Use Only. System activity is logged."
+    ssh_version: "2"
+    console_timeout_minutes: 10
+    vty_timeout_minutes: 15
+    login_retries: 3
+    dns:
+      domain_name: "campus.example.net"
+      source_interface: "Loopback0"
+    http_services:
+      enable: false
+      secure_only: true
+    ntp:
+      servers: []
+      source_interface: null
+    syslog:
+      servers: []
+      source_interface: null
+      severity_level: null
+    snmp:
+      enabled: false
+      contact: null
+      location: null
+      community_strings: []
+      trap_destinations: []
+    tacacs:
+      servers: []
+      source_interface: null
+      encryption_key: null
+  infrastructure_protection:
+    icmp_standards:
+      unreachable_rate_limit: 100
+      accept_redirects: false
+      mask_requests: false
+    disabled_ip_services:
+      - "ip_source_routing"
+      - "proxy_arp"
+    ipv6_hardening:
+      ra_suppress: true
+  endpoint_access_security:
+    dot1x_authentication:
+      enable: true
+      host_mode: "multi-domain"
+      fallback_mechanism:
+        enabled: true
+        restricted_vlan: 998
+        reinitialize_timer_seconds: 300
+    port_security:
+      enable: true
+      max_mac_addresses_per_port: 2
+      violation_action: "protect"
+    dhcp_snooping:
+      enable: true
+      trust_uplinks_to_transit: true
+    dynamic_arp_inspection:
+      enable: true
+    storm_control:
+      broadcast_pps: 500
+      multicast_pps: 500
+      action: "trap_and_log"
+  routing_baseline:
+    control_plane_policing:
+      enable: true
+      protocols:
+        routing_updates: "medium"
+        management_access: "low"
+        transit_traffic: "high"
+  hardware_integrity:
+    secure_boot_verification: true
+    environmental_monitoring: true
+  interface_baseline:
+    unused_edge_ports:
+      mode: "access"
+      default_vlan: 999
+      shutdown: true
+    underlay_uplinks:
+      link_aggregation:
+        protocol: "lacp"
+        mode: "active"
