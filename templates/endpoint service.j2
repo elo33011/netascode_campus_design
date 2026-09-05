@@ -83,9 +83,9 @@
    ============================================================================ #}
 {% set eas = platform_access_baseline.endpoint_access_security %}
 {% set target_interfaces = target_interfaces | default([]) %}
-{% set all_ports = endpoint_service | endpoint_port_configs %}
+{% set all_ports = endpoint_service | endpoint_port_configs(device_name) %}
 {% set ports = all_ports | selectattr('interface', 'in', target_interfaces) | list if target_interfaces else all_ports %}
-{% set vlan_list = endpoint_service | endpoint_vlan_list %}
+{% set vlan_list = endpoint_service | endpoint_vlan_list(device_name) %}
 !
 {# -------------------------- Switch-wide VLAN-dependent commands --------------------------
    platform_access_baseline's own template (catalyst 9000.j2) enables these
