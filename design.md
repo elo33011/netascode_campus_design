@@ -131,12 +131,12 @@ Prerequisite:
 
 ### Step 5. Execute the (site.yaml) Ansible playbook which will execute the corresponding playbooks in sequence:
 
-* 01_baseline_build.yaml
+* [Baseline build](ansible_resource/playbooks/01_baseline_build.yaml)
 * 02_physical_topology.yaml
 * 03_logical_topology.yaml
 * 00_validate_render.yaml
 
-### Step 6. Execute service deployment playbook using [Set endpoint port](scripts/set_endpoint_port.py) to apply interface configurations.
+### Step 6. Execute service deployment playbook using the script [Set endpoint port.py](scripts/set_endpoint_port.py) to apply interface configurations.
 
 ## Validation
 
