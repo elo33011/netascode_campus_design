@@ -136,7 +136,7 @@ Prerequisite:
 * 03_logical_topology.yaml
 * 00_validate_render.yaml
 
-### Step 6. Execute service deployment playbook (bau_endpoint_provisioning.yaml) to apply interface configurations.
+### Step 6. Execute service deployment playbook using [Set endpoint port](scripts/set_endpoint_port.py) to apply interface configurations.
 
 ## Validation
 
