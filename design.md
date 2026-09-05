@@ -129,7 +129,7 @@ Prerequisite:
 
 ### Step 4. Make sure the templates and playbooks are loaded onto the Ansible runners
 
-### Step 5. Execute the [Site build master playbook](ansible_resources/playbooks/site.yaml) Ansible playbook which will execute the corresponding playbooks in sequence:
+### Step 5. Execute the [Site build master playbook](ansible_resources/playbooks/site.yaml) which will execute the corresponding playbooks in sequence:
 
 * [Baseline build](ansible_resources/playbooks/01_baseline_build.yaml)
 * [Physical topology build](ansible_resources/playbooks/02_physical_topology.yaml)
