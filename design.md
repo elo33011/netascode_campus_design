@@ -129,18 +129,14 @@ Step 3. Setup management connectivity to device
 
 Step 4. Make sure the templates and playbooks are loaded onto the Ansible runners
 
-Step 5. Execute Ansible playbook on below sequence
+Step 5. Execute Ansible playbook on below sequence:
 
 * 01_baseline_build.yaml
-* 02_physical_topology
-* 03_logical_topology
+* 02_physical_topology.yaml
+* 03_logical_topology.yaml
+* 00_validate_render.yaml
 
-Step 6. 
-
-
-
-Build workflow:
-Apply the baseline template for each device -> Validate device local configuration -> Apply physical topology template -> Run point-to-point connectivity validation between devices -> Apply logical topology template -> Run layer 3 connectivity validation, endpoint vlan validation
+Step 6. Execute service deployment playbook (bau_endpoint_provisioning.yaml) to apply interface configurations.
 
 Execution: run `ansible-playbook playbooks/site.yml` from the repo root
 (add `-e deploy=false` first for a render-only dry run) -- it runs
