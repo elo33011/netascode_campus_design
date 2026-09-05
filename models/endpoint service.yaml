@@ -67,14 +67,20 @@ site_context:
         broadcast_level_percent: 1.0
         action: "shutdown"
 
+    # switch: null (or omitted) applies this override to every access
+    # switch; a hostname string (e.g. "abc-hq-f01-acc-01") scopes it to
+    # just that one switch -- how playbooks/bau_endpoint_provisioning.yml
+    # + scripts/set_endpoint_port.py record a real BAU switchport change.
     port_overrides:
       - interface: "GigabitEthernet1/0/1"
+        switch: null
         description: "Dedicated Security Camera Access"
         access_vlan: 20
         voice_vlan: null
         dot1x_enabled: false
         mab_enabled: true
       - interface: "GigabitEthernet1/0/48"
+        switch: null
         description: "WLC/Access Point Trunk Link"
         mode: "trunk"
         native_vlan: 40
