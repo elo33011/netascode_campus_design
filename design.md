@@ -3,15 +3,10 @@
 This is a sample network design to demonstrate how an automation native network design should look like. Automation native is a design approach which incorporates the elements required by network automation into design process. These elements are: Determinsitic Topology, Abstraction, Machine-Friendly interfaces & structured data, Unique source of truth, Declarative state and Streaming Telemetry.
 
 Key takeaways:
-- Data model first, every content is generated from data models written in yaml
-- In this example, data model has already included the values. In real world, this is further broken down to a JSON schema (data model without value). Use Netbox to marry the schema and value together becoming the data model we see here.
-- Generated contents includes diagram, racking and stacking plan, cable patching matrix, device baseline configurations and design specific configurations, automated test plan
-- Diagram -> Render from data model to svg format (xml)
-- Racking and cable patching matrix -> Render from physical data model to table (md)
-- Device baseline configuration -> Render from platform data model, Network source of truth, platform specific Jinj2 template, deploy using Ansible
-- Design specific configuration -> Render from physical topology data model, logical data model, deploy using Ansible
-- Access Switch endpoint facing interface configuration -> Render from the end-point service data model, deploy using Ansible
-- The deployment from the initial stage for SoT to end state of config deployed can be managed as workflow using workflow engine to join tie the task together. There will be 2 workflows: one for the build and another for the endpoint services provisioning/deprovisioning.
+- Data model first, design content is generated from vaarious data models in yaml.
+- Generated contents includes diagrams, cable patching matrix, design specific templates (And device template which is not part of this design), playbooks
+- Data model is constructed from various schema by merging the values obtained from source of truth (i.e Source of truth integration is not captured in this example) 
+- Design is validated by comparing the config output with the data model.
 
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
