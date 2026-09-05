@@ -1,0 +1,258 @@
+{# ============================================================================
+   Cisco Nexus 93240 (NX-OS) -- Core/Aggregation Role Baseline Configuration
+   ============================================================================
+   Stage 1: baseline-only, same scope as wan_router_cat8000_iosxe.j2. Renders
+   purely from platform_core_agg_baseline.yaml. No device/topology data
+   (hostname, interfaces, BGP neighbors, port-channel membership) is
+   expected or used here -- those come from physical_topology.yaml /
+   logical_topology.yaml at a later stage.
+
+   NX-OS vs IOS-XE differences that matter for this template:
+     - Most NX-OS functionality is off until enabled with `feature X` --
+       these ARE device-wide (not per-interface), so they're rendered now
+       even though the interfaces/protocols they support aren't configured
+       yet.
+     - Several IOS-style global knobs either don't exist on NX-OS or work
+       differently (no `ip source-route` toggle, no direct `ip icmp
+       rate-limit unreachable` equivalent -- NX-OS handles this class of
+       thing through CoPP instead). Rendered as "! NOTE" rather than
+       guessed at, same policy as the WAN template.
+     - CoPP on NX-OS is normally applied via a system profile
+       (`copp profile <strict|moderate|lenient|dense>`) layered with
+       optional custom classes, not built from scratch the way IOS-XE's
+       class-map/policy-map is. Both are rendered: a profile as the
+       practical baseline, plus the three named custom classes from the
+       data model for finer control.
+
+   Also unresolved from the original review of this data model, restated
+   here since it's about to become code: first_hop_redundancy_protocols
+   doesn't have anywhere to attach in this design -- the access-VTEP layer
+   already provides a distributed anycast gateway via EVPN, which is what
+   FHRP (HSRP/VRRP) exists to replace. No SVI/HSRP group is configured
+   anywhere in physical_topology.yaml or logical_topology.yaml for core/agg
+   devices (they're pure L3 underlay transit, per "LAYER 3 ROUTED ACCESS
+   VTEPS ONLY"), so this renders as a note, not commands.
+   ============================================================================ #}
+{% set mp = platform_core_agg_baseline.management_plane %}
+{% set ip_prot = platform_core_agg_baseline.infrastructure_protection %}
+{% set ha = platform_core_agg_baseline.high_availability_and_transit %}
+{% set rb = platform_core_agg_baseline.routing_baseline %}
+{% set hw = platform_core_agg_baseline.hardware_integrity %}
+{% set ib = platform_core_agg_baseline.interface_baseline %}
+!
+banner motd #
+{{ mp.banner_login }}
+#
+!
+{# -------------------------- DNS -------------------------- #}
+ip domain-name {{ mp.dns.domain_name }}
+{% if mp.dns.source_interface %}
+! NOTE: DNS source-interface pinning on NX-OS is release/platform-dependent
+! (not a single universally-documented "ip domain-lookup source-interface"
+! knob the way IOS-XE has one) -- verify the exact command for your NX-OS
+! version before relying on {{ mp.dns.source_interface }} here.
+{% endif %}
+!
+{# -------------------------- SSH / lines -------------------------- #}
+feature ssh
+! NOTE: NX-OS's SSH server only supports SSHv2 (no SSHv1 fallback exists
+! to disable), so there's no separate "ssh version {{ mp.ssh_version }}"
+! command to emit -- feature ssh above is the full equivalent.
+!
+line console
+ exec-timeout {{ mp.console_timeout_minutes }}
+!
+line vty
+ exec-timeout {{ mp.vty_timeout_minutes }}
+!
+{# login_retries -> NX-OS AAA lockout on repeated failures #}
+aaa authentication rejected {{ mp.login_retries }} in 180 ban 60
+! NOTE: the "180" (window, seconds) and "60" (ban duration, seconds) above
+! aren't in the data model -- only login_retries ({{ mp.login_retries }})
+! is. Placeholders; tune per site policy.
+!
+{# -------------------------- HTTP services -------------------------- #}
+{% if not mp.http_services.enable %}
+no feature http-server
+{% elif mp.http_services.secure_only %}
+feature http-server
+! NOTE: NX-OS's http-server feature serves both HTTP and HTTPS once
+! enabled -- there isn't a clean single-command "HTTPS only" equivalent to
+! IOS-XE's "ip http secure-server" (secure_only: true in the model).
+! Restrict HTTP access via a management ACL/VRF if plain HTTP must stay
+! fully off, rather than assuming a toggle exists here.
+{% else %}
+feature http-server
+{% endif %}
+!
+{# -------------------------- NTP -------------------------- #}
+{% for server in mp.ntp.servers %}
+ntp server {{ server }}
+{% endfor %}
+{% if mp.ntp.source_interface %}
+ntp source-interface {{ mp.ntp.source_interface }}
+{% endif %}
+{% if not mp.ntp.servers %}
+! NOTE: no NTP servers defined in platform_core_agg_baseline.management_plane.ntp.servers -- add before deploying
+{% endif %}
+!
+{# -------------------------- Syslog -------------------------- #}
+{% for server in mp.syslog.servers %}
+{% if mp.syslog.severity_level %}
+logging server {{ server }} {{ mp.syslog.severity_level }}
+{% else %}
+logging server {{ server }}
+{% endif %}
+{% endfor %}
+{% if mp.syslog.source_interface %}
+logging source-interface {{ mp.syslog.source_interface }}
+{% endif %}
+{% if not mp.syslog.servers %}
+! NOTE: no syslog servers defined -- add before deploying
+{% endif %}
+!
+{# -------------------------- SNMP -------------------------- #}
+{% if mp.snmp.enabled %}
+{% for community in mp.snmp.community_strings %}
+snmp-server community {{ community }} ro
+{% endfor %}
+{% if mp.snmp.contact %}
+snmp-server contact {{ mp.snmp.contact }}
+{% endif %}
+{% if mp.snmp.location %}
+snmp-server location {{ mp.snmp.location }}
+{% endif %}
+{% for host in mp.snmp.trap_destinations %}
+snmp-server host {{ host }} traps
+{% endfor %}
+{% else %}
+! SNMP disabled per platform_core_agg_baseline.management_plane.snmp.enabled
+{% endif %}
+!
+{# -------------------------- TACACS+ -------------------------- #}
+{% if mp.tacacs.servers %}
+feature tacacs+
+{% for server in mp.tacacs.servers %}
+tacacs-server host {{ server }} key {{ mp.tacacs.encryption_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+{% endfor %}
+{% if mp.tacacs.source_interface %}
+ip tacacs source-interface {{ mp.tacacs.source_interface }}
+{% endif %}
+aaa group server tacacs+ TACACS-GROUP
+{% for server in mp.tacacs.servers %}
+ server {{ server }}
+{% endfor %}
+aaa authentication login default group TACACS-GROUP
+{% else %}
+! NOTE: no TACACS+ servers defined -- falling back to local-only authentication
+{% endif %}
+!
+{# -------------------------- Infrastructure protection (device-wide) -------------------------- #}
+! NOTE: ip_source_routing (disabled_ip_services) has no corresponding global
+! toggle on NX-OS -- the "no ip source-route" command IOS-XE uses doesn't
+! exist here; NX-OS's forwarding architecture doesn't process source-routed
+! packets via a config knob to disable.
+! NOTE: icmp_standards.unreachable_rate_limit ({{ ip_prot.icmp_standards.unreachable_rate_limit }}ms)
+! has no direct "ip icmp rate-limit unreachable" equivalent on NX-OS either
+! -- this class of protection is normally handled through CoPP (see below)
+! rather than a standalone global command. Not rendered as a fabricated
+! command.
+! NOTE: accept_redirects, proxy_arp, and mask_requests are per-interface
+! settings (no ip redirects / no ip proxy-arp / no ip mask-reply-equivalent)
+! -- deferred to the interface-stage template, same as ipv6_hardening.ra_suppress.
+!
+{# -------------------------- High availability & transit (device-wide features) -------------------------- #}
+{% if ha.bidirectional_forwarding_detection.enable %}
+feature bfd
+bfd interval {{ ha.bidirectional_forwarding_detection.default_interval_ms }} min_rx {{ ha.bidirectional_forwarding_detection.default_interval_ms }} multiplier {{ ha.bidirectional_forwarding_detection.multiplier }}
+! NOTE: the timers above are the global BFD default; they still need to be
+! applied per-neighbor under each routing protocol (e.g. "neighbor <ip> bfd"
+! under router bgp) once neighbors are known -- deferred to that stage.
+{% endif %}
+!
+! NOTE: first_hop_redundancy_protocols (preempt: {{ ha.first_hop_redundancy_protocols.preempt }},
+! advertisement_interval_seconds: {{ ha.first_hop_redundancy_protocols.advertisement_interval_seconds }})
+! has no HSRP/VRRP group to attach to anywhere in this design -- see the
+! header note. Not rendered as commands.
+!
+{% if ha.discovery_protocols.lldp_enabled %}
+feature lldp
+{% else %}
+no feature lldp
+{% endif %}
+! NOTE: CDP on NX-OS is enabled by default without a global "feature cdp"
+! command; cdp_enabled ({{ ha.discovery_protocols.cdp_enabled }}) is
+! controlled per-interface ("cdp enable" / "no cdp enable") -- deferred to
+! the interface-stage template.
+!
+{# -------------------------- Routing baseline (device-wide enablement) -------------------------- #}
+feature bgp
+! NOTE: bgp_security (md5_authentication: {{ rb.bgp_security.md5_authentication }},
+! ttl_security_hops: {{ rb.bgp_security.ttl_security_hops }}) is applied
+! per-neighbor under "router bgp <asn>" once the ASN and neighbor list are
+! known from logical_topology.yaml -- deferred to that stage.
+!
+{# -------------------------- Control Plane Policing -------------------------- #}
+{% if rb.control_plane_policing.enable %}
+! Baseline system CoPP profile -- NX-OS's idiomatic starting point.
+! "strict" chosen as a reasonable default matching this baseline's
+! generally hardened posture; revisit per site if it proves too aggressive
+! for legitimate control-plane traffic.
+copp profile strict
+!
+! Custom classes for the three named categories in the data model, layered
+! on top of the profile for finer-grained handling than the profile alone
+! provides.
+{% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+class-map type control-plane match-any COPP-{{ class_name | upper }}
+ remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+!
+{% endfor %}
+policy-map type control-plane COPP-CUSTOM-POLICY
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+ class COPP-{{ class_name | upper }}
+  police cir {{ copp_rate[priority] }} bps conform transmit violate drop
+  ! priority tier from platform_core_agg_baseline: "{{ priority }}" -- rate above is a starting-point placeholder, tune per site
+{% endfor %}
+!
+control-plane
+ service-policy input copp-system-policy
+! NOTE: NX-OS applies CoPP via "service-policy input copp-system-policy"
+! referencing the active copp profile; merging the custom
+! COPP-CUSTOM-POLICY classes above into that active policy is a
+! platform/release-specific step (typically done by editing the generated
+! copp-system-policy policy-map, not simply substituting a different policy
+! name) -- verify the merge procedure for your NX-OS release before deploying.
+{% endif %}
+!
+{# -------------------------- Interface baseline -------------------------- #}
+{% if ib.fabric_and_transit_links.link_aggregation.protocol == 'lacp' %}
+feature lacp
+{% endif %}
+! NOTE: fabric_and_transit_links.mtu ({{ ib.fabric_and_transit_links.mtu }}),
+! link_aggregation mode ({{ ib.fabric_and_transit_links.link_aggregation.mode }}),
+! unused_ports (mode: {{ ib.unused_ports.mode }}, shutdown: {{ ib.unused_ports.shutdown }}),
+! and qos_baseline.trust_state ({{ ib.qos_baseline.trust_state }}) are all
+! per-interface -- deferred to the interface-stage template. feature lacp
+! above is the one device-wide prerequisite from this section.
+!
+{# -------------------------- Hardware integrity -------------------------- #}
+{% if hw.secure_boot_verification %}
+! NOTE: secure_boot_verification -- Secure Boot on Nexus 9000 platforms is a
+! hardware-anchored feature verified automatically at boot; there is no
+! single confirmed NX-OS enable/disable CLI command for it. Verify via your
+! platform's system-integrity/secure-boot show commands for the specific
+! N9K model and NX-OS release in use, rather than assuming a command name here.
+{% endif %}
+{% if hw.environmental_monitoring %}
+! NOTE: environmental_monitoring -- fan/power/temperature monitoring runs
+! by default in hardware on Nexus 9000 (visible via "show environment");
+! there's no single "enable" command for the monitoring itself. The
+! actionable equivalent of this flag is usually enabling SNMP environmental
+! traps (e.g. "snmp-server enable traps entity") so threshold events
+! actually notify someone -- not rendered here since it depends on the SNMP
+! trap_destinations configured above; add explicitly if wanted.
+{% endif %}
+!
+end
