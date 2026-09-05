@@ -25,7 +25,7 @@ Key takeaways:
 
 ---
 
-# Campus Network Design (HLD)
+# Campus Network Design
 
 ## Business Requirement
 
@@ -96,7 +96,6 @@ This design is constructed from a set of data models which provides a structure 
 
 Device role model define a standardized, platform-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device. This model will be used in conjunction with a platform specific jinja2 template to render the configuration output required by the platform acting as that role.
 
-
 ### Design Driven Models
 
 | Data Model | Purpose |
@@ -114,7 +113,7 @@ Device role model define a standardized, platform-agnostic set of foundational h
 | Core & Agg Role | Nexus 93240 |
 | Access Role | Catalyst 9000 |
 
-## Design Deployment (LLD)
+## Design Deployment
 
 ### Step 1. Baseline Build
 
