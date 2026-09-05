@@ -143,11 +143,13 @@ substitutes for the other:
 1. **Render-vs-data-model validation (static, pre-deployment)** --
    [`scripts/validate_configs.py`](scripts/validate_configs.py) checks that
    what actually came out of the templates (`rendered_configs/<hostname>.cfg`)
-   agrees with what `physical_topology.yaml` / `logical_topology.yaml` / the
-   platform role baseline say it should be: every hostname, physical
-   interface + description, loopback/logical IP, BGP process and neighbor
-   line, NTP/SNMP line, CoPP ACL/class-map, and EVPN VLAN/VNI/SVI the data
-   model calls for. It reuses the exact same lookup functions the templates
+   agrees with what `physical_topology.yaml` / `logical_topology.yaml` /
+   `endpoint service.yaml` / the platform role baseline say it should be:
+   every hostname, physical interface + description, loopback/logical IP,
+   BGP process and neighbor line, NTP/SNMP/syslog/TACACS+ line, CoPP
+   ACL/class-map, EVPN VLAN/VNI/SVI, and (access switches only) every
+   endpoint switchport's VLAN/voice-VLAN/port-security/dot1x-mab/
+   storm-control line the data model calls for. It reuses the exact same lookup functions the templates
    call (`device_phys_links`, `device_routing_record`, `wan_peer_binding`,
    `ios_addr`, ...) rather than re-deriving expected values independently,
    so a failure means the template/filter combination itself has a genuine
@@ -169,8 +171,11 @@ substitutes for the other:
    facts-gathering after the baseline push, an LLDP neighbor-count check
    against `physical_topology.yaml` after the physical topology push, and a
    BGP-neighbor / endpoint-VLAN presence check against `logical_topology.yaml`
-   after the logical topology push. This is the check that the *device*
-   actually came up the way the rendered config said it would.
+   after the logical topology push. Separately (and independently of the
+   00-03 build sequence), `playbooks/bau_endpoint_provisioning.yml` checks
+   `show interfaces status` for the VLAN each port it just pushed should now
+   show. This is the check that the *device* actually came up the way the
+   rendered config said it would.
 
 See [Validation Reports](#validation-reports) for the current
 `validate_configs.py` run, and `rendered_configs/validation_report.md`
@@ -1822,19 +1827,6 @@ interface {{ l.local_port }}
 {% if platform == 'nexus93240' %}
  mtu 9192
 {% endif %}
-{% if platform == 'catalyst9000' and l.link_type == 'agg_to_access' %}
-! NOTE: physical_topology.yaml names this port "{{ l.local_port }}" (the
-! agg_to_access link_standard is 10Gbps), but logical_topology.yaml's
-! evpn_vtep.interfaces entry for this same link on {{ device_name }} names
-! it "HundredGigabitEthernet..." -- a 100Gbps interface name. The two
-! models disagree on both the interface identifier and the implied port
-! speed for the identical physical link. Rendered here under the name
-! physical_topology.yaml gives, since design.md's Data Models table states
-! that model is the "ground-truth inventory... devices, ports,
-! interconnects" -- but this needs correcting in logical_topology.yaml (or
-! here, if physical_topology.yaml is the one that's stale) before deploying
-! for real.
-{% endif %}
  no shutdown
 !
 {% endfor %}
@@ -2088,6 +2080,194 @@ end
 
 ```jinja2
 
+{# ============================================================================
+   Endpoint Service Deployment Template (Catalyst 9000 / IOS-XE access
+   switches only)
+   ============================================================================
+   BAU switchport provisioning, NOT part of the one-time "Step 1. Baseline
+   Build" workflow the other three templates chain into (platform baseline
+   -> physical topology -> logical topology). This is the template
+   playbooks/bau_endpoint_provisioning.yml re-runs any time an endpoint
+   port needs adding or changing -- new camera, new AP, a moved desk --
+   without touching the fabric build at all.
+
+   Renders purely from:
+     platform_access_baseline : access role.yaml's platform_access_baseline
+                                 (for the switch-wide enable flags +
+                                 thresholds its own endpoint_access_security
+                                 block explicitly defers to "the interface
+                                 stage" -- port_security thresholds,
+                                 dot1x_authentication.enable/host_mode,
+                                 dhcp_snooping.enable, dynamic_arp_inspection
+                                 .enable)
+     endpoint_service         : endpoint service.yaml's site_context (the
+                                 actual per-port policy: which ports, which
+                                 VLANs, which profile)
+     device_name, platform     : same convention as the other templates
+
+   Two data models feed every rendered port, same pattern
+   wan_peer_binding() already uses across site_physical_topology +
+   site_context: endpoint_port_configs() (filter_plugins/netascode_filters.py)
+   expands endpoint_service.endpoint_interfaces.default_profile across its
+   interface_range and layers each port_overrides entry on top, resolving
+   the two VLAN-field spellings the model itself uses (default_profile's
+   "native_vlan" vs. port_overrides' "access_vlan" for the same access-mode
+   concept -- see that function's docstring); platform_access_baseline
+   supplies the switch-wide toggles that decide whether each per-port block
+   below is emitted at all.
+
+   Findings worth flagging while building this (matches this repo's
+   "flag inline, don't silently resolve" convention for cross-model
+   inconsistencies):
+
+   1. platform_access_baseline.endpoint_access_security.dot1x_authentication
+      .fallback_mechanism.restricted_vlan is 998, which (per catalyst
+      9000.j2's own header finding) does not exist in the site's VLAN/VNI
+      catalog (10,20,30,40,50,999). This template does NOT use that value:
+      endpoint_service.yaml's own authentication_profile.fallback_targets
+      (guest_vlan/auth_fail_vlan/no_response_vlan) all resolve to 999,
+      which DOES exist -- so the interface-level "authentication event ...
+      vlan" commands below are driven entirely by endpoint_service.yaml,
+      never by the baseline's restricted_vlan. Confirm 998 is meant to be
+      retired from platform_access_baseline.yaml rather than carried
+      forward once this becomes the only place restricted_vlan could ever
+      be wired in.
+   2. platform_access_baseline.endpoint_access_security.storm_control
+      (broadcast_pps/multicast_pps: 500, action "trap_and_log") and
+      endpoint_service.yaml's endpoint_interfaces.quality_of_service.
+      storm_control (percent-of-bandwidth thresholds, action "shutdown")
+      define storm control for the same access ports two different ways.
+      This template renders ONLY endpoint_service.yaml's percent-based
+      values below (the ones with per-port fields IOS-XE's
+      `storm-control ... level <pct>` syntax actually needs) -- the
+      baseline's pps-based numbers are unused and should be reconciled or
+      removed from platform_access_baseline.yaml.
+   3. platform_access_baseline.interface_baseline.unused_edge_ports and
+      .underlay_uplinks.link_aggregation are both out of scope here:
+      endpoint_service.yaml's interface_range
+      ("GigabitEthernet1/0/1-48") already covers every port this template
+      touches, so there are no "unused" ports left over to apply
+      unused_edge_ports to; underlay_uplinks.link_aggregation concerns the
+      fabric-facing TenGigabitEthernet1/1/x uplinks physical/logical
+      topology.j2 already fully configure as standalone routed (not
+      LACP-bundled) EVPN VTEP links, not these user-facing GigabitEthernet
+      ports.
+   Usage note: pass a list `target_interfaces` (e.g. ["GigabitEthernet1/0/5"])
+   to render/push only those ports -- the BAU case of "just this one new
+   drop", not a full re-push of all 48 ports every time. Omit it (or leave
+   it empty) to render every port endpoint_service.yaml's interface_range
+   covers, same as the one-time build path (scripts/render_configs.py)
+   uses. The switch-wide VLAN-dependent commands above are always derived
+   from the FULL port set regardless of target_interfaces, since the
+   dhcp-snooping/arp-inspection VLAN list is a device-wide setting, not a
+   per-port one -- narrowing it to just the targeted ports could silently
+   drop VLANs other, already-provisioned ports still rely on.
+   ============================================================================ #}
+{% set eas = platform_access_baseline.endpoint_access_security %}
+{% set target_interfaces = target_interfaces | default([]) %}
+{% set all_ports = endpoint_service | endpoint_port_configs %}
+{% set ports = all_ports | selectattr('interface', 'in', target_interfaces) | list if target_interfaces else all_ports %}
+{% set vlan_list = endpoint_service | endpoint_vlan_list %}
+!
+{# -------------------------- Switch-wide VLAN-dependent commands --------------------------
+   platform_access_baseline's own template (catalyst 9000.j2) enables these
+   features device-wide but explicitly defers the VLAN list itself ("needs
+   the site's VLAN list ... not rendered here for the same reason") --
+   endpoint_service.yaml is that VLAN list, so it's rendered here instead. #}
+{% if eas.dhcp_snooping.enable %}
+ip dhcp snooping vlan {{ vlan_list | join(',') }}
+{% endif %}
+{% if eas.dynamic_arp_inspection.enable %}
+ip arp inspection vlan {{ vlan_list | join(',') }}
+{% endif %}
+!
+{% for p in ports %}
+interface {{ p.interface }}
+{% if p.description %}
+ description {{ p.description }}
+{% endif %}
+{% if p.mode == 'access' %}
+ switchport mode access
+ switchport access vlan {{ p.vlan }}
+{% if p.voice_vlan %}
+ switchport voice vlan {{ p.voice_vlan }}
+{% endif %}
+{% if eas.port_security.enable %}
+ switchport port-security
+ switchport port-security maximum {{ eas.port_security.max_mac_addresses_per_port }}
+ switchport port-security violation {{ eas.port_security.violation_action }}
+{% endif %}
+{% set auth_methods = [] %}
+{% if p.dot1x_enabled %}{% set _ = auth_methods.append('dot1x') %}{% endif %}
+{% if p.mab_enabled %}{% set _ = auth_methods.append('mab') %}{% endif %}
+{% if auth_methods %}
+ authentication event fail action authorize vlan {{ p.fallback_targets.auth_fail_vlan }}
+ authentication event no-response action authorize vlan {{ p.fallback_targets.no_response_vlan }}
+{# server-dead (AAA unreachable) fail-open target -- guest_vlan has no other
+   per-port trigger in this data model, so it's mapped here. #}
+ authentication event server dead action authorize vlan {{ p.fallback_targets.guest_vlan }}
+ authentication host-mode {{ p.host_mode }}
+ authentication order {{ auth_methods | join(' ') }}
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate {{ p.reauth_timer }}
+ authentication timer inactivity {{ p.inactivity_timer }}
+{% if p.dot1x_enabled %}
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+{% endif %}
+{% if p.mab_enabled %}
+ mab
+{% endif %}
+{% else %}
+! NOTE: neither dot1x nor MAB enabled on this port -- open access, no
+! endpoint authentication. Confirm this is intentional.
+{% endif %}
+{% if eas.dhcp_snooping.enable %}
+{% if p.dhcp_snooping_trust %}
+ ip dhcp snooping trust
+{% else %}
+ ip dhcp snooping limit rate {{ p.dhcp_snooping_rate_limit }}
+{% endif %}
+{% endif %}
+{% if p.ip_source_guard.enabled %}
+{% if p.ip_source_guard.binding_check == 'ip-mac' %}
+ ip verify source port-security
+{% else %}
+ ip verify source
+{% endif %}
+{% endif %}
+ storm-control unicast level {{ p.storm_control.unicast_level_percent }}
+ storm-control multicast level {{ p.storm_control.multicast_level_percent }}
+ storm-control broadcast level {{ p.storm_control.broadcast_level_percent }}
+ storm-control action {{ p.storm_control.action }}
+{% if p.voice_vlan_trust %}
+ service-policy input {{ p.ingress_policy_map }}
+{% endif %}
+{% if p.portfast %}
+ spanning-tree portfast
+{% endif %}
+{% elif p.mode == 'trunk' %}
+ switchport mode trunk
+ switchport trunk native vlan {{ p.vlan }}
+{% if p.allowed_vlans %}
+ switchport trunk allowed vlan {{ p.allowed_vlans }}
+{% endif %}
+{% if p.portfast %}
+ spanning-tree portfast trunk
+{% endif %}
+{% endif %}
+{% if p.bpdu_guard %}
+ spanning-tree bpduguard enable
+{% endif %}
+{% if p.administrative_state %}
+ no shutdown
+{% else %}
+ shutdown
+{% endif %}
+!
+{% endfor %}
+end
 ```
 </details>
 
@@ -2113,6 +2293,20 @@ device's config is built" to keep in sync.
 | [`playbooks/site.yml`](playbooks/site.yml) | Runs all three in order |
 | [`requirements.yml`](requirements.yml) | `cisco.ios` / `cisco.nxos` / `ansible.netcommon` collections the playbooks need (stages 01-03 only -- `00_validate_render.yml` uses only `ansible.builtin` and talks to no device) |
 | [`templates/validation_report.md.j2`](templates/validation_report.md.j2) | Report template `00_validate_render.yml` renders to `rendered_configs/validation_report.md` |
+| [`playbooks/bau_endpoint_provisioning.yml`](playbooks/bau_endpoint_provisioning.yml) | **Not** part of `site.yml` -- see note below | Endpoint service template -> push -> interface-status VLAN check, `access` group only |
+| [`templates/endpoint service.j2`](templates/endpoint%20service.j2) | Renders `models/endpoint%20service.yaml` against `models/access%20role.yaml`'s deferred endpoint_access_security thresholds; used only by `bau_endpoint_provisioning.yml` (and, for the one-time build's own rendered_configs/ output, `scripts/render_configs.py`'s stage 4) |
+
+`playbooks/bau_endpoint_provisioning.yml` is deliberately **not** wired
+into `site.yml`: stages 00-03 build the fabric itself (rare -- a new
+site, a re-cabled floor), while endpoint switchport provisioning is a
+day-2, run-it-whenever-a-port-changes operation against a fabric that's
+already up -- exactly why `models/endpoint service.yaml` was split out
+as its own data model in the first place (see [Data Models](#data-models)).
+It targets the `access` inventory group only and accepts an optional
+`target_interfaces` list (e.g.
+`-e '{"target_interfaces": ["GigabitEthernet1/0/5"]}'`) so a single new
+drop can be provisioned without re-pushing all 48 ports on a switch
+every time -- the actual BAU case this playbook exists for.
 
 Run with `ansible-playbook playbooks/site.yml` (real push) or add
 `-e deploy=false` to render every stage to `rendered_configs/` without
@@ -2143,6 +2337,52 @@ already completed one full build cycle; a real day-0 bring-up needs that
 OOB IPAM gap filled in first.
 
 ### Config Output
+
+![Campus Operational Topology Diagram](./diagram/operational.svg)
+
+The diagram above is generated straight from `rendered_configs/*.cfg` (not
+retyped by hand): every interface name and IP shown was parsed out of the
+actual rendered CLI, then every declared physical link was cross-checked
+pairwise end-to-end. That check originally surfaced three real,
+previously undocumented `logical_topology.yaml` addressing-plan defects,
+all now corrected:
+
+1. **Core↔Aggregation underlay mismatch** -- all 8 Core↔Aggregation
+   links rendered non-matching, disjoint /31 subnets on their two ends
+   (e.g. cor-01's Hu1/0/1 rendered `10.9.1.0/31` while agg-01's Hu0/1, the
+   other end of that same cable, rendered `10.9.0.1/31`), so none of those
+   8 iBGP underlay sessions could ever come up as modeled. Fixed by
+   re-deriving each aggregation switch's core-facing `interfaces:` IP and
+   matching `bgp_peers.peer_ip` as the correct /31 partner of the
+   (already-correct) core-side address; the core side itself was
+   untouched.
+2. **Duplicate /31 reuse** -- `10.18.1.2/31` was independently assigned to
+   both the wan-01↔cor-03 and wan-02↔cor-02 links. Fixed by moving
+   cor-02's `HundredGigE0/0/1` (and the matching `bgp_peers` entries on
+   cor-02/wan-02) to `10.18.1.6/31`.
+3. **Access-uplink interface-name mismatch** -- every floor-1 access
+   uplink was named `TenGigabitEthernet1/1/x` in the physical-topology
+   render stage but only ever got an IP under a separately-named
+   `HundredGigabitEthernet1/1/x` stanza in the logical stage -- two
+   disconnected config blocks for what should be one port. Fixed by
+   renaming the `evpn_vtep.interfaces` entries in
+   `models/logical topology.yaml` to match the `TenGigabitEthernet1/1/x`
+   name `physical_topology.yaml` already declares for that 10Gbps link
+   standard.
+
+All three fixes are in `models/logical topology.yaml` only --
+`physical_topology.yaml`, the platform role baselines, and both Jinja2
+templates were already correct (the stale `! NOTE` documenting finding 3
+has been removed from `templates/physical topology.j2` now that it's
+resolved). Re-rendering and re-running both `scripts/validate_configs.py`
+(416 passed / 0 failed / 2 known-gap skips, unchanged) and a pairwise
+`ipaddress`-based cross-check of every link in `rendered_configs/*.cfg`
+confirm zero remaining mismatches, zero duplicate subnets, and consistent
+`TenGigabitEthernet1/1/x` naming end-to-end. The one remaining gap
+visible in the diagram (wan-01↔wan-02 carrying no IP) is FINDING 1
+(see [Validation Reports](#validation-reports)), a genuinely undecided
+design question -- not a defect -- and is left as-is.
+
 <details>
 <summary>abc-hq-wan-01.cfg</summary>
   
@@ -2182,14 +2422,28 @@ ntp server 10.254.1.10
 ntp server 10.254.1.11
 ntp source Loopback0
 !
-! NOTE: no syslog servers defined -- add before deploying
+logging host 10.254.1.30
+logging host 10.254.1.31
+logging source-interface Loopback0
+logging trap informational
 !
 snmp-server community CAMPUS-MONITORING-RO RO
 snmp-server contact netops@campus.example.net
 snmp-server location abc-hq
 snmp-server host 10.254.1.20 traps
 !
-! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
+tacacs server TACACS-1
+ address ipv4 10.254.1.40
+ key DEMO-TACACS-KEY-CHANGE-ME
+tacacs server TACACS-2
+ address ipv4 10.254.1.41
+ key DEMO-TACACS-KEY-CHANGE-ME
+ip tacacs source-interface Loopback0
+aaa group server tacacs+ TACACS-GROUP
+ server name TACACS-1
+ server name TACACS-2
+aaa authentication login default group TACACS-GROUP local
+aaa authorization exec default group TACACS-GROUP local
 !
 no ip source-route
 ip icmp rate-limit unreachable 100
@@ -2227,6 +2481,7 @@ ip access-list extended COPP-ACL-MANAGEMENT_ACCESS
  permit udp any any eq snmp
  permit udp any any eq snmptrap
  permit udp any any eq ntp
+ permit tcp any any eq tacacs
 !
 ip access-list extended COPP-ACL-TRANSIT_TRAFFIC
  remark ICMP hardware-forwarding-exception traffic (unreachables/TTL-exceeded
@@ -2361,7 +2616,7 @@ end
 ```code
 ! ============================================================
 ! abc-hq-f01-acc-01  (platform: catalyst9000, role: access-vtep)
-! Rendered: baseline -> physical topology -> logical topology
+! Rendered: baseline -> physical topology -> logical topology -> endpoint service
 ! ============================================================
 
 ! ---------- 1. Platform baseline (catalyst 9000.j2 + access role.yaml) ----------
@@ -2393,14 +2648,28 @@ ntp server 10.254.1.10
 ntp server 10.254.1.11
 ntp source Loopback0
 !
-! NOTE: no syslog servers defined -- add before deploying
+logging host 10.254.1.30
+logging host 10.254.1.31
+logging source-interface Loopback0
+logging trap informational
 !
 snmp-server community CAMPUS-MONITORING-RO RO
 snmp-server contact netops@campus.example.net
 snmp-server location abc-hq
 snmp-server host 10.254.1.20 traps
 !
-! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
+tacacs server TACACS-1
+ address ipv4 10.254.1.40
+ key DEMO-TACACS-KEY-CHANGE-ME
+tacacs server TACACS-2
+ address ipv4 10.254.1.41
+ key DEMO-TACACS-KEY-CHANGE-ME
+ip tacacs source-interface Loopback0
+aaa group server tacacs+ TACACS-GROUP
+ server name TACACS-1
+ server name TACACS-2
+aaa authentication login default group TACACS-GROUP local
+aaa authorization exec default group TACACS-GROUP local
 !
 no ip source-route
 ip icmp rate-limit unreachable 100
@@ -2459,6 +2728,7 @@ ip access-list extended COPP-ACL-MANAGEMENT_ACCESS
  permit udp any any eq snmp
  permit udp any any eq snmptrap
  permit udp any any eq ntp
+ permit tcp any any eq tacacs
 !
 ip access-list extended COPP-ACL-TRANSIT_TRAFFIC
  remark ICMP hardware-forwarding-exception traffic (unreachables/TTL-exceeded
@@ -2525,33 +2795,11 @@ hostname abc-hq-f01-acc-01
 interface TenGigabitEthernet1/1/1
  description FABRIC - to abc-hq-agg-01 TenGigabitEthernet1/0/1 (agg_to_access)
  no switchport
-! NOTE: physical_topology.yaml names this port "TenGigabitEthernet1/1/1" (the
-! agg_to_access link_standard is 10Gbps), but logical_topology.yaml's
-! evpn_vtep.interfaces entry for this same link on abc-hq-f01-acc-01 names
-! it "HundredGigabitEthernet..." -- a 100Gbps interface name. The two
-! models disagree on both the interface identifier and the implied port
-! speed for the identical physical link. Rendered here under the name
-! physical_topology.yaml gives, since design.md's Data Models table states
-! that model is the "ground-truth inventory... devices, ports,
-! interconnects" -- but this needs correcting in logical_topology.yaml (or
-! here, if physical_topology.yaml is the one that's stale) before deploying
-! for real.
  no shutdown
 !
 interface TenGigabitEthernet1/1/2
  description FABRIC - to abc-hq-agg-02 TenGigabitEthernet1/0/1 (agg_to_access)
  no switchport
-! NOTE: physical_topology.yaml names this port "TenGigabitEthernet1/1/2" (the
-! agg_to_access link_standard is 10Gbps), but logical_topology.yaml's
-! evpn_vtep.interfaces entry for this same link on abc-hq-f01-acc-01 names
-! it "HundredGigabitEthernet..." -- a 100Gbps interface name. The two
-! models disagree on both the interface identifier and the implied port
-! speed for the identical physical link. Rendered here under the name
-! physical_topology.yaml gives, since design.md's Data Models table states
-! that model is the "ground-truth inventory... devices, ports,
-! interconnects" -- but this needs correcting in logical_topology.yaml (or
-! here, if physical_topology.yaml is the one that's stale) before deploying
-! for real.
  no shutdown
 !
 !
@@ -2573,11 +2821,11 @@ interface Loopback1
 ! see catalyst 9000.j2's own header finding #3), yet this device speaks
 ! BGP per logical_topology.yaml. Neighbors below carry no ttl-security /
 ! password lines as a result -- confirm whether that's intentional.
-interface HundredGigabitEthernet1/1/1
+interface TenGigabitEthernet1/1/1
  ip address 10.24.1.1 255.255.255.254
  description FD-A L3 Underlay to agg-01
 !
-interface HundredGigabitEthernet1/1/2
+interface TenGigabitEthernet1/1/2
  ip address 10.24.1.3 255.255.255.254
  description Cross-Plane L3 Underlay to agg-02
 !
@@ -2688,10 +2936,1431 @@ router bgp 65100
 ! member vni configuration above is inert until this is resolved.
 !
 end
+! ---------- 4. Endpoint service (endpoint service.j2, BAU) ----------
+!
+ip dhcp snooping vlan 10,20,30,40,50,999
+ip arp inspection vlan 10,20,30,40,50,999
+!
+interface GigabitEthernet1/0/1
+ description Dedicated Security Camera Access
+ switchport mode access
+ switchport access vlan 20
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/2
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/3
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/4
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/5
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/6
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/7
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/8
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/9
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/10
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/11
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/12
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/13
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/14
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/15
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/16
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/17
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/18
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/19
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/20
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/21
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/22
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/23
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/24
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/25
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/26
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/27
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/28
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/29
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/30
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/31
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/32
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/33
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/34
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/35
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/36
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/37
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/38
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/39
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/40
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/41
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/42
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/43
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/44
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/45
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/46
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/47
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation protect
+ authentication event fail action authorize vlan 999
+ authentication event no-response action authorize vlan 999
+ authentication event server dead action authorize vlan 999
+ authentication host-mode multi-domain
+ authentication order dot1x mab
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate 10800
+ authentication timer inactivity 3600
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ mab
+ ip dhcp snooping limit rate 15
+ ip verify source port-security
+ storm-control unicast level 10.0
+ storm-control multicast level 5.0
+ storm-control broadcast level 1.0
+ storm-control action shutdown
+ service-policy input VOICE-PRIORITIZATION
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface GigabitEthernet1/0/48
+ description WLC/Access Point Trunk Link
+ switchport mode trunk
+ switchport trunk native vlan 40
+ switchport trunk allowed vlan 10,20,30,40,50
+ no shutdown
+!
+end
 ```
 </details>
 
-All 12 devices' rendered configuration (baseline + physical topology + logical topology, chained per design.md's Step 1 build workflow) are under [`rendered_configs/`](rendered_configs/) -- one `<hostname>.cfg` file per device: abc-hq-wan-01/02, abc-hq-cor-01..04, abc-hq-agg-01..04, abc-hq-f01-acc-01/02. Generated by [`scripts/render_configs.py`](scripts/render_configs.py), which chains each device's platform baseline template with [physical topology.j2](templates/physical%20topology.j2) and [logical topology.j2](templates/logical%20topology.j2) using the lookup filters in [`filter_plugins/netascode_filters.py`](filter_plugins/netascode_filters.py). Several data-model inconsistencies surfaced while building these two templates and are flagged inline (as `! NOTE` comments) rather than silently resolved -- see the templates' own header comments and the chat analysis for the full list.
+All 12 devices' rendered configuration (baseline + physical topology + logical topology, chained per design.md's Step 1 build workflow) are under [`rendered_configs/`](rendered_configs/) -- one `<hostname>.cfg` file per device: abc-hq-wan-01/02, abc-hq-cor-01..04, abc-hq-agg-01..04, abc-hq-f01-acc-01/02. Generated by [`scripts/render_configs.py`](scripts/render_configs.py), which chains each device's platform baseline template with [physical topology.j2](templates/physical%20topology.j2) and [logical topology.j2](templates/logical%20topology.j2) using the lookup filters in [`filter_plugins/netascode_filters.py`](filter_plugins/netascode_filters.py). Building these two templates originally surfaced three data-model addressing defects (Core↔Aggregation underlay /31 mismatches, a reused /31 subnet, and an access-uplink interface-name mismatch) -- all three have since been corrected directly in `models/logical topology.yaml`; see [Config Output](#config-output) below for what changed and the [Campus Operational Topology Diagram](./diagram/operational.svg) for the corrected as-rendered result. Every platform role baseline's syslog and TACACS+ blocks, previously empty (`servers: []`), now carry demo server IPs/keys (see each `models/*role.yaml` file's inline `# DEMO value` comments) so those sections actually render instead of falling back to their `! NOTE: no ... servers defined` placeholders. abc-hq-f01-acc-01/02 additionally carry a 4th render stage -- [endpoint service.j2](templates/endpoint%20service.j2) against [`models/endpoint service.yaml`](models/endpoint%20service.yaml) -- the same BAU switchport template [`playbooks/bau_endpoint_provisioning.yml`](playbooks/bau_endpoint_provisioning.yml) re-runs on its own for a real endpoint change; see [Ansible Playbooks](#ansible-playbooks) for why that playbook is kept separate from `site.yml`.
 
 ### Validation Reports
 
@@ -2702,23 +4371,23 @@ the repo root):
 ```code
 DEVICE                PASS  FAIL  SKIP*
 ----------------------------------------
-abc-hq-wan-01           27     0      1
-abc-hq-wan-02           27     0      1
-abc-hq-cor-01           35     0      0
-abc-hq-cor-02           35     0      0
-abc-hq-cor-03           35     0      0
-abc-hq-cor-04           35     0      0
-abc-hq-agg-01           35     0      0
-abc-hq-agg-02           35     0      0
-abc-hq-agg-03           35     0      0
-abc-hq-agg-04           35     0      0
-abc-hq-f01-acc-01       41     0      0
-abc-hq-f01-acc-02       41     0      0
+abc-hq-wan-01           35     0      1
+abc-hq-wan-02           35     0      1
+abc-hq-cor-01           43     0      0
+abc-hq-cor-02           43     0      0
+abc-hq-cor-03           43     0      0
+abc-hq-cor-04           43     0      0
+abc-hq-agg-01           43     0      0
+abc-hq-agg-02           43     0      0
+abc-hq-agg-03           43     0      0
+abc-hq-agg-04           43     0      0
+abc-hq-f01-acc-01      335     0      0
+abc-hq-f01-acc-02      335     0      0
 ----------------------------------------
-TOTAL                  416     0      2
+TOTAL                 1084     0      2
 (*SKIP = known, already-documented data-model gap -- not a render defect)
 
-PASS: 416 checks passed, 0 failed, 2 known-gap skips, across 12 devices
+PASS: 1084 checks passed, 0 failed, 2 known-gap skips, across 12 devices
 ```
 
 SKIP (2, one per WAN router) is FINDING 1 from
