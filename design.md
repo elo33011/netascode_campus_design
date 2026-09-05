@@ -7,6 +7,7 @@ Key takeaways:
 - Generated contents includes diagrams, cable patching matrix, design specific templates (And device template which is not part of this design), playbooks
 - Data model is constructed from various schema by merging the values obtained from source of truth (i.e Source of truth integration is not captured in this example) 
 - Design is validated by comparing the config output with the data model.
+- Modifying the design = Updating data models (& Schemas)
 
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
