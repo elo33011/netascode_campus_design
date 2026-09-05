@@ -1,0 +1,61 @@
+platform_wan_baseline:
+  management_plane:
+    banner_login: "Authorized Use Only. System activity is logged."
+    ssh_version: "2"
+    console_timeout_minutes: 10
+    vty_timeout_minutes: 15
+    login_retries: 3
+    dns:
+      domain_name: "campus.example.net"
+      source_interface: "Loopback0"
+    http_services:
+      enable: false
+      secure_only: true
+    ntp:
+      servers: ["10.254.1.10", "10.254.1.11"]   # DEMO values -- example internal time sources on the OOB mgmt range, not real servers
+      source_interface: "Loopback0"
+    syslog:
+      servers: []
+      source_interface: null
+      severity_level: null
+    snmp:
+      enabled: true
+      contact: "netops@campus.example.net"       # DEMO value
+      location: "abc-hq"                         # DEMO value
+      community_strings: ["CAMPUS-MONITORING-RO"] # DEMO value -- placeholder name, not "public"; replace with a real, generated string before deploying
+      trap_destinations: ["10.254.1.20"]          # DEMO value -- example NMS host on the OOB mgmt range
+    tacacs:
+      servers: []
+      source_interface: null
+      encryption_key: null
+
+  infrastructure_protection:
+    icmp_standards:
+      unreachable_rate_limit: 100
+      accept_redirects: false
+      mask_requests: false
+    disabled_ip_services:
+      - "ip_source_routing"
+      - "proxy_arp"
+    ipv6_hardening:
+      ra_suppress: true
+
+  routing_baseline:
+    bgp_security:
+      md5_authentication: true
+      ttl_security_hops: 2
+    control_plane_policing:
+      enable: true
+      protocols:
+        routing_updates: "medium"
+        management_access: "low"
+        transit_traffic: "high"
+
+  hardware_integrity:
+    secure_boot_verification: true
+    hardware_crypto_acceleration: true
+
+  interface_baseline:
+    wan_interfaces:
+      ingress_acl_name: "fw-in-wan-interface-acl"
+      passive_routing_interface: true
