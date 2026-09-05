@@ -132,11 +132,9 @@ Apply the baseline template for each device -> Validate device local configurati
 <details>
 <summary>Physical Topology - Campus Network </summary>
 
-````md
 ```yaml
 {% include_relative "models/physical topology.yaml" %}
 ```
-````
 
 </details>
 
