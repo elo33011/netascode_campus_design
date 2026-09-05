@@ -1,0 +1,200 @@
+{# ============================================================================
+   Cisco Catalyst 8000 (IOS XE) -- WAN Router Role Baseline Configuration
+   ============================================================================
+   Stage 1: baseline-only. Renders purely from platform_wan_baseline.yaml --
+   management plane, infrastructure protection, routing/CoPP baseline,
+   hardware integrity, and the WAN ACL skeleton. No device/topology data is
+   expected or used here.
+
+   Deliberately NOT rendered yet, since it depends on physical_topology.yaml
+   / logical_topology.yaml rather than the role baseline:
+     - hostname
+     - interface stanzas (Loopback0, external ISP circuit, internal fabric
+       links) and the per-interface hardening (no ip redirects/unreachables/
+       proxy-arp/mask-reply) and ACL application (ip access-group ... in)
+       that attach to them
+     - router bgp (neighbors, router-id, ASN, MD5, ttl-security) -- all of
+       it keys off device-specific peer/interface data
+   Those will come from a second template (or a second pass merging this
+   baseline with per-device topology data) once that stage is ready. The two
+   items still needing your confirmation before that stage -- ttl_security_
+   hops and passive_routing_interface -- live in platform_wan_baseline.yaml
+   itself and will matter once the BGP/interface sections are added back.
+
+   Fields with no confident, standard IOS-XE CLI equivalent are still
+   rendered as "! NOTE" comments rather than guessed at -- see
+   hardware_integrity below.
+   ============================================================================ #}
+{% set mp = platform_wan_baseline.management_plane %}
+{% set ip_prot = platform_wan_baseline.infrastructure_protection %}
+{% set rb = platform_wan_baseline.routing_baseline %}
+{% set hw = platform_wan_baseline.hardware_integrity %}
+{% set wan_if = platform_wan_baseline.interface_baseline.wan_interfaces %}
+!
+banner login ^C
+{{ mp.banner_login }}
+^C
+!
+{# -------------------------- DNS -------------------------- #}
+ip domain name {{ mp.dns.domain_name }}
+{% if mp.dns.source_interface %}
+ip domain lookup source-interface {{ mp.dns.source_interface }}
+{% endif %}
+!
+{# -------------------------- SSH / lines -------------------------- #}
+ip ssh version {{ mp.ssh_version }}
+!
+line con 0
+ exec-timeout {{ mp.console_timeout_minutes }} 0
+ login local
+!
+line vty 0 15
+ exec-timeout {{ mp.vty_timeout_minutes }} 0
+ transport input ssh
+ login local
+!
+{# login_retries -> local-authentication lockout threshold #}
+aaa local authentication attempts max-fail {{ mp.login_retries }}
+!
+{# -------------------------- HTTP services -------------------------- #}
+{% if not mp.http_services.enable %}
+no ip http server
+no ip http secure-server
+{% elif mp.http_services.secure_only %}
+no ip http server
+ip http secure-server
+{% else %}
+ip http server
+{% endif %}
+!
+{# -------------------------- NTP -------------------------- #}
+{% for server in mp.ntp.servers %}
+ntp server {{ server }}
+{% endfor %}
+{% if mp.ntp.source_interface %}
+ntp source {{ mp.ntp.source_interface }}
+{% endif %}
+{% if not mp.ntp.servers %}
+! NOTE: no NTP servers defined in platform_wan_baseline.management_plane.ntp.servers -- add before deploying
+{% endif %}
+!
+{# -------------------------- Syslog -------------------------- #}
+{% for server in mp.syslog.servers %}
+logging host {{ server }}
+{% endfor %}
+{% if mp.syslog.source_interface %}
+logging source-interface {{ mp.syslog.source_interface }}
+{% endif %}
+{% if mp.syslog.severity_level %}
+logging trap {{ mp.syslog.severity_level }}
+{% endif %}
+{% if not mp.syslog.servers %}
+! NOTE: no syslog servers defined -- add before deploying
+{% endif %}
+!
+{# -------------------------- SNMP -------------------------- #}
+{% if mp.snmp.enabled %}
+{% for community in mp.snmp.community_strings %}
+snmp-server community {{ community }} RO
+{% endfor %}
+{% if mp.snmp.contact %}
+snmp-server contact {{ mp.snmp.contact }}
+{% endif %}
+{% if mp.snmp.location %}
+snmp-server location {{ mp.snmp.location }}
+{% endif %}
+{% for host in mp.snmp.trap_destinations %}
+snmp-server host {{ host }} traps
+{% endfor %}
+{% else %}
+! SNMP disabled per platform_wan_baseline.management_plane.snmp.enabled
+{% endif %}
+!
+{# -------------------------- TACACS+ -------------------------- #}
+{% if mp.tacacs.servers %}
+{% for server in mp.tacacs.servers %}
+tacacs server TACACS-{{ loop.index }}
+ address ipv4 {{ server }}
+ key {{ mp.tacacs.encryption_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+{% endfor %}
+{% if mp.tacacs.source_interface %}
+ip tacacs source-interface {{ mp.tacacs.source_interface }}
+{% endif %}
+aaa group server tacacs+ TACACS-GROUP
+{% for server in mp.tacacs.servers %}
+ server name TACACS-{{ loop.index }}
+{% endfor %}
+aaa authentication login default group TACACS-GROUP local
+aaa authorization exec default group TACACS-GROUP local
+{% else %}
+! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
+{% endif %}
+!
+{# -------------------------- Infrastructure protection (device-wide) -------------------------- #}
+{% if 'ip_source_routing' in ip_prot.disabled_ip_services %}
+no ip source-route
+{% endif %}
+ip icmp rate-limit unreachable {{ ip_prot.icmp_standards.unreachable_rate_limit }}
+!
+! NOTE: the remaining infrastructure_protection settings (accept_redirects,
+! proxy_arp, mask_requests) and ipv6_hardening.ra_suppress are applied
+! per-interface (no ip redirects / no ip proxy-arp / no ip mask-reply /
+! ipv6 nd ra suppress all) -- deferred to the interface-stage template,
+! since there are no interfaces to attach them to yet.
+!
+{# -------------------------- WAN ingress ACL skeleton -------------------------- #}
+ip access-list extended {{ wan_if.ingress_acl_name }}
+ remark TODO: define real permit/deny entries for the WAN-facing ACL -- not present in the data model
+ remark Placeholder only -- do not deploy as-is
+ deny   ip any any log
+!
+! NOTE: this ACL is defined here as a baseline object but not yet applied to
+! an interface (ip access-group {{ wan_if.ingress_acl_name }} in) -- that
+! application, and wan_interfaces.passive_routing_interface, happen at the
+! interface stage.
+!
+{# -------------------------- Control Plane Policing skeleton -------------------------- #}
+{% if rb.control_plane_policing.enable %}
+{% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+class-map match-any COPP-{{ class_name | upper }}
+ remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+!
+{% endfor %}
+policy-map CONTROL-PLANE-POLICY
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+ class COPP-{{ class_name | upper }}
+  police {{ copp_rate[priority] }} conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "{{ priority }}" -- rate above is a starting-point placeholder, tune per site
+{% endfor %}
+!
+control-plane
+ service-policy input CONTROL-PLANE-POLICY
+!
+{% endif %}
+{# -------------------------- BGP baseline (ASN-independent security policy) -------------------------- #}
+! NOTE: bgp_security (md5_authentication: {{ rb.bgp_security.md5_authentication }},
+! ttl_security_hops: {{ rb.bgp_security.ttl_security_hops }}) is a per-neighbor
+! setting applied under "router bgp <asn>" once the ASN and neighbor list are
+! known from logical_topology.yaml -- deferred to that stage. Still flagged
+! from the earlier review: confirm ttl_security_hops (physical_topology.yaml
+! shows a single-hop ISP circuit, which would argue for 1, not 2) and confirm
+! whether wan_interfaces.passive_routing_interface is meant to apply anywhere,
+! since BGP has no native passive-interface concept.
+!
+{# -------------------------- Hardware integrity -------------------------- #}
+{% if hw.secure_boot_verification %}
+! NOTE: secure_boot_verification -- Secure Boot on Catalyst 8000 is a
+! hardware-anchored (SUDI-based) feature verified automatically at boot;
+! there is no standard IOS-XE enable/disable command for it, so no CLI is
+! emitted here. Confirm via 'show platform sudi certificate' post-deploy.
+{% endif %}
+{% if hw.hardware_crypto_acceleration %}
+! NOTE: hardware_crypto_acceleration -- hardware crypto engine use on
+! Catalyst 8000 is governed by the installed throughput/security license
+! and platform hardware, not a single confirmed IOS-XE CLI toggle. Verify
+! via 'show platform hardware qfp active feature crypto' post-deploy
+! rather than assuming a command exists here.
+{% endif %}
+!
+end
