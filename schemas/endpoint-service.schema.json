@@ -1,0 +1,390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.abc-hq.example.net/netascode-campus/endpoint-service.schema.json",
+  "title": "Endpoint Service",
+  "description": "Standardized security and QoS baseline for endpoint switchports -- loop protection, 802.1X/MAB, FHS, and edge QoS. Structurally inferred from models/endpoint service.yaml by scripts/generate_schemas.py -- regenerate after any change to that file rather than hand-editing this one.",
+  "type": "object",
+  "properties": {
+    "site_context": {
+      "type": "object",
+      "properties": {
+        "site_code": {
+          "type": "string"
+        },
+        "site_name": {
+          "type": "string"
+        },
+        "interface_provisioning": {
+          "type": "object",
+          "properties": {
+            "access_switch_baseline": {
+              "type": "object",
+              "properties": {
+                "authentication": {
+                  "type": "object",
+                  "properties": {
+                    "mac_authentication_bypass": {
+                      "type": "boolean"
+                    },
+                    "dot1x_enabled": {
+                      "type": "boolean"
+                    },
+                    "fallback_vlan": {
+                      "type": "integer"
+                    },
+                    "guest_vlan": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "mac_authentication_bypass",
+                    "dot1x_enabled",
+                    "fallback_vlan",
+                    "guest_vlan"
+                  ],
+                  "additionalProperties": false
+                },
+                "quality_of_service": {
+                  "type": "object",
+                  "properties": {
+                    "voice_vlan_trust": {
+                      "type": "boolean"
+                    },
+                    "ingress_policy_map": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "voice_vlan_trust",
+                    "ingress_policy_map"
+                  ],
+                  "additionalProperties": false
+                },
+                "spanning_tree": {
+                  "type": "object",
+                  "properties": {
+                    "bpdu_guard": {
+                      "type": "boolean"
+                    },
+                    "portfast": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "bpdu_guard",
+                    "portfast"
+                  ],
+                  "additionalProperties": false
+                },
+                "ip_dhcp_snooping": {
+                  "type": "object",
+                  "properties": {
+                    "untrusted_ports_default": {
+                      "type": "boolean"
+                    },
+                    "mac_address_validation": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "untrusted_ports_default",
+                    "mac_address_validation"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "authentication",
+                "quality_of_service",
+                "spanning_tree",
+                "ip_dhcp_snooping"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "access_switch_baseline"
+          ],
+          "additionalProperties": false
+        },
+        "endpoint_interfaces": {
+          "type": "object",
+          "properties": {
+            "default_profile": {
+              "type": "object",
+              "properties": {
+                "interface_range": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "native_vlan": {
+                  "type": "integer"
+                },
+                "voice_vlan": {
+                  "type": "integer"
+                },
+                "administrative_state": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "interface_range",
+                "mode",
+                "native_vlan",
+                "voice_vlan",
+                "administrative_state"
+              ],
+              "additionalProperties": false
+            },
+            "first_hop_security": {
+              "type": "object",
+              "properties": {
+                "dhcp_snooping": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "trust": {
+                      "type": "boolean"
+                    },
+                    "rate_limit_pps": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "trust",
+                    "rate_limit_pps"
+                  ],
+                  "additionalProperties": false
+                },
+                "ip_source_guard": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "binding_check": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "binding_check"
+                  ],
+                  "additionalProperties": false
+                },
+                "dai_inspect": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "logging": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "logging"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "dhcp_snooping",
+                "ip_source_guard",
+                "dai_inspect"
+              ],
+              "additionalProperties": false
+            },
+            "authentication_profile": {
+              "type": "object",
+              "properties": {
+                "dot1x_enabled": {
+                  "type": "boolean"
+                },
+                "mac_authentication_bypass": {
+                  "type": "boolean"
+                },
+                "host_mode": {
+                  "type": "string"
+                },
+                "auth_order": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "reauthentication_timer_seconds": {
+                  "type": "integer"
+                },
+                "inactivity_timer_seconds": {
+                  "type": "integer"
+                },
+                "fallback_targets": {
+                  "type": "object",
+                  "properties": {
+                    "guest_vlan": {
+                      "type": "integer"
+                    },
+                    "auth_fail_vlan": {
+                      "type": "integer"
+                    },
+                    "no_response_vlan": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "guest_vlan",
+                    "auth_fail_vlan",
+                    "no_response_vlan"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "dot1x_enabled",
+                "mac_authentication_bypass",
+                "host_mode",
+                "auth_order",
+                "reauthentication_timer_seconds",
+                "inactivity_timer_seconds",
+                "fallback_targets"
+              ],
+              "additionalProperties": false
+            },
+            "quality_of_service": {
+              "type": "object",
+              "properties": {
+                "trust_boundary": {
+                  "type": "string"
+                },
+                "voice_vlan_trust": {
+                  "type": "boolean"
+                },
+                "ingress_policy_map": {
+                  "type": "string"
+                },
+                "storm_control": {
+                  "type": "object",
+                  "properties": {
+                    "unicast_level_percent": {
+                      "type": "number"
+                    },
+                    "multicast_level_percent": {
+                      "type": "number"
+                    },
+                    "broadcast_level_percent": {
+                      "type": "number"
+                    },
+                    "action": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "unicast_level_percent",
+                    "multicast_level_percent",
+                    "broadcast_level_percent",
+                    "action"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "trust_boundary",
+                "voice_vlan_trust",
+                "ingress_policy_map",
+                "storm_control"
+              ],
+              "additionalProperties": false
+            },
+            "port_overrides": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "interface": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "access_vlan": {
+                    "type": "integer"
+                  },
+                  "voice_vlan": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "null = voice disabled on this override (e.g. a camera port)."
+                  },
+                  "dot1x_enabled": {
+                    "type": "boolean"
+                  },
+                  "mab_enabled": {
+                    "type": "boolean"
+                  },
+                  "mode": {
+                    "type": "string"
+                  },
+                  "native_vlan": {
+                    "type": "integer"
+                  },
+                  "allowed_vlans": {
+                    "type": "string"
+                  },
+                  "spanning_tree": {
+                    "type": "object",
+                    "properties": {
+                      "portfast": {
+                        "type": "boolean"
+                      },
+                      "bpdu_guard": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "portfast",
+                      "bpdu_guard"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "description",
+                  "dot1x_enabled",
+                  "interface"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "default_profile",
+            "first_hop_security",
+            "authentication_profile",
+            "quality_of_service",
+            "port_overrides"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "site_code",
+        "site_name",
+        "interface_provisioning",
+        "endpoint_interfaces"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "site_context"
+  ],
+  "additionalProperties": false
+}

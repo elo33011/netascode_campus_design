@@ -1,0 +1,739 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.abc-hq.example.net/netascode-campus/logical-topology.schema.json",
+  "title": "Logical Topology",
+  "description": "The campus's BGP underlay and VXLAN EVPN overlay -- how traffic is forwarded and isolated, independent of physical hardware. Structurally inferred from models/logical topology.yaml by scripts/generate_schemas.py -- regenerate after any change to that file rather than hand-editing this one.",
+  "type": "object",
+  "properties": {
+    "site_context": {
+      "type": "object",
+      "properties": {
+        "site_code": {
+          "type": "string"
+        },
+        "site_name": {
+          "type": "string"
+        },
+        "ipam_design": {
+          "type": "object",
+          "properties": {
+            "point_to_point": {
+              "type": "object",
+              "properties": {
+                "allocation": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "allocation"
+              ],
+              "additionalProperties": false
+            },
+            "loopback": {
+              "type": "object",
+              "properties": {
+                "allocation": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "allocation"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "point_to_point",
+            "loopback"
+          ],
+          "additionalProperties": false
+        },
+        "bgp_as_schemas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "as_id": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "as_id",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "evpn_overlay_design": {
+          "type": "object",
+          "properties": {
+            "vtep_parameters": {
+              "type": "object",
+              "properties": {
+                "nve_interface": {
+                  "type": "string"
+                },
+                "vtep_source_interface": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nve_interface",
+                "vtep_source_interface"
+              ],
+              "additionalProperties": false
+            },
+            "vni_service_mappings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vni_id": {
+                    "type": "integer"
+                  },
+                  "vlan_id": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "anycast_gateway_ip": {
+                    "type": "string",
+                    "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                    "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                  },
+                  "vrf_name": {
+                    "type": "string"
+                  },
+                  "route_distinguisher": {
+                    "type": "string"
+                  },
+                  "route_targets": {
+                    "type": "object",
+                    "properties": {
+                      "import": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "export": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "import",
+                      "export"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "dhcp_server": {
+                    "type": "string",
+                    "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                    "description": "IPv4 address, no prefix length."
+                  }
+                },
+                "required": [
+                  "description",
+                  "name",
+                  "vlan_id",
+                  "vni_id"
+                ],
+                "additionalProperties": false
+              },
+              "description": "The single source of truth for VNI/VLAN service mappings -- endpoint service.yaml's per-port config references vlan_id values from here rather than redefining them. Only VNI 10 (Campus_Users) carries anycast_gateway_ip / vrf_name / route_distinguisher / route_targets / dhcp_server -- VNIs 20/30/40/50/999 are a known, documented data-model gap, not omitted here."
+            }
+          },
+          "required": [
+            "vtep_parameters",
+            "vni_service_mappings"
+          ],
+          "additionalProperties": false
+        },
+        "device_interconnects": {
+          "type": "object",
+          "properties": {
+            "wan_routers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "failure_domain": {
+                    "type": "string"
+                  },
+                  "routing": {
+                    "type": "object",
+                    "properties": {
+                      "global": {
+                        "type": "object",
+                        "properties": {
+                          "bgp_asn": {
+                            "type": "integer"
+                          },
+                          "router_id": {
+                            "type": "string",
+                            "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                            "description": "IPv4 address, no prefix length."
+                          }
+                        },
+                        "required": [
+                          "bgp_asn",
+                          "router_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "loopbacks": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "interface": {
+                              "type": "string"
+                            },
+                            "ip_address": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "management"
+                              ],
+                              "description": "What this loopback is used for."
+                            }
+                          },
+                          "required": [
+                            "interface",
+                            "ip_address",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "bgp_peers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "description": {
+                              "type": "string"
+                            },
+                            "peer_ip": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                              "description": "IPv4 address, no prefix length."
+                            },
+                            "remote_as": {
+                              "type": "integer"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "ebgp",
+                                "ibgp"
+                              ],
+                              "description": "eBGP (to the ISP) or iBGP (underlay, within AS 65100)."
+                            }
+                          },
+                          "required": [
+                            "description",
+                            "peer_ip",
+                            "remote_as",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "bgp_peers",
+                      "global",
+                      "loopbacks"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "failure_domain",
+                  "name",
+                  "routing"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "core_routers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "failure_domain": {
+                    "type": "string"
+                  },
+                  "routing": {
+                    "type": "object",
+                    "properties": {
+                      "global": {
+                        "type": "object",
+                        "properties": {
+                          "bgp_asn": {
+                            "type": "integer"
+                          },
+                          "router_id": {
+                            "type": "string",
+                            "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                            "description": "IPv4 address, no prefix length."
+                          }
+                        },
+                        "required": [
+                          "bgp_asn",
+                          "router_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "loopbacks": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "interface": {
+                              "type": "string"
+                            },
+                            "ip_address": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "management"
+                              ],
+                              "description": "What this loopback is used for."
+                            }
+                          },
+                          "required": [
+                            "interface",
+                            "ip_address",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "interfaces": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "interface": {
+                              "type": "string"
+                            },
+                            "ip_address": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                            }
+                          },
+                          "required": [
+                            "interface",
+                            "ip_address"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "bgp_peers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "description": {
+                              "type": "string"
+                            },
+                            "peer_ip": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                              "description": "IPv4 address, no prefix length."
+                            },
+                            "remote_as": {
+                              "type": "integer"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "ibgp"
+                              ],
+                              "description": "eBGP (to the ISP) or iBGP (underlay, within AS 65100)."
+                            }
+                          },
+                          "required": [
+                            "description",
+                            "peer_ip",
+                            "remote_as",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "bgp_peers",
+                      "global",
+                      "interfaces",
+                      "loopbacks"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "failure_domain",
+                  "name",
+                  "routing"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "aggregation_switches": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "failure_domain": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "aggregation-transit"
+                    ],
+                    "description": "device_role() also derives this from the -agg- hostname convention; stated explicitly here too."
+                  },
+                  "routing": {
+                    "type": "object",
+                    "properties": {
+                      "global": {
+                        "type": "object",
+                        "properties": {
+                          "bgp_asn": {
+                            "type": "integer"
+                          },
+                          "router_id": {
+                            "type": "string",
+                            "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                            "description": "IPv4 address, no prefix length."
+                          }
+                        },
+                        "required": [
+                          "bgp_asn",
+                          "router_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "loopbacks": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "interface": {
+                              "type": "string"
+                            },
+                            "ip_address": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "management"
+                              ],
+                              "description": "What this loopback is used for."
+                            }
+                          },
+                          "required": [
+                            "interface",
+                            "ip_address",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "interfaces": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "interface": {
+                              "type": "string"
+                            },
+                            "ip_address": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                            }
+                          },
+                          "required": [
+                            "interface",
+                            "ip_address"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "bgp_peers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "description": {
+                              "type": "string"
+                            },
+                            "peer_ip": {
+                              "type": "string",
+                              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                              "description": "IPv4 address, no prefix length."
+                            },
+                            "remote_as": {
+                              "type": "integer"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "ibgp"
+                              ],
+                              "description": "eBGP (to the ISP) or iBGP (underlay, within AS 65100)."
+                            }
+                          },
+                          "required": [
+                            "description",
+                            "peer_ip",
+                            "remote_as",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "bgp_peers",
+                      "global",
+                      "interfaces",
+                      "loopbacks"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "failure_domain",
+                  "name",
+                  "role",
+                  "routing"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "floors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "floor_number": {
+                    "type": "integer"
+                  },
+                  "access_vteps": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "failure_domain": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "access-vtep"
+                          ],
+                          "description": "device_role() also derives this from the -acc- hostname convention; stated explicitly here too."
+                        },
+                        "evpn_vtep": {
+                          "type": "object",
+                          "properties": {
+                            "global": {
+                              "type": "object",
+                              "properties": {
+                                "bgp_asn": {
+                                  "type": "integer"
+                                },
+                                "router_id": {
+                                  "type": "string",
+                                  "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                                  "description": "IPv4 address, no prefix length."
+                                }
+                              },
+                              "required": [
+                                "bgp_asn",
+                                "router_id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "loopbacks": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "interface": {
+                                    "type": "string"
+                                  },
+                                  "ip_address": {
+                                    "type": "string",
+                                    "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                                    "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "management",
+                                      "vtep-source"
+                                    ],
+                                    "description": "management = Loopback0 (day-2 mgmt/underlay router-id source); vtep-source = Loopback1 (NVE/VXLAN tunnel source)."
+                                  }
+                                },
+                                "required": [
+                                  "interface",
+                                  "ip_address",
+                                  "type"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "interfaces": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "interface": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "ip_address": {
+                                    "type": "string",
+                                    "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+                                    "description": "IPv4 address in CIDR notation (address/prefix-length)."
+                                  }
+                                },
+                                "required": [
+                                  "description",
+                                  "interface",
+                                  "ip_address"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "bgp_peers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "peer_ip": {
+                                    "type": "string",
+                                    "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                                    "description": "IPv4 address, no prefix length."
+                                  },
+                                  "remote_as": {
+                                    "type": "integer"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "ibgp"
+                                    ],
+                                    "description": "eBGP (to the ISP) or iBGP (underlay, within AS 65100)."
+                                  }
+                                },
+                                "required": [
+                                  "description",
+                                  "peer_ip",
+                                  "remote_as",
+                                  "type"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "bgp_peers",
+                            "global",
+                            "interfaces",
+                            "loopbacks"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "evpn_vtep",
+                        "failure_domain",
+                        "name",
+                        "role"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "floor_number",
+                  "access_vteps"
+                ],
+                "additionalProperties": false
+              },
+              "description": "Only floor_number: 1 is spelled out; floors 2-10 repeat this same access_vteps pattern."
+            }
+          },
+          "required": [
+            "wan_routers",
+            "core_routers",
+            "aggregation_switches",
+            "floors"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "site_code",
+        "site_name",
+        "ipam_design",
+        "bgp_as_schemas",
+        "evpn_overlay_design",
+        "device_interconnects"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "site_context"
+  ],
+  "additionalProperties": false
+}

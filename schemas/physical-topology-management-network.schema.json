@@ -1,0 +1,616 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.abc-hq.example.net/netascode-campus/physical-topology-management-network.schema.json",
+  "title": "Physical Topology - Management Network",
+  "description": "Ground-truth inventory of the OOB management network -- terminal servers, management switches, and console cabling. Structurally inferred from models/physical topology management network.yaml by scripts/generate_schemas.py -- regenerate after any change to that file rather than hand-editing this one.",
+  "type": "object",
+  "properties": {
+    "management_context": {
+      "type": "object",
+      "properties": {
+        "site_code": {
+          "type": "string"
+        },
+        "site_name": {
+          "type": "string"
+        },
+        "failure_domains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "domain_id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "rack_group": {
+                "type": "string"
+              },
+              "racks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rack_id": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "u_space_total": {
+                      "type": "integer"
+                    },
+                    "mounted_devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "u_position_start": {
+                            "type": "integer"
+                          },
+                          "u_height": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "u_height",
+                          "u_position_start"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "location",
+                    "mounted_devices",
+                    "rack_id",
+                    "u_space_total"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "description",
+              "domain_id",
+              "rack_group",
+              "racks"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "link_standards": {
+          "type": "object",
+          "properties": {
+            "mgt_wan_circuit": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media",
+                "description"
+              ],
+              "additionalProperties": false
+            },
+            "mgt_backbone": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media",
+                "description"
+              ],
+              "additionalProperties": false
+            },
+            "mgt_ethernet": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media",
+                "description"
+              ],
+              "additionalProperties": false
+            },
+            "mgt_console": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "mgt_wan_circuit",
+            "mgt_backbone",
+            "mgt_ethernet",
+            "mgt_console"
+          ],
+          "additionalProperties": false
+        },
+        "ipam_schema": {
+          "type": "object",
+          "properties": {
+            "oob_wan_subnet_fd_a": {
+              "type": "string",
+              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+            },
+            "oob_wan_subnet_fd_b": {
+              "type": "string",
+              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+            },
+            "oob_management_loopbacks": {
+              "type": "string",
+              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+            },
+            "oob_console_servers": {
+              "type": "string",
+              "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$",
+              "description": "IPv4 address in CIDR notation (address/prefix-length)."
+            }
+          },
+          "required": [
+            "oob_wan_subnet_fd_a",
+            "oob_wan_subnet_fd_b",
+            "oob_management_loopbacks",
+            "oob_console_servers"
+          ],
+          "additionalProperties": false
+        },
+        "management_tier": {
+          "type": "object",
+          "properties": {
+            "mgt_wan_routers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "failure_domain": {
+                    "type": "string"
+                  },
+                  "rack_location": {
+                    "type": "string"
+                  },
+                  "external_links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "interface": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "mgt_wan_circuit"
+                          ],
+                          "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                        },
+                        "description": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "description",
+                        "interface",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "internal_links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "local_port": {
+                          "type": "string"
+                        },
+                        "remote_device": {
+                          "type": "string"
+                        },
+                        "remote_port": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "mgt_backbone"
+                          ],
+                          "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                        }
+                      },
+                      "required": [
+                        "local_port",
+                        "remote_device",
+                        "remote_port",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "external_links",
+                  "failure_domain",
+                  "internal_links",
+                  "name",
+                  "rack_location"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "mgt_core_switches": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "failure_domain": {
+                    "type": "string"
+                  },
+                  "rack_location": {
+                    "type": "string"
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "local_port": {
+                          "type": "string"
+                        },
+                        "remote_device": {
+                          "type": "string"
+                        },
+                        "remote_port": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "mgt_backbone"
+                          ],
+                          "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                        }
+                      },
+                      "required": [
+                        "local_port",
+                        "remote_device",
+                        "remote_port",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "failure_domain",
+                  "links",
+                  "name",
+                  "rack_location"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "mgt_access_nodes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "terminal_server",
+                      "mgt_switch"
+                    ],
+                    "description": "What this MER-level OOB access node is: a console terminal server (async_console_mappings) or a management-plane switch (mgt_ethernet_mappings)."
+                  },
+                  "failure_domain": {
+                    "type": "string"
+                  },
+                  "rack_location": {
+                    "type": "string"
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "local_port": {
+                          "type": "string"
+                        },
+                        "remote_device": {
+                          "type": "string"
+                        },
+                        "remote_port": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "mgt_backbone"
+                          ],
+                          "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                        }
+                      },
+                      "required": [
+                        "local_port",
+                        "remote_device",
+                        "remote_port",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "async_console_mappings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "async_port": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "target_device": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "async_port",
+                        "description",
+                        "target_device"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "mgt_ethernet_mappings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "mgt_port": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "target_device": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "description",
+                        "mgt_port",
+                        "target_device"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "failure_domain",
+                  "links",
+                  "name",
+                  "rack_location",
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "floors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "floor_number": {
+                    "type": "integer"
+                  },
+                  "oob_nodes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "combo_console_switch"
+                          ],
+                          "description": "Floor-level OOB node combining both console (async_console_mappings) and switched-Ethernet (mgt_ethernet_mappings) access in one device."
+                        },
+                        "failure_domain": {
+                          "type": "string"
+                        },
+                        "rack_location": {
+                          "type": "string"
+                        },
+                        "uplink": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "local_port": {
+                                "type": "string"
+                              },
+                              "remote_device": {
+                                "type": "string"
+                              },
+                              "remote_port": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "mgt_backbone"
+                                ],
+                                "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                              }
+                            },
+                            "required": [
+                              "local_port",
+                              "remote_device",
+                              "remote_port",
+                              "type"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "async_console_mappings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "async_port": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "target_device": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "async_port",
+                              "description",
+                              "target_device"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "mgt_ethernet_mappings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "mgt_port": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "target_device": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "description",
+                              "mgt_port",
+                              "target_device"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "async_console_mappings",
+                        "failure_domain",
+                        "mgt_ethernet_mappings",
+                        "name",
+                        "rack_location",
+                        "type",
+                        "uplink"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "floor_number",
+                  "oob_nodes"
+                ],
+                "additionalProperties": false
+              },
+              "description": "Only floor_number: 1 is spelled out; floors 2-10 repeat this same oob_nodes pattern, one per production access switch pair (see physical topology.yaml's own floors: for the pattern this mirrors)."
+            }
+          },
+          "required": [
+            "mgt_wan_routers",
+            "mgt_core_switches",
+            "mgt_access_nodes",
+            "floors"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "site_code",
+        "site_name",
+        "failure_domains",
+        "link_standards",
+        "ipam_schema",
+        "management_tier"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "management_context"
+  ],
+  "additionalProperties": false
+}

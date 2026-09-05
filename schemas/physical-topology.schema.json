@@ -1,0 +1,452 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.abc-hq.example.net/netascode-campus/physical-topology.schema.json",
+  "title": "Physical Topology - Campus Network",
+  "description": "Ground-truth inventory of campus network hardware and cabling -- devices, ports, and interconnects. Structurally inferred from models/physical topology.yaml by scripts/generate_schemas.py -- regenerate after any change to that file rather than hand-editing this one.",
+  "type": "object",
+  "properties": {
+    "site_physical_topology": {
+      "type": "object",
+      "properties": {
+        "site_code": {
+          "type": "string"
+        },
+        "site_name": {
+          "type": "string"
+        },
+        "building": {
+          "type": "string"
+        },
+        "failure_domains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "domain_id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "rack_group": {
+                "type": "string"
+              },
+              "racks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rack_id": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "u_space_total": {
+                      "type": "integer"
+                    },
+                    "mounted_devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "u_position_start": {
+                            "type": "integer"
+                          },
+                          "u_height": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "u_height",
+                          "u_position_start"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "location",
+                    "mounted_devices",
+                    "rack_id",
+                    "u_space_total"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "description",
+              "domain_id",
+              "rack_group",
+              "racks"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "link_standards": {
+          "type": "object",
+          "properties": {
+            "wan_circuit": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media"
+              ],
+              "additionalProperties": false
+            },
+            "inter_device": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media"
+              ],
+              "additionalProperties": false
+            },
+            "core_to_agg": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media"
+              ],
+              "additionalProperties": false
+            },
+            "agg_to_access": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "string"
+                },
+                "media": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "speed",
+                "media"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "wan_circuit",
+            "inter_device",
+            "core_to_agg",
+            "agg_to_access"
+          ],
+          "additionalProperties": false
+        },
+        "wan_routers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "failure_domain": {
+                "type": "string"
+              },
+              "rack_location": {
+                "type": "string"
+              },
+              "external_links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "interface": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "wan_circuit"
+                      ],
+                      "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "description",
+                    "interface",
+                    "type"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "internal_links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "local_port": {
+                      "type": "string"
+                    },
+                    "remote_device": {
+                      "type": "string"
+                    },
+                    "remote_port": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "inter_device"
+                      ],
+                      "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                    }
+                  },
+                  "required": [
+                    "local_port",
+                    "remote_device",
+                    "remote_port",
+                    "type"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "external_links",
+              "failure_domain",
+              "internal_links",
+              "name",
+              "rack_location"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "core_routers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "failure_domain": {
+                "type": "string"
+              },
+              "rack_location": {
+                "type": "string"
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "local_port": {
+                      "type": "string"
+                    },
+                    "remote_device": {
+                      "type": "string"
+                    },
+                    "remote_port": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "inter_device",
+                        "core_to_agg"
+                      ],
+                      "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                    }
+                  },
+                  "required": [
+                    "local_port",
+                    "remote_device",
+                    "remote_port",
+                    "type"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "failure_domain",
+              "links",
+              "name",
+              "rack_location"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "aggregation_switches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "failure_domain": {
+                "type": "string"
+              },
+              "rack_location": {
+                "type": "string"
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "local_port": {
+                      "type": "string"
+                    },
+                    "remote_device": {
+                      "type": "string"
+                    },
+                    "remote_port": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "inter_device"
+                      ],
+                      "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                    }
+                  },
+                  "required": [
+                    "local_port",
+                    "remote_device",
+                    "remote_port",
+                    "type"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "failure_domain",
+              "links",
+              "name",
+              "rack_location"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "floors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "floor_number": {
+                "type": "integer"
+              },
+              "access_switches": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "failure_domain": {
+                      "type": "string"
+                    },
+                    "rack_location": {
+                      "type": "string"
+                    },
+                    "uplinks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "local_port": {
+                            "type": "string"
+                          },
+                          "remote_device": {
+                            "type": "string"
+                          },
+                          "remote_port": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "agg_to_access"
+                            ],
+                            "description": "Link-speed/media class, keyed into this same document's link_standards mapping (its top-level keys are the closed set of valid values here)."
+                          }
+                        },
+                        "required": [
+                          "local_port",
+                          "remote_device",
+                          "remote_port",
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "failure_domain",
+                    "name",
+                    "rack_location",
+                    "uplinks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "floor_number",
+              "access_switches"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Only floor_number: 1 is spelled out; floors 2-10 repeat this same access_switches pattern (see design.md and the templates' own header notes)."
+        }
+      },
+      "required": [
+        "site_code",
+        "site_name",
+        "building",
+        "failure_domains",
+        "link_standards",
+        "wan_routers",
+        "core_routers",
+        "aggregation_switches",
+        "floors"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "site_physical_topology"
+  ],
+  "additionalProperties": false
+}

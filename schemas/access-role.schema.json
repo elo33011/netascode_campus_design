@@ -1,0 +1,512 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.abc-hq.example.net/netascode-campus/access-role.schema.json",
+  "title": "Access Role (platform: Catalyst 9000)",
+  "description": "Platform-agnostic hardening/security/operational baseline for access switches, rendered by templates/catalyst 9000.j2. Structurally inferred from models/access role.yaml by scripts/generate_schemas.py -- regenerate after any change to that file rather than hand-editing this one.",
+  "type": "object",
+  "properties": {
+    "platform_access_baseline": {
+      "type": "object",
+      "properties": {
+        "management_plane": {
+          "type": "object",
+          "properties": {
+            "banner_login": {
+              "type": "string"
+            },
+            "ssh_version": {
+              "type": "string"
+            },
+            "console_timeout_minutes": {
+              "type": "integer"
+            },
+            "vty_timeout_minutes": {
+              "type": "integer"
+            },
+            "login_retries": {
+              "type": "integer"
+            },
+            "dns": {
+              "type": "object",
+              "properties": {
+                "domain_name": {
+                  "type": "string"
+                },
+                "source_interface": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "domain_name",
+                "source_interface"
+              ],
+              "additionalProperties": false
+            },
+            "http_services": {
+              "type": "object",
+              "properties": {
+                "enable": {
+                  "type": "boolean"
+                },
+                "secure_only": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "enable",
+                "secure_only"
+              ],
+              "additionalProperties": false
+            },
+            "ntp": {
+              "type": "object",
+              "properties": {
+                "servers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                    "description": "IPv4 address, no prefix length."
+                  }
+                },
+                "source_interface": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "servers",
+                "source_interface"
+              ],
+              "additionalProperties": false
+            },
+            "syslog": {
+              "type": "object",
+              "properties": {
+                "servers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Empty in this data model -- documented gap (no syslog servers configured), not a fabricated default. Items are hostname/IP strings, same shape as ntp.servers."
+                },
+                "source_interface": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "null = no syslog servers configured, so nothing to source from."
+                },
+                "severity_level": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "null = no syslog servers configured, so no severity level set."
+                }
+              },
+              "required": [
+                "servers",
+                "source_interface",
+                "severity_level"
+              ],
+              "additionalProperties": false
+            },
+            "snmp": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "contact": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                },
+                "community_strings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "trap_destinations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                    "description": "IPv4 address, no prefix length."
+                  }
+                }
+              },
+              "required": [
+                "enabled",
+                "contact",
+                "location",
+                "community_strings",
+                "trap_destinations"
+              ],
+              "additionalProperties": false
+            },
+            "tacacs": {
+              "type": "object",
+              "properties": {
+                "servers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Empty in this data model -- documented gap (no TACACS+ servers configured), not a fabricated default. Items are hostname/IP strings, same shape as ntp.servers."
+                },
+                "source_interface": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "null = no TACACS+ servers configured, so nothing to source from."
+                },
+                "encryption_key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "null = no TACACS+ servers configured, so no shared key."
+                }
+              },
+              "required": [
+                "servers",
+                "source_interface",
+                "encryption_key"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "banner_login",
+            "ssh_version",
+            "console_timeout_minutes",
+            "vty_timeout_minutes",
+            "login_retries",
+            "dns",
+            "http_services",
+            "ntp",
+            "syslog",
+            "snmp",
+            "tacacs"
+          ],
+          "additionalProperties": false
+        },
+        "infrastructure_protection": {
+          "type": "object",
+          "properties": {
+            "icmp_standards": {
+              "type": "object",
+              "properties": {
+                "unreachable_rate_limit": {
+                  "type": "integer"
+                },
+                "accept_redirects": {
+                  "type": "boolean"
+                },
+                "mask_requests": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "unreachable_rate_limit",
+                "accept_redirects",
+                "mask_requests"
+              ],
+              "additionalProperties": false
+            },
+            "disabled_ip_services": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ipv6_hardening": {
+              "type": "object",
+              "properties": {
+                "ra_suppress": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "ra_suppress"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "icmp_standards",
+            "disabled_ip_services",
+            "ipv6_hardening"
+          ],
+          "additionalProperties": false
+        },
+        "endpoint_access_security": {
+          "type": "object",
+          "properties": {
+            "dot1x_authentication": {
+              "type": "object",
+              "properties": {
+                "enable": {
+                  "type": "boolean"
+                },
+                "host_mode": {
+                  "type": "string"
+                },
+                "fallback_mechanism": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "restricted_vlan": {
+                      "type": "integer"
+                    },
+                    "reinitialize_timer_seconds": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "restricted_vlan",
+                    "reinitialize_timer_seconds"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "enable",
+                "host_mode",
+                "fallback_mechanism"
+              ],
+              "additionalProperties": false
+            },
+            "port_security": {
+              "type": "object",
+              "properties": {
+                "enable": {
+                  "type": "boolean"
+                },
+                "max_mac_addresses_per_port": {
+                  "type": "integer"
+                },
+                "violation_action": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "enable",
+                "max_mac_addresses_per_port",
+                "violation_action"
+              ],
+              "additionalProperties": false
+            },
+            "dhcp_snooping": {
+              "type": "object",
+              "properties": {
+                "enable": {
+                  "type": "boolean"
+                },
+                "trust_uplinks_to_transit": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "enable",
+                "trust_uplinks_to_transit"
+              ],
+              "additionalProperties": false
+            },
+            "dynamic_arp_inspection": {
+              "type": "object",
+              "properties": {
+                "enable": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "enable"
+              ],
+              "additionalProperties": false
+            },
+            "storm_control": {
+              "type": "object",
+              "properties": {
+                "broadcast_pps": {
+                  "type": "integer"
+                },
+                "multicast_pps": {
+                  "type": "integer"
+                },
+                "action": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "broadcast_pps",
+                "multicast_pps",
+                "action"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "dot1x_authentication",
+            "port_security",
+            "dhcp_snooping",
+            "dynamic_arp_inspection",
+            "storm_control"
+          ],
+          "additionalProperties": false
+        },
+        "routing_baseline": {
+          "type": "object",
+          "properties": {
+            "control_plane_policing": {
+              "type": "object",
+              "properties": {
+                "enable": {
+                  "type": "boolean"
+                },
+                "protocols": {
+                  "type": "object",
+                  "properties": {
+                    "routing_updates": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ],
+                      "description": "CoPP priority tier (rate is derived from this in the template, not stored here)."
+                    },
+                    "management_access": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ],
+                      "description": "CoPP priority tier (rate is derived from this in the template, not stored here)."
+                    },
+                    "transit_traffic": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ],
+                      "description": "CoPP priority tier (rate is derived from this in the template, not stored here)."
+                    }
+                  },
+                  "required": [
+                    "routing_updates",
+                    "management_access",
+                    "transit_traffic"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "enable",
+                "protocols"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "control_plane_policing"
+          ],
+          "additionalProperties": false
+        },
+        "hardware_integrity": {
+          "type": "object",
+          "properties": {
+            "secure_boot_verification": {
+              "type": "boolean"
+            },
+            "environmental_monitoring": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "secure_boot_verification",
+            "environmental_monitoring"
+          ],
+          "additionalProperties": false
+        },
+        "interface_baseline": {
+          "type": "object",
+          "properties": {
+            "unused_edge_ports": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string"
+                },
+                "default_vlan": {
+                  "type": "integer"
+                },
+                "shutdown": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "mode",
+                "default_vlan",
+                "shutdown"
+              ],
+              "additionalProperties": false
+            },
+            "underlay_uplinks": {
+              "type": "object",
+              "properties": {
+                "link_aggregation": {
+                  "type": "object",
+                  "properties": {
+                    "protocol": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "protocol",
+                    "mode"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "link_aggregation"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "unused_edge_ports",
+            "underlay_uplinks"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "management_plane",
+        "infrastructure_protection",
+        "endpoint_access_security",
+        "routing_baseline",
+        "hardware_integrity",
+        "interface_baseline"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "platform_access_baseline"
+  ],
+  "additionalProperties": false
+}
