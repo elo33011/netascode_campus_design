@@ -1,0 +1,188 @@
+{# ============================================================================
+   Endpoint Service Deployment Template (Catalyst 9000 / IOS-XE access
+   switches only)
+   ============================================================================
+   BAU switchport provisioning, NOT part of the one-time "Step 1. Baseline
+   Build" workflow the other three templates chain into (platform baseline
+   -> physical topology -> logical topology). This is the template
+   playbooks/bau_endpoint_provisioning.yml re-runs any time an endpoint
+   port needs adding or changing -- new camera, new AP, a moved desk --
+   without touching the fabric build at all.
+
+   Renders purely from:
+     platform_access_baseline : access role.yaml's platform_access_baseline
+                                 (for the switch-wide enable flags +
+                                 thresholds its own endpoint_access_security
+                                 block explicitly defers to "the interface
+                                 stage" -- port_security thresholds,
+                                 dot1x_authentication.enable/host_mode,
+                                 dhcp_snooping.enable, dynamic_arp_inspection
+                                 .enable)
+     endpoint_service         : endpoint service.yaml's site_context (the
+                                 actual per-port policy: which ports, which
+                                 VLANs, which profile)
+     device_name, platform     : same convention as the other templates
+
+   Two data models feed every rendered port, same pattern
+   wan_peer_binding() already uses across site_physical_topology +
+   site_context: endpoint_port_configs() (filter_plugins/netascode_filters.py)
+   expands endpoint_service.endpoint_interfaces.default_profile across its
+   interface_range and layers each port_overrides entry on top, resolving
+   the two VLAN-field spellings the model itself uses (default_profile's
+   "native_vlan" vs. port_overrides' "access_vlan" for the same access-mode
+   concept -- see that function's docstring); platform_access_baseline
+   supplies the switch-wide toggles that decide whether each per-port block
+   below is emitted at all.
+
+   Findings worth flagging while building this (matches this repo's
+   "flag inline, don't silently resolve" convention for cross-model
+   inconsistencies):
+
+   1. platform_access_baseline.endpoint_access_security.dot1x_authentication
+      .fallback_mechanism.restricted_vlan is 998, which (per catalyst
+      9000.j2's own header finding) does not exist in the site's VLAN/VNI
+      catalog (10,20,30,40,50,999). This template does NOT use that value:
+      endpoint_service.yaml's own authentication_profile.fallback_targets
+      (guest_vlan/auth_fail_vlan/no_response_vlan) all resolve to 999,
+      which DOES exist -- so the interface-level "authentication event ...
+      vlan" commands below are driven entirely by endpoint_service.yaml,
+      never by the baseline's restricted_vlan. Confirm 998 is meant to be
+      retired from platform_access_baseline.yaml rather than carried
+      forward once this becomes the only place restricted_vlan could ever
+      be wired in.
+   2. platform_access_baseline.endpoint_access_security.storm_control
+      (broadcast_pps/multicast_pps: 500, action "trap_and_log") and
+      endpoint_service.yaml's endpoint_interfaces.quality_of_service.
+      storm_control (percent-of-bandwidth thresholds, action "shutdown")
+      define storm control for the same access ports two different ways.
+      This template renders ONLY endpoint_service.yaml's percent-based
+      values below (the ones with per-port fields IOS-XE's
+      `storm-control ... level <pct>` syntax actually needs) -- the
+      baseline's pps-based numbers are unused and should be reconciled or
+      removed from platform_access_baseline.yaml.
+   3. platform_access_baseline.interface_baseline.unused_edge_ports and
+      .underlay_uplinks.link_aggregation are both out of scope here:
+      endpoint_service.yaml's interface_range
+      ("GigabitEthernet1/0/1-48") already covers every port this template
+      touches, so there are no "unused" ports left over to apply
+      unused_edge_ports to; underlay_uplinks.link_aggregation concerns the
+      fabric-facing TenGigabitEthernet1/1/x uplinks physical/logical
+      topology.j2 already fully configure as standalone routed (not
+      LACP-bundled) EVPN VTEP links, not these user-facing GigabitEthernet
+      ports.
+   Usage note: pass a list `target_interfaces` (e.g. ["GigabitEthernet1/0/5"])
+   to render/push only those ports -- the BAU case of "just this one new
+   drop", not a full re-push of all 48 ports every time. Omit it (or leave
+   it empty) to render every port endpoint_service.yaml's interface_range
+   covers, same as the one-time build path (scripts/render_configs.py)
+   uses. The switch-wide VLAN-dependent commands above are always derived
+   from the FULL port set regardless of target_interfaces, since the
+   dhcp-snooping/arp-inspection VLAN list is a device-wide setting, not a
+   per-port one -- narrowing it to just the targeted ports could silently
+   drop VLANs other, already-provisioned ports still rely on.
+   ============================================================================ #}
+{% set eas = platform_access_baseline.endpoint_access_security %}
+{% set target_interfaces = target_interfaces | default([]) %}
+{% set all_ports = endpoint_service | endpoint_port_configs %}
+{% set ports = all_ports | selectattr('interface', 'in', target_interfaces) | list if target_interfaces else all_ports %}
+{% set vlan_list = endpoint_service | endpoint_vlan_list %}
+!
+{# -------------------------- Switch-wide VLAN-dependent commands --------------------------
+   platform_access_baseline's own template (catalyst 9000.j2) enables these
+   features device-wide but explicitly defers the VLAN list itself ("needs
+   the site's VLAN list ... not rendered here for the same reason") --
+   endpoint_service.yaml is that VLAN list, so it's rendered here instead. #}
+{% if eas.dhcp_snooping.enable %}
+ip dhcp snooping vlan {{ vlan_list | join(',') }}
+{% endif %}
+{% if eas.dynamic_arp_inspection.enable %}
+ip arp inspection vlan {{ vlan_list | join(',') }}
+{% endif %}
+!
+{% for p in ports %}
+interface {{ p.interface }}
+{% if p.description %}
+ description {{ p.description }}
+{% endif %}
+{% if p.mode == 'access' %}
+ switchport mode access
+ switchport access vlan {{ p.vlan }}
+{% if p.voice_vlan %}
+ switchport voice vlan {{ p.voice_vlan }}
+{% endif %}
+{% if eas.port_security.enable %}
+ switchport port-security
+ switchport port-security maximum {{ eas.port_security.max_mac_addresses_per_port }}
+ switchport port-security violation {{ eas.port_security.violation_action }}
+{% endif %}
+{% set auth_methods = [] %}
+{% if p.dot1x_enabled %}{% set _ = auth_methods.append('dot1x') %}{% endif %}
+{% if p.mab_enabled %}{% set _ = auth_methods.append('mab') %}{% endif %}
+{% if auth_methods %}
+ authentication event fail action authorize vlan {{ p.fallback_targets.auth_fail_vlan }}
+ authentication event no-response action authorize vlan {{ p.fallback_targets.no_response_vlan }}
+{# server-dead (AAA unreachable) fail-open target -- guest_vlan has no other
+   per-port trigger in this data model, so it's mapped here. #}
+ authentication event server dead action authorize vlan {{ p.fallback_targets.guest_vlan }}
+ authentication host-mode {{ p.host_mode }}
+ authentication order {{ auth_methods | join(' ') }}
+ authentication port-control auto
+ authentication periodic
+ authentication timer reauthenticate {{ p.reauth_timer }}
+ authentication timer inactivity {{ p.inactivity_timer }}
+{% if p.dot1x_enabled %}
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+{% endif %}
+{% if p.mab_enabled %}
+ mab
+{% endif %}
+{% else %}
+! NOTE: neither dot1x nor MAB enabled on this port -- open access, no
+! endpoint authentication. Confirm this is intentional.
+{% endif %}
+{% if eas.dhcp_snooping.enable %}
+{% if p.dhcp_snooping_trust %}
+ ip dhcp snooping trust
+{% else %}
+ ip dhcp snooping limit rate {{ p.dhcp_snooping_rate_limit }}
+{% endif %}
+{% endif %}
+{% if p.ip_source_guard.enabled %}
+{% if p.ip_source_guard.binding_check == 'ip-mac' %}
+ ip verify source port-security
+{% else %}
+ ip verify source
+{% endif %}
+{% endif %}
+ storm-control unicast level {{ p.storm_control.unicast_level_percent }}
+ storm-control multicast level {{ p.storm_control.multicast_level_percent }}
+ storm-control broadcast level {{ p.storm_control.broadcast_level_percent }}
+ storm-control action {{ p.storm_control.action }}
+{% if p.voice_vlan_trust %}
+ service-policy input {{ p.ingress_policy_map }}
+{% endif %}
+{% if p.portfast %}
+ spanning-tree portfast
+{% endif %}
+{% elif p.mode == 'trunk' %}
+ switchport mode trunk
+ switchport trunk native vlan {{ p.vlan }}
+{% if p.allowed_vlans %}
+ switchport trunk allowed vlan {{ p.allowed_vlans }}
+{% endif %}
+{% if p.portfast %}
+ spanning-tree portfast trunk
+{% endif %}
+{% endif %}
+{% if p.bpdu_guard %}
+ spanning-tree bpduguard enable
+{% endif %}
+{% if p.administrative_state %}
+ no shutdown
+{% else %}
+ shutdown
+{% endif %}
+!
+{% endfor %}
+end

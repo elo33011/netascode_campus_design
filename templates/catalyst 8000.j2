@@ -156,9 +156,46 @@ ip access-list extended {{ wan_if.ingress_acl_name }}
 {# -------------------------- Control Plane Policing skeleton -------------------------- #}
 {% if rb.control_plane_policing.enable %}
 {% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+ip access-list extended COPP-ACL-ROUTING_UPDATES
+ remark BGP control-plane sessions -- the only routing protocol anywhere in
+ remark this design's data model (logical_topology.yaml has no OSPF/EIGRP
+ remark session defined); extend this ACL if another IGP is ever added.
+ permit tcp any eq bgp any
+ permit tcp any any eq bgp
+!
+ip access-list extended COPP-ACL-MANAGEMENT_ACCESS
+ remark Device management-plane access -- only matches protocols THIS
+ remark device's own management_plane settings actually enable (SSH is
+ remark unconditional; SNMP/NTP/TACACS+ only when enabled/non-empty),
+ remark same "don't render disabled things" rule the rest of this
+ remark template already follows.
+ permit tcp any any eq 22
+{% if mp.snmp.enabled %}
+ permit udp any any eq snmp
+ permit udp any any eq snmptrap
+{% endif %}
+{% if mp.ntp.servers %}
+ permit udp any any eq ntp
+{% endif %}
+{% if mp.tacacs.servers %}
+ permit tcp any any eq tacacs
+{% endif %}
+!
+ip access-list extended COPP-ACL-TRANSIT_TRAFFIC
+ remark ICMP hardware-forwarding-exception traffic (unreachables/TTL-exceeded
+ remark generation -- icmp_standards.unreachable_rate_limit is always set in
+ remark this baseline). ARP is matched separately below via "match protocol
+ remark arp" since ARP isn't an IP protocol an ACL can match. This is a
+ remark standard CoPP classification pairing, not a value logical_topology.
+ remark yaml / platform_wan_baseline.yaml specifies.
+ permit icmp any any
+!
 {% for class_name, priority in rb.control_plane_policing.protocols.items() %}
 class-map match-any COPP-{{ class_name | upper }}
- remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+ match access-group name COPP-ACL-{{ class_name | upper }}
+{% if class_name == 'transit_traffic' %}
+ match protocol arp
+{% endif %}
 !
 {% endfor %}
 policy-map CONTROL-PLANE-POLICY

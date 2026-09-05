@@ -204,9 +204,42 @@ copp profile strict
 ! on top of the profile for finer-grained handling than the profile alone
 ! provides.
 {% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+ip access-list COPP-ACL-ROUTING_UPDATES
+  permit tcp any eq bgp any
+  permit tcp any any eq bgp
+!
+ip access-list COPP-ACL-MANAGEMENT_ACCESS
+  permit tcp any any eq 22
+{% if mp.snmp.enabled %}
+  permit udp any any eq snmp
+  permit udp any any eq snmptrap
+{% endif %}
+{% if mp.ntp.servers %}
+  permit udp any any eq ntp
+{% endif %}
+{% if mp.tacacs.servers %}
+  permit tcp any any eq tacacs
+{% endif %}
+!
+ip access-list COPP-ACL-TRANSIT_TRAFFIC
+  permit icmp any any
+!
+! NOTE: routing_updates matches BGP only (the only routing protocol
+! anywhere in logical_topology.yaml); management_access only matches
+! protocols this device's own management_plane settings actually enable
+! (SSH unconditional, SNMP/NTP/TACACS+ only when enabled/non-empty);
+! transit_traffic pairs the ICMP ACL above with "match protocol arp" below
+! (ARP isn't an IP protocol an ACL can match) -- a standard CoPP
+! classification set, not a value either yaml file specifies.
 {% for class_name, priority in rb.control_plane_policing.protocols.items() %}
 class-map type control-plane match-any COPP-{{ class_name | upper }}
- remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+ match access-group name COPP-ACL-{{ class_name | upper }}
+{% if class_name == 'transit_traffic' %}
+ match protocol arp
+! NOTE: "match protocol arp" on an NX-OS control-plane class-map is
+! standard CoPP practice for ARP glean/punt traffic -- verify the exact
+! keyword for your NX-OS release before deploying.
+{% endif %}
 !
 {% endfor %}
 policy-map type control-plane COPP-CUSTOM-POLICY

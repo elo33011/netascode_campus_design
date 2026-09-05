@@ -66,19 +66,6 @@ interface {{ l.local_port }}
 {% if platform == 'nexus93240' %}
  mtu 9192
 {% endif %}
-{% if platform == 'catalyst9000' and l.link_type == 'agg_to_access' %}
-! NOTE: physical_topology.yaml names this port "{{ l.local_port }}" (the
-! agg_to_access link_standard is 10Gbps), but logical_topology.yaml's
-! evpn_vtep.interfaces entry for this same link on {{ device_name }} names
-! it "HundredGigabitEthernet..." -- a 100Gbps interface name. The two
-! models disagree on both the interface identifier and the implied port
-! speed for the identical physical link. Rendered here under the name
-! physical_topology.yaml gives, since design.md's Data Models table states
-! that model is the "ground-truth inventory... devices, ports,
-! interconnects" -- but this needs correcting in logical_topology.yaml (or
-! here, if physical_topology.yaml is the one that's stale) before deploying
-! for real.
-{% endif %}
  no shutdown
 !
 {% endfor %}
