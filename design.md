@@ -122,7 +122,12 @@ Device role model define a standardized, platform-agnostic set of foundational h
 
 ## Design Deployment
 
-### Step 1. Baseline Build
+schema + value = data model
+data model + template = config
+playbook + config = deployed config
+validation  = data moodel vs deployed config
+
+
 
 Prerequisite:
 - Management Network has been up and running so that devices are reachable by Ansible runners
