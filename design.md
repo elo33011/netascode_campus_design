@@ -101,7 +101,7 @@ Device role model define a standardized, platform-agnostic set of foundational h
 | Data Model | Purpose |
 |---|---|
 | [Physical Topology - Campus Network](models/physical%20topology.yaml) | Ground-truth inventory of campus network hardware and cabling — devices, ports, and interconnects. |
-| Physical Topology - Management Network | Ground-truth inventory of the OOB management network — terminal servers, management switches, and console cabling. |
+| [Physical Topology - Management Network](models/physical%20topology%20management%20network.yaml) | Ground-truth inventory of the OOB management network — terminal servers, management switches, and console cabling. |
 | Logical Topology | Defines the campus's BGP underlay and VXLAN EVPN overlay — how traffic is forwarded and isolated, independent of physical hardware. |
 | Endpoint Service | Standardized security and QoS baseline for endpoint switchports — loop protection, 802.1X/MAB, FHS, and edge QoS |
 
