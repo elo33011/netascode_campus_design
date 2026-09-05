@@ -92,11 +92,11 @@ This section outlines the architectural framework and design principles for the 
 
 ## Data Models
 
-This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows. Design driven models manage the campus network design, while the device role model man
-
-Device role model define a standardized, platform-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device. This model will be used in conjunction with a platform specific jinja2 template to render the configuration output required by the platform acting as that role.
+This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows.
 
 ### Design Driven Models
+
+Design driven models define the physical and logical network topology. Endpoint Service has been taken out as a separate data model since it will be frequently reused in BAU.
 
 | Data Model | Purpose |
 |---|---|
@@ -107,11 +107,13 @@ Device role model define a standardized, platform-agnostic set of foundational h
 
 ### Device Role Models
 
+Device role model define a standardized, platform-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device. This model will be used in conjunction with a platform specific jinja2 template to render the configuration output required by the platform acting as that role.
+
 | Data Model | Platform Template|
 |---|---|
 | [WAN Edge Role](models/wan%20edge%20role.yaml) | [Catalyst 8000](templates/catalyst%208000.j2) | 
-| [Core & Agg Role](models/core%20agg%20role.yaml) | Nexus 93240 |
-| [Access Role](models/access%20role.yaml) | Catalyst 9000 |
+| [Core & Agg Role](models/core%20agg%20role.yaml) | [Nexus 93240](templates/nexus%2093240.j2) |
+| [Access Role](models/access%20role.yaml) | [Catalyst 9000](templates/catalyst%2090000.j2) |
 
 ## Design Deployment
 
