@@ -1,0 +1,295 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1250 1450" width="100%" height="100%" style="background-color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <!-- Gradients for Failure Domains -->
+    <linearGradient id="fda-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.10" />
+      <stop offset="100%" stop-color="#b91c1c" stop-opacity="0.03" />
+    </linearGradient>
+    <linearGradient id="fdb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.10" />
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.03" />
+    </linearGradient>
+
+    <!-- Node Gradients -->
+    <linearGradient id="wan-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="core-a-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f87171" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <linearGradient id="core-b-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="100%" stop-color="#1e40af" />
+    </linearGradient>
+    <linearGradient id="agg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+    <linearGradient id="vtep-a-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#881337" />
+    </linearGradient>
+    <linearGradient id="vtep-b-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- TITLE BLOCK -->
+  <text x="625" y="30" text-anchor="middle" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">ABC HQ - LOGICAL BGP (CORE AS ROUTE REFLECTOR) &amp; VXLAN EVPN</text>
+  <text x="625" y="52" text-anchor="middle" fill="#94a3b8" font-size="13">Unified Campus AS 65100 | Cores as Separate BGP Route Reflectors (All iBGP Dotted)</text>
+
+  <!-- FAILURE DOMAIN CONTAINERS -->
+  <!-- FD-A Container -->
+  <rect x="40" y="72" width="560" height="955" rx="16" fill="url(#fda-bg)" stroke="#ef4444" stroke-width="2"/>
+  <rect x="60" y="92" width="245" height="28" rx="6" fill="#ef4444" fill-opacity="0.25"/>
+  <text x="72" y="111" fill="#fca5a5" font-size="13" font-weight="700">FAILURE DOMAIN A (FD-A)</text>
+
+  <!-- FD-B Container -->
+  <rect x="650" y="72" width="560" height="955" rx="16" fill="url(#fdb-bg)" stroke="#3b82f6" stroke-width="2"/>
+  <rect x="670" y="92" width="245" height="28" rx="6" fill="#3b82f6" fill-opacity="0.25"/>
+  <text x="682" y="111" fill="#93c5fd" font-size="13" font-weight="700">FAILURE DOMAIN B (FD-B)</text>
+
+  <!-- ==================== iBGP SESSIONS (DOTTED LINES) & OVERLAYS ==================== -->
+
+  <!-- External eBGP connections -->
+  <path d="M 140,192 L 90,242" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+  <path d="M 1110,192 L 1160,242" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- WAN to Core iBGP Sessions (Dotted) -->
+  <path d="M 120,267 L 100,387" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3,3"/>
+  <path d="M 160,267 L 200,387" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3,3"/>
+  <path d="M 1090,267 L 990,387" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3,3"/>
+  <path d="M 1130,267 L 1090,387" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3,3"/>
+  
+  <!-- Cross-Domain Core RR Mesh (Dotted) -->
+  <path d="M 260,427 L 940,427" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5"/>
+
+  <!-- Core-01 to Agg & Access iBGP Client Sessions (Dotted) -->
+  <path d="M 100,497 L 100,597" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3,3"/>
+  <path d="M 100,497 L 360,597" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3"/>
+  <path d="M 100,497 L 100,807" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+  <!-- Core-02 to Agg & Access iBGP Client Sessions (Dotted) -->
+  <path d="M 220,497 L 130,597" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3"/>
+  <path d="M 220,497 L 400,597" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3,3"/>
+  <path d="M 220,497 L 160,807" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+  <!-- Core-03 to Agg & Access iBGP Client Sessions (Dotted) -->
+  <path d="M 980,497 L 840,597" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3,3"/>
+  <path d="M 980,497 L 1100,597" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3"/>
+  <path d="M 980,497 L 1060,807" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+  <!-- Core-04 to Agg & Access iBGP Client Sessions (Dotted) -->
+  <path d="M 1100,497 L 890,597" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3"/>
+  <path d="M 1100,497 L 1130,597" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3,3"/>
+  <path d="M 1100,497 L 1110,807" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+  <!-- VXLAN EVPN Overlay Virtual Tunnel Connections (Mesh between Access VTEPs) -->
+  <path d="M 205,862 L 1045,862" stroke="#ec4899" stroke-width="2.5" stroke-dasharray="8,6"/>
+  <path d="M 205,882 L 445,882" stroke="#ec4899" stroke-width="2" stroke-dasharray="8,6"/>
+  <path d="M 805,882 L 1045,882" stroke="#ec4899" stroke-width="2" stroke-dasharray="8,6"/>
+
+  <!-- ==================== NETWORK NODES ==================== -->
+
+  <!-- LAYER 1: WAN ROUTERS -->
+  <g id="wan-01" filter="url(#shadow)">
+    <rect x="40" y="147" width="200" height="120" rx="8" fill="url(#wan-grad)"/>
+    <text x="140" y="172" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-wan-01</text>
+    <text x="140" y="192" text-anchor="middle" fill="#fef3c7" font-size="11">AS 65100 | ID: 10.0.0.1</text>
+    <line x1="55" y1="202" x2="225" y2="202" stroke="#d97706" stroke-width="1"/>
+    <text x="55" y="219" fill="#ffffff" font-size="10">• Lo0: 10.0.0.1/32 (Mgmt)</text>
+    <text x="55" y="235" fill="#ffffff" font-size="10">• eBGP: ISP-A (AS 65530)</text>
+    <text x="55" y="251" fill="#ffffff" font-size="10">• iBGP: core-01, core-03</text>
+  </g>
+
+  <g id="wan-02" filter="url(#shadow)">
+    <rect x="1010" y="147" width="200" height="120" rx="8" fill="url(#wan-grad)"/>
+    <text x="1110" y="172" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">abc-hq-wan-02</text>
+    <text x="1110" y="192" text-anchor="middle" fill="#fef3c7" font-size="11">AS 65100 | ID: 10.0.0.2</text>
+    <line x1="1025" y1="202" x2="1195" y2="202" stroke="#d97706" stroke-width="1"/>
+    <text x="1025" y="219" fill="#ffffff" font-size="10">• Lo0: 10.0.0.2/32 (Mgmt)</text>
+    <text x="1025" y="235" fill="#ffffff" font-size="10">• eBGP: ISP-B (AS 65531)</text>
+    <text x="1025" y="251" fill="#ffffff" font-size="10">• iBGP: core-02, core-04</text>
+  </g>
+
+  <!-- LAYER 2: CORE ROUTERS / SEPARATE ROUTE REFLECTORS -->
+  <g id="core-01" filter="url(#shadow)">
+    <rect x="45" y="387" width="110" height="110" rx="8" fill="url(#core-a-grad)" stroke="#fbbf24" stroke-width="2"/>
+    <text x="100" y="410" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-01</text>
+    <text x="100" y="428" text-anchor="middle" fill="#fca5a5" font-size="10">ID: 10.1.0.1</text>
+    <line x1="55" y1="438" x2="145" y2="438" stroke="#b91c1c" stroke-width="1"/>
+    <text x="55" y="454" fill="#fef3c7" font-size="9" font-weight="750">⭐ BGP RR</text>
+    <text x="55" y="470" fill="#ffffff" font-size="9">AS 65100 iBGP</text>
+  </g>
+
+  <g id="core-02" filter="url(#shadow)">
+    <rect x="165" y="387" width="110" height="110" rx="8" fill="url(#core-a-grad)" stroke="#fbbf24" stroke-width="2"/>
+    <text x="220" y="410" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-02</text>
+    <text x="220" y="428" text-anchor="middle" fill="#fca5a5" font-size="10">ID: 10.1.0.2</text>
+    <line x1="175" y1="438" x2="265" y2="438" stroke="#b91c1c" stroke-width="1"/>
+    <text x="175" y="454" fill="#fef3c7" font-size="9" font-weight="750">⭐ BGP RR</text>
+    <text x="175" y="470" fill="#ffffff" font-size="9">AS 65100 iBGP</text>
+  </g>
+
+  <g id="core-03" filter="url(#shadow)">
+    <rect x="945" y="387" width="110" height="110" rx="8" fill="url(#core-b-grad)" stroke="#fbbf24" stroke-width="2"/>
+    <text x="1000" y="410" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-03</text>
+    <text x="1000" y="428" text-anchor="middle" fill="#93c5fd" font-size="10">ID: 10.1.0.3</text>
+    <line x1="955" y1="438" x2="1045" y2="438" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="955" y="454" fill="#fef3c7" font-size="9" font-weight="750">⭐ BGP RR</text>
+    <text x="955" y="470" fill="#ffffff" font-size="9">AS 65100 iBGP</text>
+  </g>
+
+  <g id="core-04" filter="url(#shadow)">
+    <rect x="1065" y="387" width="110" height="110" rx="8" fill="url(#core-b-grad)" stroke="#fbbf24" stroke-width="2"/>
+    <text x="1120" y="410" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-cor-04</text>
+    <text x="1120" y="428" text-anchor="middle" fill="#93c5fd" font-size="10">ID: 10.1.0.4</text>
+    <line x1="1075" y1="438" x2="1165" y2="438" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="1075" y="454" fill="#fef3c7" font-size="9" font-weight="750">⭐ BGP RR</text>
+    <text x="1075" y="470" fill="#ffffff" font-size="9">AS 65100 iBGP</text>
+  </g>
+
+  <!-- LAYER 3: AGGREGATION SWITCHES -->
+  <g id="agg-01" filter="url(#shadow)">
+    <rect x="45" y="597" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="115" y="620" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-01</text>
+    <text x="115" y="638" text-anchor="middle" fill="#cbd5e1" font-size="10">AS 65100 Client</text>
+    <line x1="55" y1="648" x2="175" y2="648" stroke="#475569" stroke-width="1"/>
+    <text x="55" y="665" fill="#ffffff" font-size="10">• Lo0: 10.2.0.1/32</text>
+    <text x="55" y="681" fill="#e2e8f0" font-size="9" font-weight="600">• iBGP Client to Core RR</text>
+  </g>
+
+  <g id="agg-02" filter="url(#shadow)">
+    <rect x="315" y="597" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="385" y="620" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-02</text>
+    <text x="385" y="638" text-anchor="middle" fill="#cbd5e1" font-size="10">AS 65100 Client</text>
+    <line x1="325" y1="648" x2="445" y2="648" stroke="#475569" stroke-width="1"/>
+    <text x="325" y="665" fill="#ffffff" font-size="10">• Lo0: 10.2.0.2/32</text>
+    <text x="325" y="681" fill="#e2e8f0" font-size="9" font-weight="600">• iBGP Client to Core RR</text>
+  </g>
+
+  <g id="agg-03" filter="url(#shadow)">
+    <rect x="795" y="597" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="865" y="620" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-03</text>
+    <text x="865" y="638" text-anchor="middle" fill="#cbd5e1" font-size="10">AS 65100 Client</text>
+    <line x1="805" y1="648" x2="925" y2="648" stroke="#475569" stroke-width="1"/>
+    <text x="805" y="665" fill="#ffffff" font-size="10">• Lo0: 10.2.0.3/32</text>
+    <text x="805" y="681" fill="#e2e8f0" font-size="9" font-weight="600">• iBGP Client to Core RR</text>
+  </g>
+
+  <g id="agg-04" filter="url(#shadow)">
+    <rect x="1065" y="597" width="140" height="110" rx="8" fill="url(#agg-grad)"/>
+    <text x="1135" y="620" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">abc-hq-agg-04</text>
+    <text x="1135" y="638" text-anchor="middle" fill="#cbd5e1" font-size="10">AS 65100 Client</text>
+    <line x1="1075" y1="648" x2="1195" y2="648" stroke="#475569" stroke-width="1"/>
+    <text x="1075" y="665" fill="#ffffff" font-size="10">• Lo0: 10.2.0.4/32</text>
+    <text x="1075" y="681" fill="#e2e8f0" font-size="9" font-weight="600">• iBGP Client to Core RR</text>
+  </g>
+
+  <!-- LAYER 4: ACCESS VTEPS -->
+  <g id="acc-01" filter="url(#shadow)">
+    <rect x="55" y="807" width="150" height="160" rx="8" fill="url(#vtep-a-grad)"/>
+    <text x="130" y="830" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">abc-hq-f01-acc-01</text>
+    <text x="130" y="848" text-anchor="middle" fill="#fecdd3" font-size="10">AS 65100 VTEP (FD-A)</text>
+    <line x1="65" y1="858" x2="195" y2="858" stroke="#9f1239" stroke-width="1"/>
+    <text x="65" y="875" fill="#ffffff" font-size="9">• Lo0: 10.3.0.1/32</text>
+    <text x="65" y="891" fill="#ffffff" font-size="9">• Lo1: 10.128.1.1/32</text>
+    <text x="65" y="907" fill="#fecdd3" font-size="9">• EVPN Peer: Core RR</text>
+    <text x="65" y="923" fill="#fef3c7" font-size="9" font-weight="700">• iBGP Client of Cor-01/02</text>
+    <text x="65" y="939" fill="#fecdd3" font-size="9">• Overlay VTEP Endpoint</text>
+  </g>
+
+  <g id="acc-02" filter="url(#shadow)">
+    <rect x="345" y="807" width="150" height="160" rx="8" fill="url(#vtep-a-grad)"/>
+    <text x="420" y="830" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Floor 2-10 Acc</text>
+    <text x="420" y="848" text-anchor="middle" fill="#fecdd3" font-size="10">AS 65100 VTEP (FD-A)</text>
+    <line x1="355" y1="858" x2="485" y2="858" stroke="#9f1239" stroke-width="1"/>
+    <text x="355" y="875" fill="#ffffff" font-size="9">• Scaled Topology</text>
+    <text x="355" y="891" fill="#ffffff" font-size="9">• Multi-Floor Design</text>
+    <text x="355" y="907" fill="#fecdd3" font-size="9">• EVPN Peer: Core RR</text>
+    <text x="355" y="923" fill="#fef3c7" font-size="9" font-weight="700">• iBGP Client of Cor-01/02</text>
+    <text x="355" y="939" fill="#fecdd3" font-size="9">• Overlay VTEP Endpoint</text>
+  </g>
+
+  <g id="acc-03" filter="url(#shadow)">
+    <rect x="735" y="807" width="150" height="160" rx="8" fill="url(#vtep-b-grad)"/>
+    <text x="810" y="830" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Floor 2-10 Acc</text>
+    <text x="810" y="848" text-anchor="middle" fill="#e0f2fe" font-size="10">AS 65100 VTEP (FD-B)</text>
+    <line x1="745" y1="858" x2="875" y2="858" stroke="#0284c7" stroke-width="1"/>
+    <text x="745" y="875" fill="#ffffff" font-size="9">• Scaled Topology</text>
+    <text x="745" y="891" fill="#ffffff" font-size="9">• Multi-Floor Design</text>
+    <text x="745" y="907" fill="#e0f2fe" font-size="9">• EVPN Peer: Core RR</text>
+    <text x="745" y="923" fill="#fef3c7" font-size="9" font-weight="700">• iBGP Client of Cor-03/04</text>
+    <text x="745" y="939" fill="#e0f2fe" font-size="9">• Overlay VTEP Endpoint</text>
+  </g>
+
+  <g id="acc-04" filter="url(#shadow)">
+    <rect x="1035" y="807" width="150" height="160" rx="8" fill="url(#vtep-b-grad)"/>
+    <text x="1110" y="830" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">abc-hq-f01-acc-02</text>
+    <text x="1110" y="848" text-anchor="middle" fill="#e0f2fe" font-size="10">AS 65100 VTEP (FD-B)</text>
+    <line x1="1045" y1="858" x2="1175" y2="858" stroke="#0284c7" stroke-width="1"/>
+    <text x="1045" y="875" fill="#ffffff" font-size="9">• Lo0: 10.3.0.2/32</text>
+    <text x="1045" y="891" fill="#ffffff" font-size="9">• Lo1: 10.128.1.2/32</text>
+    <text x="1045" y="907" fill="#e0f2fe" font-size="9">• EVPN Peer: Core RR</text>
+    <text x="1045" y="923" fill="#fef3c7" font-size="9" font-weight="700">• iBGP Client of Cor-03/04</text>
+    <text x="1045" y="939" fill="#e0f2fe" font-size="9">• Overlay VTEP Endpoint</text>
+  </g>
+
+  <!-- ==================== VXLAN VNI MAPPINGS CARD ==================== -->
+  <g transform="translate(40, 1045)" filter="url(#shadow)">
+    <rect x="0" y="0" width="1170" height="135" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+    <text x="25" y="28" fill="#38bdf8" font-size="13" font-weight="700">EVPN OVERLAY VNI SERVICE MAPPINGS (Access Tier Termination) - AS 65100</text>
+    <line x1="25" y1="42" x2="1145" y2="42" stroke="#334155" stroke-width="1"/>
+
+    <rect x="35" y="55" width="210" height="62" rx="6" fill="#0f172a" stroke="#ec4899" stroke-width="1"/>
+    <text x="50" y="75" fill="#f43f5e" font-size="11" font-weight="700">VNI 10 | VLAN 10</text>
+    <text x="50" y="93" fill="#f8fafc" font-size="11" font-weight="600">Campus_Users</text>
+    <text x="50" y="108" fill="#94a3b8" font-size="9">Primary user network segment</text>
+
+    <rect x="257" y="55" width="210" height="62" rx="6" fill="#0f172a" stroke="#ec4899" stroke-width="1"/>
+    <text x="272" y="75" fill="#f43f5e" font-size="11" font-weight="700">VNI 20 | VLAN 20</text>
+    <text x="272" y="93" fill="#f8fafc" font-size="11" font-weight="600">Security_Cameras</text>
+    <text x="272" y="108" fill="#94a3b8" font-size="9">IoT/OT segment for cameras</text>
+
+    <rect x="479" y="55" width="210" height="62" rx="6" fill="#0f172a" stroke="#ec4899" stroke-width="1"/>
+    <text x="494" y="75" fill="#f43f5e" font-size="11" font-weight="700">VNI 30 | VLAN 30</text>
+    <text x="494" y="93" fill="#f8fafc" font-size="11" font-weight="600">Voice_VoIP</text>
+    <text x="494" y="108" fill="#94a3b8" font-size="9">IP Telephony &amp; VoIP segment</text>
+
+    <rect x="701" y="55" width="210" height="62" rx="6" fill="#0f172a" stroke="#ec4899" stroke-width="1"/>
+    <text x="716" y="75" fill="#f43f5e" font-size="11" font-weight="700">VNI 40 | VLAN 40</text>
+    <text x="716" y="93" fill="#f8fafc" font-size="11" font-weight="600">Wireless_AP_Mgmt</text>
+    <text x="716" y="108" fill="#94a3b8" font-size="9">CAPWAP mgmt infrastructure</text>
+
+    <rect x="923" y="55" width="210" height="62" rx="6" fill="#0f172a" stroke="#ec4899" stroke-width="1"/>
+    <text x="938" y="75" fill="#f43f5e" font-size="11" font-weight="700">VNI 50 / 999</text>
+    <text x="938" y="93" fill="#f8fafc" font-size="11" font-weight="600">IPTV &amp; Critical Services</text>
+    <text x="938" y="108" fill="#94a3b8" font-size="9">Multicast &amp; fallback segments</text>
+  </g>
+
+  <!-- ==================== LEGEND PANEL ==================== -->
+  <g transform="translate(40, 1200)" filter="url(#shadow)">
+    <rect x="0" y="0" width="1170" height="75" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+    <text x="25" y="30" fill="#f8fafc" font-size="12" font-weight="700">TOPOLOGY LEGEND:</text>
+
+    <line x1="170" y1="26" x2="220" y2="26" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3,3"/>
+    <text x="230" y="30" fill="#94a3b8" font-size="11">iBGP Session (AS 65100 Dotted)</text>
+
+    <line x1="460" y1="26" x2="510" y2="26" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
+    <text x="520" y="30" fill="#94a3b8" font-size="11">eBGP (External ISPs)</text>
+
+    <line x1="700" y1="26" x2="750" y2="26" stroke="#ec4899" stroke-width="2.5" stroke-dasharray="8,6"/>
+    <text x="760" y="30" fill="#94a3b8" font-size="11">VXLAN EVPN Overlay Tunnel (NVE1)</text>
+
+    <rect x="170" y="44" width="14" height="14" rx="3" fill="#f87171" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="192" y="56" fill="#fef3c7" font-size="11" font-weight="600">Gold border = Separate BGP Route Reflector nodes acting as RRs for Agg &amp; Access VTEPs within AS 65100</text>
+  </g>
+</svg>
