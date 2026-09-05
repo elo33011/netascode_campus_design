@@ -7,7 +7,11 @@ Key takeaways:
 - Generated contents includes diagrams, cable patching matrix, design specific templates (And device template which is not part of this design), playbooks
 - Data model is constructed from various schema by merging the values obtained from source of truth (i.e Source of truth integration is not captured in this example) 
 - Design is validated by comparing the config output with the data model.
-- Modifying the design = Updating data models (& Schemas)
+- Concept:
+  - schema + value = data model
+  - data model + template = config
+  - playbook + config = deployed config
+  - validation = data model vs deployed config
 
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
@@ -88,11 +92,11 @@ This section outlines the architectural framework and design principles for the 
 
 ## Data Models
 
-This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows. Every data model below also has a JSON Schema under [`schemas/`](schemas/) 
+This design is constructed from a set of data models which provides a structure for the "source of truth" information required by the design. The data model is embedded with the value so that it can be used by the automation to render, deploy and validate the configurations. Every data modelis governed by a JSON Schema under [`schemas/`](schemas/) 
 
 ### Design Driven Models
 
-Design driven models define the physical and logical network topology. Endpoint Service has been taken out as a separate data model since it will be frequently reused in BAU. 
+Design driven models are specific models created for this design. They defines the physical and logical network topology, as well as the endpoint service (i.e. interface configurations) required on the access switches.
 
 | Data Model | Purpose | JSON Schema |
 |---|---|---|
@@ -103,26 +107,37 @@ Design driven models define the physical and logical network topology. Endpoint 
 
 ### Device Role Models
 
-Device role model define a standardized, platform-agnostic set of foundational hardening, security, and operational features that must be implemented on every network device. This model will be used in conjunction with a platform specific jinja2 template to render the configuration output required by the platform acting as that role.
+A role is the function of the device performed in the design. Device role models define a standardized, platform-agnostic set of foundational hardening and operational features that must be implemented on a role (i.e. WAN Edge). It is intentionally decoupled from the hardware platform such that to allow flexible use of platform against role. These models will be used in conjunction with the platform specific jinja2 template to render the configuration output that is required by the platform acting as that role.
 
-| Data Model | Platform Template| JSON Schema |
+| Role-based Data Model | Platform Template| JSON Schema |
 |---|---|---|
 | [WAN Edge Role](models/wan%20edge%20role.yaml) | [Catalyst 8000](templates/catalyst%208000.j2) | [wan-edge-role.schema.json](schemas/wan-edge-role.schema.json) |
 | [Core & Agg Role](models/core%20agg%20role.yaml) | [Nexus 93240](templates/nexus%2093240.j2) | [core-agg-role.schema.json](schemas/core-agg-role.schema.json) |
 | [Access Role](models/access%20role.yaml) | [Catalyst 9000](templates/catalyst%2090000.j2) | [access-role.schema.json](schemas/access-role.schema.json) |
 
-## Design Deployment
-
-schema + value = data model
-data model + template = config
-playbook + config = deployed config
-validation  = data moodel vs deployed config
-
-
+## Design Deployment (a.k.a Low Level Design)
 
 Prerequisite:
 - Management Network has been up and running so that devices are reachable by Ansible runners
 - Devices are physically racked and patched according to the patching scheme
+
+Step 1. Populate the schema in the network source of truth platform
+
+Step 2. Ingest value into the schema to generate data models
+
+Step 3. Setup management connectivity to device
+
+Step 4. Make sure the templates and playbooks are loaded onto the Ansible runners
+
+Step 5. Execute Ansible playbook on below sequence
+
+* 01_baseline_build.yaml
+* 02_physical_topology
+* 03_logical_topology
+
+Step 6. 
+
+
 
 Build workflow:
 Apply the baseline template for each device -> Validate device local configuration -> Apply physical topology template -> Run point-to-point connectivity validation between devices -> Apply logical topology template -> Run layer 3 connectivity validation, endpoint vlan validation
