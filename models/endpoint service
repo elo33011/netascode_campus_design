@@ -1,0 +1,85 @@
+site_context:
+  site_code: "abc-hq"
+  site_name: "Company ABC Main Campus"
+
+  # ----------------------------------------------------------------------
+  # 1. LAYER 1/2 ENDPOINT INTERFACE BASELINE (switch-wide defaults)
+  # ----------------------------------------------------------------------
+  interface_provisioning:
+    access_switch_baseline:
+      authentication:
+        mac_authentication_bypass: true
+        dot1x_enabled: true
+        fallback_vlan: 999
+        guest_vlan: 999
+      quality_of_service:
+        voice_vlan_trust: true
+        ingress_policy_map: "VOICE-PRIORITIZATION"
+      spanning_tree:
+        bpdu_guard: true
+        portfast: true
+      ip_dhcp_snooping:
+        untrusted_ports_default: true
+        mac_address_validation: true
+
+  # ----------------------------------------------------------------------
+  # 2. FINE-GRAINED ENDPOINT INTERFACE SPECIFICATIONS (applied profile)
+  # ----------------------------------------------------------------------
+  endpoint_interfaces:
+    default_profile:
+      interface_range: "GigabitEthernet1/0/1-48"
+      mode: "access"
+      native_vlan: 10
+      voice_vlan: 30
+      administrative_state: true
+
+    first_hop_security:
+      dhcp_snooping:
+        enabled: true
+        trust: false
+        rate_limit_pps: 15
+      ip_source_guard:
+        enabled: true
+        binding_check: "ip-mac"
+      dai_inspect:
+        enabled: true
+        logging: "log-buffer"
+
+    authentication_profile:
+      dot1x_enabled: true
+      mac_authentication_bypass: true
+      host_mode: "multi-domain"
+      auth_order: ["dot1x", "mab"]
+      reauthentication_timer_seconds: 10800
+      inactivity_timer_seconds: 3600
+      fallback_targets:
+        guest_vlan: 999
+        auth_fail_vlan: 999
+        no_response_vlan: 999
+
+    quality_of_service:
+      trust_boundary: "dscp"
+      voice_vlan_trust: true
+      ingress_policy_map: "VOICE-PRIORITIZATION"
+      storm_control:
+        unicast_level_percent: 10.0
+        multicast_level_percent: 5.0
+        broadcast_level_percent: 1.0
+        action: "shutdown"
+
+    port_overrides:
+      - interface: "GigabitEthernet1/0/1"
+        description: "Dedicated Security Camera Access"
+        access_vlan: 20
+        voice_vlan: null
+        dot1x_enabled: false
+        mab_enabled: true
+      - interface: "GigabitEthernet1/0/48"
+        description: "WLC/Access Point Trunk Link"
+        mode: "trunk"
+        native_vlan: 40
+        allowed_vlans: "10,20,30,40,50"
+        dot1x_enabled: false
+        spanning_tree:
+          portfast: false
+          bpdu_guard: false
