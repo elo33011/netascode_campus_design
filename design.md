@@ -88,20 +88,11 @@ This section outlines the architectural framework and design principles for the 
 
 ## Data Models
 
-This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows.
+This design is constructed from a set of data models which provides a structure for the "source of truth" information that the automation tools will need. The models are used to render, validate, deploy and maintainthe configurations over automated workflows. Every data model below also has a JSON Schema under [`schemas/`](schemas/) 
 
 ### Design Driven Models
 
-Design driven models define the physical and logical network topology. Endpoint Service has been taken out as a separate data model since it will be frequently reused in BAU.
-
-Every data model below also has a generated JSON Schema under
-[`schemas/`](schemas/) -- draft 2020-12, structurally inferred from the
-YAML itself (required vs. optional fields, closed vocabularies like link
-types and CoPP priority tiers, IPv4/CIDR string patterns) by
-[`scripts/generate_schemas.py`](scripts/generate_schemas.py). Regenerate
-with `python3 scripts/generate_schemas.py .` after any model change --
-every generated schema was checked to both be a valid 2020-12 schema and
-to accept its own source YAML without error before being committed here.
+Design driven models define the physical and logical network topology. Endpoint Service has been taken out as a separate data model since it will be frequently reused in BAU. 
 
 | Data Model | Purpose | JSON Schema |
 |---|---|---|
