@@ -1,0 +1,249 @@
+{# ============================================================================
+   Cisco Catalyst 9300 (IOS XE) -- Access Switch Role Baseline Configuration
+   ============================================================================
+   Stage 1: baseline-only, same scope as the WAN and core/agg templates.
+   Renders purely from platform_access_baseline.yaml. No device/topology
+   data (hostname, interfaces, VLANs, access-VTEP BGP config) is used here.
+
+   Findings from checking this data model against the others before
+   building this, worth resolving regardless of template stage:
+
+   1. restricted_vlan: 998 does not exist anywhere in the site's VLAN/VNI
+      catalog (logical_topology.yaml's evpn_overlay_design.vni_service_
+      mappings only defines 10, 20, 30, 40, 50, 999). If a dot1x fallback
+      ever assigns a port to VLAN 998, that VLAN has no VNI mapping, no
+      anycast gateway, nothing -- it doesn't exist on the fabric. Compare
+      against endpoint_services.yaml, which uses VLAN 999 (Critical_
+      Services, which IS defined) for the equivalent guest_vlan/auth_fail_
+      vlan/no_response_vlan fields. This looks like it should also be 999,
+      not a second, undefined restricted VLAN.
+
+   2. storm_control here (broadcast_pps/multicast_pps: 500, action:
+      "trap_and_log") uses different units and a different action than
+      endpoint_services.yaml's storm_control (percent-of-bandwidth
+      thresholds, action: "shutdown") for what appears to be the same
+      concept on the same access ports. Two data models now define storm
+      control for the access layer differently -- one of them should be
+      the single source of truth, same issue as the evpn_overlay_design
+      duplication resolved earlier.
+
+   3. Unlike platform_wan_baseline.yaml and platform_core_agg_baseline.yaml,
+      this file has no routing_baseline.bgp_security section -- yet
+      access-VTEPs DO speak BGP per logical_topology.yaml (evpn_vtep.
+      bgp_peers). Worth confirming whether that omission is intentional
+      (e.g. access-tier iBGP considered lower-risk) or a gap to fill in.
+
+   Neither #1 nor #2 blocks rendering this baseline-only stage (both are
+   per-interface/per-VLAN settings deferred below regardless), but both
+   will matter as soon as the interface stage is built, so they're flagged
+   here rather than silently carried into rendered config later.
+   ============================================================================ #}
+{% set mp = platform_access_baseline.management_plane %}
+{% set ip_prot = platform_access_baseline.infrastructure_protection %}
+{% set eas = platform_access_baseline.endpoint_access_security %}
+{% set rb = platform_access_baseline.routing_baseline %}
+{% set hw = platform_access_baseline.hardware_integrity %}
+{% set ib = platform_access_baseline.interface_baseline %}
+!
+banner login ^C
+{{ mp.banner_login }}
+^C
+!
+{# -------------------------- DNS -------------------------- #}
+ip domain-name {{ mp.dns.domain_name }}
+{% if mp.dns.source_interface %}
+ip domain lookup source-interface {{ mp.dns.source_interface }}
+{% endif %}
+!
+{# -------------------------- SSH / lines -------------------------- #}
+ip ssh version {{ mp.ssh_version }}
+!
+line con 0
+ exec-timeout {{ mp.console_timeout_minutes }} 0
+ login local
+!
+line vty 0 15
+ exec-timeout {{ mp.vty_timeout_minutes }} 0
+ transport input ssh
+ login local
+!
+aaa local authentication attempts max-fail {{ mp.login_retries }}
+!
+{# -------------------------- HTTP services -------------------------- #}
+{% if not mp.http_services.enable %}
+no ip http server
+no ip http secure-server
+{% elif mp.http_services.secure_only %}
+no ip http server
+ip http secure-server
+{% else %}
+ip http server
+{% endif %}
+!
+{# -------------------------- NTP -------------------------- #}
+{% for server in mp.ntp.servers %}
+ntp server {{ server }}
+{% endfor %}
+{% if mp.ntp.source_interface %}
+ntp source {{ mp.ntp.source_interface }}
+{% endif %}
+{% if not mp.ntp.servers %}
+! NOTE: no NTP servers defined in platform_access_baseline.management_plane.ntp.servers -- add before deploying
+{% endif %}
+!
+{# -------------------------- Syslog -------------------------- #}
+{% for server in mp.syslog.servers %}
+logging host {{ server }}
+{% endfor %}
+{% if mp.syslog.source_interface %}
+logging source-interface {{ mp.syslog.source_interface }}
+{% endif %}
+{% if mp.syslog.severity_level %}
+logging trap {{ mp.syslog.severity_level }}
+{% endif %}
+{% if not mp.syslog.servers %}
+! NOTE: no syslog servers defined -- add before deploying
+{% endif %}
+!
+{# -------------------------- SNMP -------------------------- #}
+{% if mp.snmp.enabled %}
+{% for community in mp.snmp.community_strings %}
+snmp-server community {{ community }} RO
+{% endfor %}
+{% if mp.snmp.contact %}
+snmp-server contact {{ mp.snmp.contact }}
+{% endif %}
+{% if mp.snmp.location %}
+snmp-server location {{ mp.snmp.location }}
+{% endif %}
+{% for host in mp.snmp.trap_destinations %}
+snmp-server host {{ host }} traps
+{% endfor %}
+{% else %}
+! SNMP disabled per platform_access_baseline.management_plane.snmp.enabled
+{% endif %}
+!
+{# -------------------------- TACACS+ -------------------------- #}
+{% if mp.tacacs.servers %}
+{% for server in mp.tacacs.servers %}
+tacacs server TACACS-{{ loop.index }}
+ address ipv4 {{ server }}
+ key {{ mp.tacacs.encryption_key | default('!! VAULT-REFERENCE-REQUIRED !!') }}
+{% endfor %}
+{% if mp.tacacs.source_interface %}
+ip tacacs source-interface {{ mp.tacacs.source_interface }}
+{% endif %}
+aaa group server tacacs+ TACACS-GROUP
+{% for server in mp.tacacs.servers %}
+ server name TACACS-{{ loop.index }}
+{% endfor %}
+aaa authentication login default group TACACS-GROUP local
+aaa authorization exec default group TACACS-GROUP local
+{% else %}
+! NOTE: no TACACS+ servers defined -- falling back to local-only authentication (login local, above)
+{% endif %}
+!
+{# -------------------------- Infrastructure protection (device-wide) -------------------------- #}
+{% if 'ip_source_routing' in ip_prot.disabled_ip_services %}
+no ip source-route
+{% endif %}
+ip icmp rate-limit unreachable {{ ip_prot.icmp_standards.unreachable_rate_limit }}
+!
+! NOTE: accept_redirects, proxy_arp, mask_requests, and ipv6_hardening.
+! ra_suppress are per-interface -- deferred to the interface-stage template.
+!
+{# -------------------------- Endpoint access security (device-wide enablement) -------------------------- #}
+{% if eas.dot1x_authentication.enable %}
+dot1x system-auth-control
+{% if eas.dot1x_authentication.fallback_mechanism.enabled %}
+dot1x critical eapol
+! NOTE: fallback restricted_vlan ({{ eas.dot1x_authentication.fallback_mechanism.restricted_vlan }})
+! is applied per-interface ("authentication event fail action authorize
+! vlan <n>" / "authentication event no-response action authorize vlan <n>")
+! once interfaces exist -- but see the header finding: VLAN
+! {{ eas.dot1x_authentication.fallback_mechanism.restricted_vlan }} isn't in
+! the site's VLAN catalog. Confirm the correct value (999?) before this is
+! wired into the interface stage.
+{% endif %}
+dot1x timeout reauth-period {{ eas.dot1x_authentication.fallback_mechanism.reinitialize_timer_seconds }}
+! NOTE: this sets the global default reauth timer; host_mode ("{{ eas.dot1x_authentication.host_mode }}")
+! itself is a per-interface setting, deferred.
+{% else %}
+no dot1x system-auth-control
+{% endif %}
+!
+! NOTE: port_security (max {{ eas.port_security.max_mac_addresses_per_port }} MAC(s)/port,
+! violation action "{{ eas.port_security.violation_action }}") has no global
+! enable on IOS-XE -- "switchport port-security ..." only exists under
+! interface config. Fully deferred to the interface stage.
+!
+{% if eas.dhcp_snooping.enable %}
+ip dhcp snooping
+! NOTE: "ip dhcp snooping vlan <list>" also needs the site's VLAN list
+! (logical_topology.yaml's vni_service_mappings: 10,20,30,40,50,999) --
+! not rendered here since this stage has no topology data. trust_uplinks_
+! to_transit ({{ eas.dhcp_snooping.trust_uplinks_to_transit }}) is per-interface
+! ("ip dhcp snooping trust"), deferred.
+{% endif %}
+!
+{% if eas.dynamic_arp_inspection.enable %}
+! NOTE: "ip arp inspection vlan <list>" needs the same site VLAN list as
+! DHCP snooping above -- not rendered here for the same reason.
+{% endif %}
+!
+! NOTE: storm_control (broadcast_pps/multicast_pps: {{ eas.storm_control.broadcast_pps }}/{{ eas.storm_control.multicast_pps }},
+! action: "{{ eas.storm_control.action }}") is entirely per-interface on
+! IOS-XE ("storm-control broadcast level pps ...") -- deferred. See header
+! finding #2: reconcile against endpoint_services.yaml's conflicting
+! percent-based storm_control before this reaches the interface stage.
+!
+{# -------------------------- Control Plane Policing -------------------------- #}
+{% if rb.control_plane_policing.enable %}
+{% set copp_rate = {'low': 8000, 'medium': 32000, 'high': 128000} %}
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+class-map match-any COPP-{{ class_name | upper }}
+ remark TODO: add real match statements (ACL/protocol) for {{ class_name }}
+!
+{% endfor %}
+policy-map CONTROL-PLANE-POLICY
+{% for class_name, priority in rb.control_plane_policing.protocols.items() %}
+ class COPP-{{ class_name | upper }}
+  police {{ copp_rate[priority] }} conform-action transmit exceed-action drop
+  ! priority tier from platform_access_baseline: "{{ priority }}" -- rate above is a starting-point placeholder, tune per site
+{% endfor %}
+!
+control-plane
+ service-policy input CONTROL-PLANE-POLICY
+!
+! NOTE: this baseline has no routing_baseline.bgp_security section (see
+! header finding #3), even though access-VTEPs speak BGP per
+! logical_topology.yaml -- nothing to render here as a result; confirm
+! whether that's intentional before the BGP/interface stage is built.
+{% endif %}
+!
+{# -------------------------- Hardware integrity -------------------------- #}
+{% if hw.secure_boot_verification %}
+! NOTE: secure_boot_verification -- Secure Boot on Catalyst 9300 is a
+! hardware-anchored (SUDI-based) feature verified automatically at boot;
+! there is no standard IOS-XE enable/disable command for it, so no CLI is
+! emitted here. Confirm via 'show platform sudi certificate' post-deploy.
+{% endif %}
+{% if hw.environmental_monitoring %}
+! NOTE: environmental_monitoring -- fan/power/temperature monitoring runs
+! by default in hardware (visible via 'show environment all'); there's no
+! single enable command for the monitoring itself. If threshold alerting is
+! wanted, that's normally SNMP environmental traps, which depend on the
+! snmp trap_destinations configured above -- not rendered here since it's
+! a separate decision from "monitoring exists."
+{% endif %}
+!
+{# -------------------------- Interface baseline -------------------------- #}
+! NOTE: unused_edge_ports (mode: {{ ib.unused_edge_ports.mode }}, default_vlan:
+! {{ ib.unused_edge_ports.default_vlan }}, shutdown: {{ ib.unused_edge_ports.shutdown }})
+! and underlay_uplinks.link_aggregation (protocol: {{ ib.underlay_uplinks.link_aggregation.protocol }},
+! mode: {{ ib.underlay_uplinks.link_aggregation.mode }}) are both per-interface
+! -- deferred to the interface-stage template. Unlike NX-OS, IOS-XE needs no
+! global "feature lacp"-style command, so there is nothing device-wide to
+! render for link aggregation at this stage.
+!
+end
