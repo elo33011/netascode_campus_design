@@ -107,9 +107,9 @@ Device role model define a standardized, platform-agnostic set of foundational h
 
 ### Device Role Models
 
-| Data Model | Platform adopted in Design|
-|---|---|
-| [WAN Edge Role](models/wan%20edge%20role.yaml) | Catalyst 8000 |
+| Data Model | Platform Template|
+|---|---|---|
+| [WAN Edge Role](models/wan%20edge%20role.yaml) | [Catalyst 8000](templates/catalyst%208000.j2) | 
 | [Core & Agg Role](models/core%20agg%20role.yaml) | Nexus 93240 |
 | [Access Role](models/access%20role.yaml) | Catalyst 9000 |
 
