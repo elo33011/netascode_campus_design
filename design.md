@@ -57,7 +57,7 @@ This section outlines the architectural framework and design principles for the 
 * Implements a standard five-tier architecture: Regional On-Prem/Cloud Colo Access $\rightarrow$ WAN $\rightarrow$ Core $\rightarrow$ Aggregation $\rightarrow$ Access.
 * Extends dual-homed connections across all network tiers for end-to-end path redundancy.
 
-![Campus Network Diagram](./diagram/topology1.svg)
+![Campus Network Diagram](./diagram/physical.svg)
 
 ![Campus Management Network Diagram](./diagram/mgmt_topology.svg)
 
