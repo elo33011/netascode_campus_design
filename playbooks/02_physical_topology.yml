@@ -1,0 +1,94 @@
+---
+# ============================================================================
+# Stage 2 of design.md's "Step 1. Baseline Build" workflow:
+#   Apply physical topology template -> Run point-to-point connectivity
+#   validation between devices
+# ============================================================================
+# Renders templates/physical topology.j2 against physical_topology.yaml:
+# hostname + interface bring-up/description only, no addressing (see that
+# template's own header for why).
+#
+# Usage:
+#   ansible-playbook playbooks/02_physical_topology.yml
+#   ansible-playbook playbooks/02_physical_topology.yml -e deploy=false
+- name: Stage 2 - Physical topology (interfaces up, described)
+  hosts: all
+  gather_facts: false
+  vars_files:
+    - "../models/physical topology.yaml"
+  tasks:
+    - name: Derive this device's platform + role from its hostname
+      ansible.builtin.set_fact:
+        device_name: "{{ inventory_hostname }}"
+        platform: "{{ inventory_hostname | device_platform }}"
+        role: "{{ inventory_hostname | device_role }}"
+
+    - name: Render physical topology configuration for this device
+      ansible.builtin.set_fact:
+        rendered_physical: "{{ lookup('template', repo_root + '/templates/physical topology.j2') }}"
+
+    - name: Save rendered physical topology config locally
+      ansible.builtin.copy:
+        content: "{{ rendered_physical }}"
+        dest: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.physical.cfg"
+      delegate_to: localhost
+
+    - name: Push physical topology config (IOS-XE platforms)
+      cisco.ios.ios_config:
+        src: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.physical.cfg"
+        save_when: modified
+      when: deploy | bool and ansible_network_os == 'cisco.ios.ios'
+
+    - name: Push physical topology config (NX-OS platforms)
+      cisco.nxos.nxos_config:
+        src: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.physical.cfg"
+        save_when: modified
+      when: deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
+
+    # -------------------------------------------------------------------
+    # "Point-to-point connectivity validation between devices" -- a basic
+    # LLDP-neighbor-count check against physical_topology.yaml's own link
+    # count for this device (via the same device_phys_links() filter that
+    # built the rendered config, so the expectation and the config it's
+    # checking against can't drift apart). This is a presence/count check,
+    # NOT a full per-port neighbor-identity diff -- extend with structured
+    # parsing (ansible.utils.cli_parse / genie) for a real per-link
+    # assertion before relying on this in production.
+    # -------------------------------------------------------------------
+    - name: Compute expected neighbor count from physical_topology.yaml
+      ansible.builtin.set_fact:
+        expected_links: "{{ site_physical_topology | device_phys_links(inventory_hostname) }}"
+
+    - name: Gather LLDP neighbors (IOS-XE)
+      cisco.ios.ios_command:
+        commands: ["show lldp neighbors"]
+      when: deploy | bool and ansible_network_os == 'cisco.ios.ios'
+      register: lldp_ios
+
+    - name: Gather LLDP neighbors (NX-OS)
+      cisco.nxos.nxos_command:
+        commands: ["show lldp neighbors"]
+      when: deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
+      register: lldp_nxos
+
+    - name: Warn if fewer LLDP neighbors are seen than physical_topology.yaml expects (IOS-XE)
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} expects {{ expected_links | length }}
+          fabric neighbor(s) per physical_topology.yaml but LLDP output has
+          {{ (lldp_ios.stdout[0].splitlines() | length) - 1 }} line(s) --
+          review before proceeding to logical topology.
+      when: >
+        deploy | bool and ansible_network_os == 'cisco.ios.ios'
+        and ((lldp_ios.stdout[0].splitlines() | length) - 1) < (expected_links | length)
+
+    - name: Warn if fewer LLDP neighbors are seen than physical_topology.yaml expects (NX-OS)
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} expects {{ expected_links | length }}
+          fabric neighbor(s) per physical_topology.yaml but LLDP output has
+          {{ (lldp_nxos.stdout[0].splitlines() | length) - 1 }} line(s) --
+          review before proceeding to logical topology.
+      when: >
+        deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
+        and ((lldp_nxos.stdout[0].splitlines() | length) - 1) < (expected_links | length)
