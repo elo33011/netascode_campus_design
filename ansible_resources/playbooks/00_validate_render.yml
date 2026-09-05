@@ -30,6 +30,11 @@
   hosts: localhost
   connection: local
   gather_facts: false
+  become: false  # inventory/hosts.yml's `all:` group sets ansible_become=true
+                 # for the real network-device plays (01/02/03) -- this
+                 # localhost-only pre-flight play must never inherit that,
+                 # since it never touches a device and has no enable secret
+                 # to escalate with.
   vars:
     validate_verbose: false
   tasks:

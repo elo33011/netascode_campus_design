@@ -1,0 +1,104 @@
+---
+# ============================================================================
+# BAU (business-as-usual) switchport provisioning -- deliberately NOT part
+# of playbooks/site.yml's one-time build sequence (00-03). Stages 00-03
+# build the fabric itself (rare: a new site, a re-cabled floor); this
+# playbook applies templates/endpoint service.j2 against
+# models/endpoint service.yaml's access_switch policy, and is meant to be
+# re-run every time an endpoint port needs adding or changing -- a new
+# camera, a new AP, a moved desk -- against a fabric that's already up.
+#
+# Renders and (when deploy) pushes every Catalyst 9000 access switch in
+# inventory/hosts.yml's `access` group. Two data models feed the render,
+# same as every other stage: platform_access_baseline (models/access
+# role.yaml -- the switch-wide enable flags + thresholds its own
+# baseline template explicitly defers to "the interface stage") and
+# endpoint_service (models/endpoint service.yaml -- the actual per-port
+# policy). See templates/endpoint service.j2's own header for the full
+# render logic and the cross-model findings surfaced while building it.
+#
+# Usage:
+#   ansible-playbook playbooks/bau_endpoint_provisioning.yml
+#     # render + push every port on every access switch
+#   ansible-playbook playbooks/bau_endpoint_provisioning.yml -e deploy=false
+#     # render + save locally only, touch nothing (audit / dry run)
+#   ansible-playbook playbooks/bau_endpoint_provisioning.yml \
+#       --limit abc-hq-f01-acc-01 \
+#       -e '{"target_interfaces": ["GigabitEthernet1/0/5"]}'
+#     # the actual BAU case: provision just one new drop on one switch,
+#     # without re-touching the other 47 ports or the other switch
+# ============================================================================
+- name: BAU - Endpoint service switchport provisioning (access switches only)
+  hosts: access
+  gather_facts: false
+  vars:
+    target_interfaces: []
+  vars_files:
+    - "../models/endpoint service.yaml"
+  tasks:
+    - name: Derive this device's platform + role from its hostname
+      ansible.builtin.set_fact:
+        device_name: "{{ inventory_hostname }}"
+        platform: "{{ inventory_hostname | device_platform }}"
+        role: "{{ inventory_hostname | device_role }}"
+
+    - name: Load this device's platform role baseline (endpoint_access_security thresholds)
+      ansible.builtin.include_vars:
+        file: "{{ repo_root }}/models/{{ platform_map[platform].baseline_yaml }}"
+
+    - name: Normalise the loaded baseline under the generic name endpoint service.j2 expects
+      ansible.builtin.set_fact:
+        platform_access_baseline: "{{ lookup('vars', platform_map[platform].baseline_var) }}"
+
+    - name: Normalise the loaded endpoint service model under the name the template expects
+      ansible.builtin.set_fact:
+        endpoint_service: "{{ site_context }}"
+
+    - name: Render endpoint service configuration for this device
+      ansible.builtin.set_fact:
+        rendered_endpoint: "{{ lookup('template', repo_root + '/templates/endpoint service.j2') }}"
+
+    - name: Save rendered endpoint service config locally
+      ansible.builtin.copy:
+        content: "{{ rendered_endpoint }}"
+        dest: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.endpoint.cfg"
+      delegate_to: localhost
+
+    - name: Push endpoint service config
+      cisco.ios.ios_config:
+        src: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.endpoint.cfg"
+        save_when: modified
+      when: deploy | bool
+
+    # -------------------------------------------------------------------
+    # Post-push validation: the ports actually touched this run (all of
+    # them, or just target_interfaces if set) should show their expected
+    # VLAN in "show interfaces status" -- same soft-WARNING-not-hard-fail
+    # pattern playbooks/03_logical_topology.yml's BGP/VLAN checks use,
+    # for the same reason (output-format parsing is inherently fragile,
+    # not something to gate a real push on).
+    # -------------------------------------------------------------------
+    - name: Resolve the ports this run actually touched
+      ansible.builtin.set_fact:
+        touched_ports: >-
+          {{ (endpoint_service | endpoint_port_configs
+              | selectattr('interface', 'in', target_interfaces) | list)
+             if target_interfaces else
+             (endpoint_service | endpoint_port_configs) }}
+
+    - name: Gather interface status
+      cisco.ios.ios_command:
+        commands: ["show interfaces status"]
+      when: deploy | bool
+      register: iface_status
+
+    - name: Warn about any touched access port whose VLAN doesn't show in interface status
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} {{ item.interface }} expected
+          access VLAN {{ item.vlan }} not seen in show interfaces status
+          output -- confirm the push actually applied.
+      loop: "{{ touched_ports }}"
+      when: >
+        deploy | bool and item.mode == 'access'
+        and (item.vlan | string) not in iface_status.stdout[0]
