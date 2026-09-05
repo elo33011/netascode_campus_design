@@ -8,33 +8,56 @@
 # re-run every time an endpoint port needs adding or changing -- a new
 # camera, a new AP, a moved desk -- against a fabric that's already up.
 #
-# Renders and (when deploy) pushes every Catalyst 9000 access switch in
-# inventory/hosts.yml's `access` group. Two data models feed the render,
-# same as every other stage: platform_access_baseline (models/access
-# role.yaml -- the switch-wide enable flags + thresholds its own
-# baseline template explicitly defers to "the interface stage") and
-# endpoint_service (models/endpoint service.yaml -- the actual per-port
-# policy). See templates/endpoint service.j2's own header for the full
-# render logic and the cross-model findings surfaced while building it.
+# Two data models feed the render, same as every other stage:
+# platform_access_baseline (models/access role.yaml -- the switch-wide
+# enable flags + thresholds its own baseline template explicitly defers
+# to "the interface stage") and endpoint_service (models/endpoint
+# service.yaml -- the actual per-port policy). See templates/endpoint
+# service.j2's own header for the full render logic.
+#
+# THE ACTUAL BAU CHANGE -- three inputs: which switch, which interface,
+# which VLAN(s). Give all three (switch_name + interface_name + vlan) and
+# this playbook first calls scripts/set_endpoint_port.py to record the
+# change as a `switch`-scoped port_overrides entry directly in
+# models/endpoint service.yaml (so it's the persisted, git-diffable
+# source of truth from then on -- never a runtime-only override the next
+# full re-push would silently revert), THEN renders + pushes + validates
+# from that freshly-updated model, scoped to just that one switch and
+# that one interface.
 #
 # Usage:
-#   ansible-playbook playbooks/bau_endpoint_provisioning.yml
-#     # render + push every port on every access switch
-#   ansible-playbook playbooks/bau_endpoint_provisioning.yml -e deploy=false
-#     # render + save locally only, touch nothing (audit / dry run)
 #   ansible-playbook playbooks/bau_endpoint_provisioning.yml \
-#       --limit abc-hq-f01-acc-01 \
-#       -e '{"target_interfaces": ["GigabitEthernet1/0/5"]}'
-#     # the actual BAU case: provision just one new drop on one switch,
-#     # without re-touching the other 47 ports or the other switch
+#       -e switch_name=abc-hq-f01-acc-01 \
+#       -e interface_name=GigabitEthernet1/0/5 \
+#       -e vlan=20 \
+#       -e voice_vlan=30 \
+#       -e description="Marketing desk move, INC0012345"
+#     # THE actual BAU case: record the change in the data model, then
+#     # render + push + validate just that one port on just that one
+#     # switch. voice_vlan and description are optional (pass
+#     # voice_vlan=none to explicitly clear an existing voice VLAN).
+#
+#   ansible-playbook playbooks/bau_endpoint_provisioning.yml \
+#       -e switch_name=abc-hq-f01-acc-01 -e interface_name=GigabitEthernet1/0/5 \
+#       -e vlan=20 -e deploy=false
+#     # same, but render + save locally only -- touch nothing (dry run)
+#
+#   ansible-playbook playbooks/bau_endpoint_provisioning.yml
+#     # no switch_name/interface_name/vlan given: render + push every
+#     # port on every access switch from whatever's already in
+#     # models/endpoint service.yaml (e.g. after editing it by hand, or
+#     # re-applying after a device reload)
 # ============================================================================
 - name: BAU - Endpoint service switchport provisioning (access switches only)
   hosts: access
   gather_facts: false
   vars:
+    switch_name: ""
+    interface_name: ""
+    vlan: ""
+    voice_vlan: ""
+    description: ""
     target_interfaces: []
-  vars_files:
-    - "../models/endpoint service.yaml"
   tasks:
     - name: Derive this device's platform + role from its hostname
       ansible.builtin.set_fact:
@@ -42,33 +65,68 @@
         platform: "{{ inventory_hostname | device_platform }}"
         role: "{{ inventory_hostname | device_role }}"
 
-    - name: Load this device's platform role baseline (endpoint_access_security thresholds)
-      ansible.builtin.include_vars:
-        file: "{{ repo_root }}/models/{{ platform_map[platform].baseline_yaml }}"
+    # -------------------------------------------------------------------
+    # THE BAU CHANGE ITSELF -- runs exactly once (not once per host in the
+    # `access` group) and only when all three required inputs are given.
+    # -------------------------------------------------------------------
+    - name: Apply BAU switchport change to the data model (models/endpoint service.yaml)
+      ansible.builtin.command:
+        argv: >-
+          {{
+            ['python3', repo_root + '/scripts/set_endpoint_port.py', repo_root,
+             '--switch', switch_name, '--interface', interface_name, '--vlan', vlan | string]
+            + (['--voice-vlan', voice_vlan | string] if voice_vlan != '' else [])
+            + (['--description', description] if description != '' else [])
+          }}
+      when: switch_name != '' and interface_name != '' and vlan != ''
+      run_once: true
+      delegate_to: localhost
+      register: bau_patch_result
+      changed_when: "'OK:' in bau_patch_result.stdout"
 
-    - name: Normalise the loaded baseline under the generic name endpoint service.j2 expects
+    - name: A specific interface was given -- scope this run to just that port
       ansible.builtin.set_fact:
-        platform_access_baseline: "{{ lookup('vars', platform_map[platform].baseline_var) }}"
+        target_interfaces: ["{{ interface_name }}"]
+      when: interface_name != ''
+
+    # Loaded as a task (not vars_files, which is evaluated once at play
+    # start) so a switch_name/interface_name/vlan run above always reads
+    # its own just-written change, not a stale in-memory copy.
+    - name: Load endpoint service model (fresh read, reflects any change just made above)
+      ansible.builtin.include_vars:
+        file: "{{ repo_root }}/models/endpoint service.yaml"
 
     - name: Normalise the loaded endpoint service model under the name the template expects
       ansible.builtin.set_fact:
         endpoint_service: "{{ site_context }}"
 
+    - name: Load this device's platform role baseline (endpoint_access_security thresholds)
+      ansible.builtin.include_vars:
+        file: "{{ repo_root }}/models/{{ platform_map[platform].baseline_yaml }}"
+      when: switch_name == '' or inventory_hostname == switch_name
+
+    - name: Normalise the loaded baseline under the generic name endpoint service.j2 expects
+      ansible.builtin.set_fact:
+        platform_access_baseline: "{{ lookup('vars', platform_map[platform].baseline_var) }}"
+      when: switch_name == '' or inventory_hostname == switch_name
+
     - name: Render endpoint service configuration for this device
       ansible.builtin.set_fact:
         rendered_endpoint: "{{ lookup('template', repo_root + '/templates/endpoint service.j2') }}"
+      when: switch_name == '' or inventory_hostname == switch_name
 
     - name: Save rendered endpoint service config locally
       ansible.builtin.copy:
         content: "{{ rendered_endpoint }}"
         dest: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.endpoint.cfg"
       delegate_to: localhost
+      when: switch_name == '' or inventory_hostname == switch_name
 
     - name: Push endpoint service config
       cisco.ios.ios_config:
         src: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.endpoint.cfg"
         save_when: modified
-      when: deploy | bool
+      when: (switch_name == '' or inventory_hostname == switch_name) and deploy | bool
 
     # -------------------------------------------------------------------
     # Post-push validation: the ports actually touched this run (all of
@@ -81,15 +139,16 @@
     - name: Resolve the ports this run actually touched
       ansible.builtin.set_fact:
         touched_ports: >-
-          {{ (endpoint_service | endpoint_port_configs
+          {{ (endpoint_service | endpoint_port_configs(inventory_hostname)
               | selectattr('interface', 'in', target_interfaces) | list)
              if target_interfaces else
-             (endpoint_service | endpoint_port_configs) }}
+             (endpoint_service | endpoint_port_configs(inventory_hostname)) }}
+      when: switch_name == '' or inventory_hostname == switch_name
 
     - name: Gather interface status
       cisco.ios.ios_command:
         commands: ["show interfaces status"]
-      when: deploy | bool
+      when: (switch_name == '' or inventory_hostname == switch_name) and deploy | bool
       register: iface_status
 
     - name: Warn about any touched access port whose VLAN doesn't show in interface status
@@ -100,5 +159,6 @@
           output -- confirm the push actually applied.
       loop: "{{ touched_ports }}"
       when: >
-        deploy | bool and item.mode == 'access'
+        (switch_name == '' or inventory_hostname == switch_name) and deploy | bool
+        and item.mode == 'access'
         and (item.vlan | string) not in iface_status.stdout[0]
