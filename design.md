@@ -132,9 +132,10 @@ Prerequisite:
 
 ### Step 3. Setup management connectivity to device
 
-* Submit [patching record](Rack
-* Complete the management network connect
-### Step 4. Make sure the templates and playbooks are loaded onto the Ansible runners
+* Submit [patching record](Rack_Patching_Record.md) to facility team for physical setup
+* Login to the device and manually configure IP address and gateway for management interface) (Assume management network has been setup)
+
+### Step 4. Make sure the templates and playbooks are loaded onto the Ansible runners hosts
 
 ### Step 5. Execute the [Site build master playbook](ansible_resources/playbooks/site.yml) which will execute the corresponding playbooks in sequence:
 
