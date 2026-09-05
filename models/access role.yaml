@@ -18,9 +18,9 @@ platform_access_baseline:
       servers: ["10.254.1.10", "10.254.1.11"]   # DEMO value -- reuses the same OOB time source as platform_wan_baseline.yaml; no separate value was ever supplied for this platform
       source_interface: "Loopback0"
     syslog:
-      servers: []
-      source_interface: null
-      severity_level: null
+      servers: ["10.254.1.30", "10.254.1.31"]     # DEMO values -- example syslog collectors on the OOB mgmt range, not real servers
+      source_interface: "Loopback0"
+      severity_level: "informational"             # DEMO value -- level 6, a common baseline "log everything but debugging" default
     snmp:
       enabled: true
       contact: "netops@campus.example.net"       # DEMO value -- reuses platform_wan_baseline.yaml's value; no separate value was ever supplied for this platform
@@ -28,9 +28,9 @@ platform_access_baseline:
       community_strings: ["CAMPUS-MONITORING-RO"] # DEMO value -- placeholder name, not "public"; replace with a real, generated string before deploying
       trap_destinations: ["10.254.1.20"]          # DEMO value -- example NMS host on the OOB mgmt range
     tacacs:
-      servers: []
-      source_interface: null
-      encryption_key: null
+      servers: ["10.254.1.40", "10.254.1.41"]     # DEMO values -- example TACACS+ servers on the OOB mgmt range, not real servers
+      source_interface: "Loopback0"
+      encryption_key: "DEMO-TACACS-KEY-CHANGE-ME"  # DEMO value -- a real key belongs in ansible-vault / an environment variable, never committed in plaintext
   infrastructure_protection:
     icmp_standards:
       unreachable_rate_limit: 100

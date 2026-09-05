@@ -100,7 +100,7 @@ site_context:
         bgp_peers:
           - { description: "eBGP to ISP-B", peer_ip: "192.168.20.1", remote_as: 65531, type: "ebgp" }
           - { description: "iBGP to core-04 (FD-B)", peer_ip: "10.18.1.4", remote_as: 65100, type: "ibgp" }
-          - { description: "iBGP Cross-FD to core-02", peer_ip: "10.18.1.2", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Cross-FD to core-02", peer_ip: "10.18.1.6", remote_as: 65100, type: "ibgp" }
 
     # --------------------------------------------------------------------------
     # LAYER 2: CORE ROUTERS
@@ -128,12 +128,12 @@ site_context:
         global: { bgp_asn: 65100, router_id: "10.1.0.2" }
         loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.2/32", type: "management" }]
         interfaces:
-          - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.2/31" } # to wan-02 (Cross-FD)
+          - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.6/31" } # to wan-02 (Cross-FD)
           - { interface: "HundredGigE0/0/2", ip_address: "10.18.2.0/31" } # to cor-01
           - { interface: "HundredGigE1/0/1", ip_address: "10.9.3.0/31" }  # to agg-01
           - { interface: "HundredGigE1/0/2", ip_address: "10.9.4.0/31" }  # to agg-02
         bgp_peers:
-          - { description: "iBGP Underlay to wan-02", peer_ip: "10.18.1.3", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay to wan-02", peer_ip: "10.18.1.7", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to cor-01", peer_ip: "10.18.2.1", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to agg-01", peer_ip: "10.9.3.1", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to agg-02", peer_ip: "10.9.4.1", remote_as: 65100, type: "ibgp" }
@@ -182,13 +182,13 @@ site_context:
         loopbacks:
           - { interface: "Loopback0", ip_address: "10.2.0.1/32", type: "management" }
         interfaces:
-          - { interface: "HundredGigE0/1", ip_address: "10.9.0.1/31" } # Up to cor-01
-          - { interface: "HundredGigE0/2", ip_address: "10.9.2.1/31" } # Up to cor-02
+          - { interface: "HundredGigE0/1", ip_address: "10.9.1.1/31" } # Up to cor-01
+          - { interface: "HundredGigE0/2", ip_address: "10.9.3.1/31" } # Up to cor-02
           - { interface: "HundredGigE0/48", ip_address: "10.15.0.0/31" } # Inter-agg to agg-02
           - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.1.0/31" } # Down to f01-acc-01
         bgp_peers:
-          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.0.0", remote_as: 65100, type: "ibgp" }
-          - { description: "iBGP Underlay Up to cor-02", peer_ip: "10.9.2.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.1.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-02", peer_ip: "10.9.3.0", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to agg-02", peer_ip: "10.15.0.1", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay Down to f01-acc-01", peer_ip: "10.24.1.1", remote_as: 65100, type: "ibgp" }
 
@@ -200,13 +200,13 @@ site_context:
         loopbacks:
           - { interface: "Loopback0", ip_address: "10.2.0.2/32", type: "management" }
         interfaces:
-          - { interface: "HundredGigE0/1", ip_address: "10.9.4.0/31" } # Up to cor-01
-          - { interface: "HundredGigE0/2", ip_address: "10.9.6.0/31" } # Up to cor-02
+          - { interface: "HundredGigE0/1", ip_address: "10.9.2.1/31" } # Up to cor-01
+          - { interface: "HundredGigE0/2", ip_address: "10.9.4.1/31" } # Up to cor-02
           - { interface: "HundredGigE0/48", ip_address: "10.15.0.1/31" } # Inter-agg to agg-01
           - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.1.2/31" } # Down to f01-acc-01 (cross)
         bgp_peers:
-          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.4.1", remote_as: 65100, type: "ibgp" }
-          - { description: "iBGP Underlay Up to cor-02", peer_ip: "10.9.6.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-01", peer_ip: "10.9.2.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-02", peer_ip: "10.9.4.0", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to agg-01", peer_ip: "10.15.0.0", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay Down to f01-acc-01", peer_ip: "10.24.1.3", remote_as: 65100, type: "ibgp" }
 
@@ -218,13 +218,13 @@ site_context:
         loopbacks:
           - { interface: "Loopback0", ip_address: "10.2.0.3/32", type: "management" }
         interfaces:
-          - { interface: "HundredGigE0/1", ip_address: "10.9.8.0/31" } # Up to cor-03
-          - { interface: "HundredGigE0/2", ip_address: "10.9.10.0/31" } # Up to cor-04
+          - { interface: "HundredGigE0/1", ip_address: "10.9.5.1/31" } # Up to cor-03
+          - { interface: "HundredGigE0/2", ip_address: "10.9.7.1/31" } # Up to cor-04
           - { interface: "HundredGigE0/48", ip_address: "10.15.2.0/31" } # Inter-agg to agg-04
           - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.2.0/31" } # Down to f01-acc-02
         bgp_peers:
-          - { description: "iBGP Underlay Up to cor-03", peer_ip: "10.9.8.1", remote_as: 65100, type: "ibgp" }
-          - { description: "iBGP Underlay Up to cor-04", peer_ip: "10.9.10.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-03", peer_ip: "10.9.5.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-04", peer_ip: "10.9.7.0", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to agg-04", peer_ip: "10.15.2.1", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay Down to f01-acc-02", peer_ip: "10.24.2.1", remote_as: 65100, type: "ibgp" }
 
@@ -236,13 +236,13 @@ site_context:
         loopbacks:
           - { interface: "Loopback0", ip_address: "10.2.0.4/32", type: "management" }
         interfaces:
-          - { interface: "HundredGigE0/1", ip_address: "10.9.12.0/31" } # Up to cor-03
-          - { interface: "HundredGigE0/2", ip_address: "10.9.14.0/31" } # Up to cor-04
+          - { interface: "HundredGigE0/1", ip_address: "10.9.6.1/31" } # Up to cor-03
+          - { interface: "HundredGigE0/2", ip_address: "10.9.8.1/31" } # Up to cor-04
           - { interface: "HundredGigE0/48", ip_address: "10.15.2.1/31" } # Inter-agg to agg-03
           - { interface: "TenGigabitEthernet1/0/1", ip_address: "10.24.2.2/31" } # Down to f01-acc-02 (cross)
         bgp_peers:
-          - { description: "iBGP Underlay Up to cor-03", peer_ip: "10.9.12.1", remote_as: 65100, type: "ibgp" }
-          - { description: "iBGP Underlay Up to cor-04", peer_ip: "10.9.14.1", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-03", peer_ip: "10.9.6.0", remote_as: 65100, type: "ibgp" }
+          - { description: "iBGP Underlay Up to cor-04", peer_ip: "10.9.8.0", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay to agg-03", peer_ip: "10.15.2.0", remote_as: 65100, type: "ibgp" }
           - { description: "iBGP Underlay Down to f01-acc-02", peer_ip: "10.24.2.3", remote_as: 65100, type: "ibgp" }
 
@@ -261,10 +261,10 @@ site_context:
                 - { interface: "Loopback0", ip_address: "10.3.0.1/32", type: "management" }
                 - { interface: "Loopback1", ip_address: "10.128.1.1/32", type: "vtep-source" }
               interfaces:
-                - interface: "HundredGigabitEthernet1/1/1"
+                - interface: "TenGigabitEthernet1/1/1"
                   description: "FD-A L3 Underlay to agg-01"
                   ip_address: "10.24.1.1/31"
-                - interface: "HundredGigabitEthernet1/1/2"
+                - interface: "TenGigabitEthernet1/1/2"
                   description: "Cross-Plane L3 Underlay to agg-02"
                   ip_address: "10.24.1.3/31"
               bgp_peers:
@@ -286,10 +286,10 @@ site_context:
                 - { interface: "Loopback0", ip_address: "10.3.0.2/32", type: "management" }
                 - { interface: "Loopback1", ip_address: "10.128.1.2/32", type: "vtep-source" }
               interfaces:
-                - interface: "HundredGigabitEthernet1/1/1"
+                - interface: "TenGigabitEthernet1/1/1"
                   description: "FD-B L3 Underlay to agg-03"
                   ip_address: "10.24.2.1/31"
-                - interface: "HundredGigabitEthernet1/1/2"
+                - interface: "TenGigabitEthernet1/1/2"
                   description: "Cross-Plane L3 Underlay to agg-04"
                   ip_address: "10.24.2.3/31"
               bgp_peers:
