@@ -1,0 +1,28 @@
+---
+# ============================================================================
+# Full build, in the order design.md's "Step 1. Baseline Build" specifies,
+# plus a pre-flight render-vs-data-model check (design.md's "## Validation",
+# layer 1) that runs before anything else:
+#   validate render -> baseline -> validate -> physical topology ->
+#   validate p2p connectivity -> logical topology -> validate L3/vlan
+# ============================================================================
+# Prerequisites (also stated in design.md):
+#   - Management network up, devices reachable by these Ansible runners
+#     (see inventory/hosts.yml's FINDING about ansible_host / OOB IPAM gap)
+#   - Devices physically racked and patched per Rack_Patching_Record.md
+#   - ansible-galaxy collection install -r requirements.yml
+#
+# Usage:
+#   ansible-playbook playbooks/site.yml                  # validate render, then full build against real devices
+#   ansible-playbook playbooks/site.yml -e deploy=false   # validate render, then render + save every stage, touch nothing
+- name: abc-hq campus build
+  import_playbook: 00_validate_render.yml
+
+- name: abc-hq campus build
+  import_playbook: 01_baseline_build.yml
+
+- name: abc-hq campus build
+  import_playbook: 02_physical_topology.yml
+
+- name: abc-hq campus build
+  import_playbook: 03_logical_topology.yml

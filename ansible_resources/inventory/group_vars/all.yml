@@ -1,0 +1,28 @@
+# ============================================================================
+# Vars shared by every device in the play
+# ============================================================================
+# The single place that ties a platform name (from device_platform(), keyed
+# off the hostname convention) to its role baseline yaml + Jinja2 template --
+# design.md's own "Device Role Models" table, made data instead of repeated
+# per-playbook logic.
+platform_map:
+  catalyst8000:
+    baseline_yaml: "wan edge role.yaml"
+    baseline_template: "catalyst 8000.j2"
+    baseline_var: "platform_wan_baseline"
+  nexus93240:
+    baseline_yaml: "core agg role.yaml"
+    baseline_template: "nexus 93240.j2"
+    baseline_var: "platform_core_agg_baseline"
+  catalyst9000:
+    baseline_yaml: "access role.yaml"
+    baseline_template: "catalyst 9000.j2"
+    baseline_var: "platform_access_baseline"
+
+repo_root: "{{ playbook_dir }}/.."
+
+# Set -e deploy=false (or -e "deploy=no") to render + save every stage's
+# config locally without pushing anything to a device -- a dry run /
+# audit-only pass. Defaults to true so `ansible-playbook playbooks/site.yml`
+# does the real build described in design.md's "Step 1. Baseline Build".
+deploy: true

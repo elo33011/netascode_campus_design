@@ -1,0 +1,90 @@
+---
+# ============================================================================
+# Pre-flight: render-vs-data-model validation (design.md's "## Validation",
+# layer 1). Confirms the CLI that scripts/render_configs.py / the templates
+# would produce for every device actually matches what
+# physical_topology.yaml / logical_topology.yaml / the platform role
+# baseline say it should -- BEFORE stages 01/02/03 ever touch a device.
+#
+# Talks to no device and needs no cisco.* collection -- pure data-model
+# correctness, run once against localhost. Gates the rest of site.yml: a
+# failed check here means the templates/filters combination has a genuine
+# defect, and pushing configs built from it would be pushing a
+# known-wrong config to production hardware.
+#
+# The actual checking logic stays in Python
+# (scripts/validate_configs.py), not reimplemented here in YAML, so there
+# is exactly one place -- reusing exactly the same
+# filter_plugins/netascode_filters.py lookups the templates call -- that
+# decides what "correct" means. This playbook's job is only to run it,
+# surface every individual check as native Ansible task output, and turn
+# the result into a reviewable report + a hard gate.
+#
+# Usage:
+#   ansible-playbook playbooks/00_validate_render.yml
+#   ansible-playbook playbooks/00_validate_render.yml -e validate_verbose=true
+#     # also print every individual check (400+ lines) to the run output,
+#     # not just the per-device/category summary + generated report
+# ============================================================================
+- name: Pre-flight - validate rendered config against data models
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    validate_verbose: false
+  tasks:
+    - name: Re-render every device's config from the current templates + data models
+      ansible.builtin.command: >-
+        python3 {{ repo_root }}/scripts/render_configs.py {{ repo_root }} {{ repo_root }}/rendered_configs
+      changed_when: true
+
+    - name: Run scripts/validate_configs.py against the freshly rendered configs
+      ansible.builtin.command: >-
+        python3 {{ repo_root }}/scripts/validate_configs.py {{ repo_root }}
+        --json {{ repo_root }}/rendered_configs/.validation_report.json
+      changed_when: false
+      failed_when: false
+      register: validate_run
+      # failed_when: false is deliberate -- the script's own exit code
+      # (1 on any failure) is NOT what gates this play. We want the
+      # per-check report generated either way, then gate explicitly on
+      # the parsed summary below, so a failed run still leaves a reviewable
+      # rendered_configs/validation_report.md behind.
+
+    - name: Load structured per-check results
+      ansible.builtin.set_fact:
+        validation_data: "{{ lookup('file', repo_root + '/rendered_configs/.validation_report.json') | from_json }}"
+
+    - name: Show every check that ran (category, expectation, pass/fail/skip)
+      ansible.builtin.debug:
+        msg: >-
+          [{{ item.0.name }}] {{ item.1.category }}:
+          {{ 'SKIP' if (item.1.passed and item.1.note) else ('PASS' if item.1.passed else 'FAIL') }}
+          -- expected {{ item.1.expectation }}{{ ' [' + item.1.note + ']' if item.1.note else '' }}
+      loop: "{{ validation_data.devices | subelements('checks') }}"
+      loop_control:
+        label: "{{ item.0.name }} / {{ item.1.category }}"
+      when: validate_verbose | bool
+
+    - name: Write a human-readable validation report (what was tested, per device)
+      ansible.builtin.template:
+        src: "{{ repo_root }}/templates/validation_report.md.j2"
+        dest: "{{ repo_root }}/rendered_configs/validation_report.md"
+
+    - name: Summarise
+      ansible.builtin.debug:
+        msg: >-
+          {{ validation_data.summary.total_pass }} passed,
+          {{ validation_data.summary.total_fail }} failed,
+          {{ validation_data.summary.skipped }} known-gap skips,
+          across {{ validation_data.summary.device_count }} devices.
+          Full per-check report: rendered_configs/validation_report.md
+
+    - name: Fail the play if any render-vs-data-model check failed
+      ansible.builtin.assert:
+        that:
+          - validation_data.summary.total_fail == 0
+        success_msg: "All render-vs-data-model checks passed -- safe to proceed to baseline build."
+        fail_msg: >-
+          {{ validation_data.summary.total_fail }} check(s) failed -- see
+          rendered_configs/validation_report.md before deploying anything.
