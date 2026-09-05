@@ -19,7 +19,7 @@ Key takeaways:
   </div>
 
   <div style="flex: 1;">
-    <img src="automation-native-data-model-pipeline.svg" width="1200">
+    <img src="diagram/automation-native-data-model-pipeline.svg" width="1200">
   </div>
 </div>
 
@@ -57,16 +57,16 @@ This section outlines the architectural framework and design principles for the 
 * Implements a standard five-tier architecture: Regional On-Prem/Cloud Colo Access $\rightarrow$ WAN $\rightarrow$ Core $\rightarrow$ Aggregation $\rightarrow$ Access.
 * Extends dual-homed connections across all network tiers for end-to-end path redundancy.
 
-![Campus Network Diagram](./topology1.svg)
+![Campus Network Diagram](./diagram/topology1.svg)
 
-![Campus Management Network Diagram](./mgmt_topology.svg)
+![Campus Management Network Diagram](./diagram/mgmt_topology.svg)
 
 ### Control Plane & Overlay Architecture
 
 * Deploys a unified BGP Routing-based transport underlay.
 * Runs EVPN-VXLAN on top of the underlay to deliver flexible Layer 2/Layer 3 multi-tenant virtual overlay networks.
 
-![Logical Network Diagram](./logical.svg)
+![Logical Network Diagram](./diagram/logical.svg)
 
 ### Network Services & Security
 
