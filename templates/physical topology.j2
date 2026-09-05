@@ -1,0 +1,95 @@
+{# ============================================================================
+   Physical Topology Deployment Template (platform-agnostic)
+   ============================================================================
+   Fills the "Jinja2 template - Physical Topology Deployment" placeholder in
+   design.md. Stage 2 of the build workflow (design.md -> "Design
+   Deployment" -> "Step 1. Baseline Build"): applied to a device AFTER its
+   platform baseline template (catalyst 8000.j2 / nexus 93240.j2 /
+   catalyst 9000.j2) and BEFORE logical topology.j2. Renders purely from
+   physical_topology.yaml (site_physical_topology) -- Layer 1/2 only: which
+   ports exist on this device, bring them up, describe them. Deliberately no
+   IP addressing and no BGP here; that's logical topology.j2's job, mirroring
+   physical.svg vs logical.svg being modelled as separate concerns.
+
+   Render context expected (one device at a time -- like an Ansible
+   `template` task looped over inventory_hostname):
+     site_physical_topology : full parsed physical_topology.yaml
+     device_name             : hostname being rendered
+     platform                : 'catalyst8000' | 'nexus93240' | 'catalyst9000'
+                               (see filter_plugins/netascode_filters.py
+                               device_platform() -- design.md's Device Role
+                               Models table gives the mapping; neither yaml
+                               model carries a platform field itself)
+
+   Link discovery: physical_topology.yaml records each physical link from
+   ONE side only (e.g. core_routers declares the Core<->Agg link; the
+   aggregation_switches entry for that same link is not restated). The
+   device_phys_links() filter resolves this by unioning a device's own
+   declared links with any other device's entry naming this device as
+   remote_device, normalised so the result always reads "this device's local
+   port -> that neighbor's port".
+
+   FINDING -- not silently resolved, flagged instead: platform_access_
+   baseline.yaml and platform_core_agg_baseline.yaml both set an
+   interface_baseline.*.link_aggregation = {protocol: lacp, mode: active}
+   for underlay/fabric uplinks. But every fabric/underlay link in this
+   topology is a discrete routed point-to-point link to a DIFFERENT
+   neighbor (an access switch's two uplinks go to agg-01 and agg-02; a
+   core's fabric ports each go to a different agg/wan neighbor) -- nowhere
+   does this topology have two links to the SAME neighbor that would need
+   bundling into one LACP port-channel. Rendering a port-channel here would
+   be wrong: ECMP over independent L3 links is this design's actual
+   redundancy mechanism (ties directly to "Deterministic Topology" +
+   "Routed Access EVPN-VXLAN Fabric" in design.md's Technical Requirements),
+   not link aggregation. No port-channel / LACP config is emitted below;
+   confirm with the design owner whether that baseline field is meant for a
+   scenario not yet modelled here, or should simply be removed for these
+   roles.
+   ============================================================================ #}
+!
+hostname {{ device_name }}
+!
+{% set ext_links = site_physical_topology | device_external_links(device_name) %}
+{% set links = site_physical_topology | device_phys_links(device_name) %}
+{% for l in ext_links %}
+interface {{ l.interface }}
+ description EXTERNAL - {{ l.description }} ({{ l.type }})
+ no shutdown
+!
+{% endfor %}
+{% for l in links %}
+interface {{ l.local_port }}
+ description FABRIC - to {{ l.remote_device }} {{ l.remote_port }} ({{ l.link_type }})
+{% if platform in ('nexus93240', 'catalyst9000') %}
+ no switchport
+{% endif %}
+{% if platform == 'nexus93240' %}
+ mtu 9192
+{% endif %}
+{% if platform == 'catalyst9000' and l.link_type == 'agg_to_access' %}
+! NOTE: physical_topology.yaml names this port "{{ l.local_port }}" (the
+! agg_to_access link_standard is 10Gbps), but logical_topology.yaml's
+! evpn_vtep.interfaces entry for this same link on {{ device_name }} names
+! it "HundredGigabitEthernet..." -- a 100Gbps interface name. The two
+! models disagree on both the interface identifier and the implied port
+! speed for the identical physical link. Rendered here under the name
+! physical_topology.yaml gives, since design.md's Data Models table states
+! that model is the "ground-truth inventory... devices, ports,
+! interconnects" -- but this needs correcting in logical_topology.yaml (or
+! here, if physical_topology.yaml is the one that's stale) before deploying
+! for real.
+{% endif %}
+ no shutdown
+!
+{% endfor %}
+{% if platform == 'catalyst8000' %}
+! NOTE: {{ device_name }}'s internal_links in physical_topology.yaml include
+! a link to its WAN-tier peer (the horizontal wan-01<->wan-02 interconnect)
+! that has no corresponding entry anywhere in logical_topology.yaml's
+! bgp_peers for this device -- that physical link is brought up above but
+! carries no routing session. Confirm whether it's meant to (e.g. a direct
+! iBGP/heartbeat path between the two WAN edges) or is deliberately
+! data-plane-only / unused at this stage.
+{% endif %}
+!
+end

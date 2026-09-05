@@ -1,0 +1,223 @@
+{# ============================================================================
+   Logical Topology Deployment Template (platform-agnostic)
+   ============================================================================
+   Fills the "Jinja2 template - Logical Topology Deployment" placeholder in
+   design.md. Stage 3 of the build workflow -- applied AFTER
+   physical_topology.j2 (which brought the ports up and named them). Renders
+   from logical_topology.yaml (site_context): loopbacks, per-interface IP
+   addressing on the ports physical_topology.j2 already created, underlay
+   BGP, and (access-vtep devices only) the EVPN-VXLAN overlay.
+
+   Render context expected (one device at a time):
+     site_physical_topology : full parsed physical_topology.yaml (only used
+                               here to resolve WAN routers' missing
+                               interface bindings, see FINDING 1 below)
+     site_context            : full parsed logical_topology.yaml
+     device_name, platform, role
+     platform_baseline       : whichever of platform_wan_baseline /
+                               platform_core_agg_baseline /
+                               platform_access_baseline matches this device
+                               (reused from the baseline-stage template so
+                               routing_baseline.bgp_security is available)
+
+   FINDING 1 -- wan_routers in logical_topology.yaml have no `interfaces:`
+   list (core_routers, aggregation_switches and access_vteps all do). Their
+   bgp_peers only carry peer_ip, not which local interface or local IP the
+   session rides on -- this is the exact gap catalyst 8000.j2's own header
+   already flagged ("all of it keys off device-specific peer/interface
+   data"). wan_peer_binding() resolves it two ways: the eBGP peer is
+   assumed to ride the device's one external ISP circuit (true for both WAN
+   routers here); each iBGP peer's remote device is found by matching
+   peer_ip against every OTHER device's logical-topology interfaces list,
+   then the physical link to that device supplies the local port, and the
+   device's own /31 address is derived (RFC 3021: the other half of the
+   peer's /31). Anywhere this can't be resolved, a NOTE is rendered instead
+   of a guessed command.
+
+   FINDING 2 -- physical_topology.yaml and logical_topology.yaml both use
+   IOS-style interface names (HundredGigE0/0/1, TenGigabitEthernet1/0/1,
+   ...) for EVERY device, including core_routers/aggregation_switches,
+   which design.md's Device Role Models table maps to Nexus 93240 (NX-OS).
+   Real NX-OS interface names follow a different convention (e.g.
+   Ethernet1/1), so the interface names below are almost certainly
+   placeholders rather than the real hardware-verified port names for that
+   platform. Rendered literally as the data model gives them (renaming
+   them would be guessing a real NX-OS slot/port layout that isn't in
+   scope of these two yaml files) -- flag for correction before deploying
+   against real Nexus 93240 hardware.
+
+   FINDING 3 -- there is no BGP EVPN overlay peering anywhere in this data
+   model. Each access-vtep's bgp_peers are underlay-only iBGP sessions to
+   its two local aggregation switches (which are themselves declared
+   "role: aggregation-transit", pure L3 forwarders with no VTEP/EVPN
+   config at all). For EVPN-VXLAN to actually distribute MAC/IP routes
+   between abc-hq-f01-acc-01 and abc-hq-f01-acc-02, something has to run
+   the L2VPN EVPN address-family between the access-VTEPs (or a
+   route-reflector each peers to) -- normally their shared Loopback0/
+   Loopback1 space, or an RR seated at the core. That layer isn't defined
+   anywhere in logical_topology.yaml. `router bgp` / `address-family
+   l2vpn evpn` is still rendered below (NVE and per-VNI config are
+   meaningless without it), but with no neighbor activated under it --
+   this is flagged as a real design gap, not filled in with an assumed RR.
+   ============================================================================ #}
+{% set rtg = site_context | device_routing_record(device_name) %}
+{% set bgp_sec = platform_baseline.routing_baseline.bgp_security if platform_baseline.routing_baseline is defined and platform_baseline.routing_baseline.bgp_security is defined else none %}
+!
+{% for lb in rtg.loopbacks %}
+interface {{ lb.interface }}
+{% if platform == 'nexus93240' %}
+ ip address {{ lb.ip_address }}
+{% else %}
+ ip address {{ lb.ip_address | ios_addr }}
+{% endif %}
+ description LOOPBACK - {{ lb.type }}
+ no shutdown
+!
+{% endfor %}
+{% if not bgp_sec %}
+! NOTE: {{ platform }} has no routing_baseline.bgp_security section in its
+! platform baseline yaml (platform_access_baseline.yaml has none at all --
+! see catalyst 9000.j2's own header finding #3), yet this device speaks
+! BGP per logical_topology.yaml. Neighbors below carry no ttl-security /
+! password lines as a result -- confirm whether that's intentional.
+{% endif %}
+{# -------------------------- Per-interface IP addressing -------------------------- #}
+{% if rtg.interfaces %}
+{% for i in rtg.interfaces %}
+interface {{ i.interface }}
+{% if platform == 'nexus93240' %}
+ ip address {{ i.ip_address }}
+{% else %}
+ ip address {{ i.ip_address | ios_addr }}
+{% endif %}
+{% if i.description is defined %}
+ description {{ i.description }}
+{% endif %}
+!
+{% endfor %}
+{% else %}
+{% for p in rtg.bgp_peers %}
+{% set b = site_physical_topology | wan_peer_binding(site_context, device_name, p) %}
+{% if b.resolved and b.own_ip %}
+interface {{ b.local_port }}
+ ip address {{ b.own_ip | ios_addr }}
+ description UNDERLAY - {{ p.description }}
+!
+{% elif b.resolved %}
+! NOTE: {{ b.local_port }} carries "{{ p.description }}" (peer {{ p.peer_ip }})
+! but no local IP can be derived for it -- eBGP peers have no counterpart
+! `interfaces:` entry on either side of logical_topology.yaml to derive an
+! address from (see FINDING 1). Address must be supplied before deploying.
+{% else %}
+! NOTE: could not resolve which physical interface carries "{{ p.description }}"
+! (peer {{ p.peer_ip }}) for {{ device_name }} -- no other device's
+! logical_topology.yaml `interfaces:` entry has this peer_ip. Skipped
+! rather than guessed.
+{% endif %}
+{% endfor %}
+{% endif %}
+{# -------------------------- Underlay BGP -------------------------- #}
+router bgp {{ rtg.global.bgp_asn }}
+{% if platform == 'nexus93240' %}
+ router-id {{ rtg.global.router_id }}
+{% else %}
+ bgp router-id {{ rtg.global.router_id }}
+ bgp log-neighbor-changes
+{% endif %}
+{% for p in rtg.bgp_peers %}
+ neighbor {{ p.peer_ip }} remote-as {{ p.remote_as }}
+{% if platform == 'nexus93240' %}
+  description {{ p.description }}
+{% if bgp_sec %}
+  ttl-security hops {{ bgp_sec.ttl_security_hops }}
+{% if bgp_sec.md5_authentication %}
+  password !! VAULT-REFERENCE-REQUIRED !!
+{% endif %}
+{% endif %}
+  address-family ipv4 unicast
+{% else %}
+ neighbor {{ p.peer_ip }} description {{ p.description }}
+{% if bgp_sec %}
+ neighbor {{ p.peer_ip }} ttl-security hops {{ bgp_sec.ttl_security_hops }}
+{% if bgp_sec.md5_authentication %}
+ neighbor {{ p.peer_ip }} password !! VAULT-REFERENCE-REQUIRED !!
+{% endif %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% if platform != 'nexus93240' %}
+ address-family ipv4 unicast
+{% for p in rtg.bgp_peers %}
+  neighbor {{ p.peer_ip }} activate
+{% endfor %}
+ exit-address-family
+{% endif %}
+{# -------------------------- EVPN-VXLAN overlay (access-vtep only) -------------------------- #}
+{% if rtg.kind == 'access-vtep' %}
+{% set evpn = site_context.evpn_overlay_design %}
+{% set lo0 = rtg.loopbacks | selectattr('type', 'equalto', 'management') | map(attribute='ip_address') | first %}
+{% set lo1_iface = rtg.loopbacks | selectattr('type', 'equalto', 'vtep-source') | map(attribute='interface') | first %}
+!
+{% for vni in evpn.vni_service_mappings %}
+{% if vni.vrf_name is defined %}
+vrf definition {{ vni.vrf_name }}
+ rd {{ vni.route_distinguisher | resolve_rd(lo0) }}
+ address-family ipv4
+{% for rt in vni.route_targets.import %}
+  route-target import {{ rt }}
+{% endfor %}
+{% for rt in vni.route_targets.export %}
+  route-target export {{ rt }}
+{% endfor %}
+ exit-address-family
+!
+{% endif %}
+vlan configuration {{ vni.vlan_id }}
+ member vni {{ vni.vni_id }}
+!
+{% if vni.anycast_gateway_ip is defined %}
+interface vlan{{ vni.vlan_id }}
+ description {{ vni.name }} - {{ vni.description }}
+ vrf forwarding {{ vni.vrf_name }}
+ ip address {{ vni.anycast_gateway_ip | ios_addr }}
+ no ip redirects
+ fabric forwarding mode anycast-gateway
+{% if vni.dhcp_server is defined %}
+ ip helper-address {{ vni.dhcp_server }}
+{% endif %}
+ no shutdown
+!
+{% else %}
+! NOTE: VNI {{ vni.vni_id }} ({{ vni.name }}) has no anycast_gateway_ip /
+! vrf_name in logical_topology.yaml (only vni_id, vlan_id, name,
+! description were ever supplied for it -- see that file's own header
+! comment). Rendered as an L2-only VNI extension with no SVI/anycast
+! gateway; confirm whether it's meant to stay L2-only (plausible for
+! Security_Cameras/Voice/Wireless-Mgmt/IPTV/Critical-Services) or is
+! simply incomplete data.
+{% endif %}
+{% endfor %}
+!
+interface nve1
+ source-interface {{ lo1_iface }}
+ host-reachability protocol bgp
+{% for vni in evpn.vni_service_mappings %}
+{% if vni.vrf_name is defined %}
+ member vni {{ vni.vni_id }} vrf {{ vni.vrf_name }}
+{% else %}
+ member vni {{ vni.vni_id }}
+  ingress-replication protocol bgp
+{% endif %}
+{% endfor %}
+ no shutdown
+!
+router bgp {{ rtg.global.bgp_asn }}
+ address-family l2vpn evpn
+! NOTE: no neighbor is activated under this address-family -- see header
+! FINDING 3. Nothing in logical_topology.yaml defines an EVPN overlay
+! peer (route-reflector or full-mesh) between access-VTEPs; the two
+! underlay iBGP peers above only carry the IPv4 underlay, not L2VPN EVPN.
+! member vni configuration above is inert until this is resolved.
+{% endif %}
+!
+end
