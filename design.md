@@ -143,5 +143,13 @@ Prerequisite:
 * [Physical topology build](ansible_resources/playbooks/02_physical_topology.yml)
 * [Logical topology build](ansible_resources/playbooks/03_logical_topology.yml)
 
-### Step 6. Execute service deployment playbook using the script [Set endpoint port.py](scripts/set_endpoint_port.py) to apply interface configurations.
+### Step 6. Execute [service deployment playbook](ansible_resources/playbooks/bau_endpoint_provisioning.yml)
+
+```yaml
+ansible-playbook playbooks/bau_endpoint_provisioning.yml \
+    -e switch_name=abc-hq-f01-acc-01 -e interface_name=GigabitEthernet1/0/5 \
+    -e vlan=20 -e voice_vlan=30 -e description="Marketing desk move, INC0012345"
+```
+
+
 
