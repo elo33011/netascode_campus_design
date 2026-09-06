@@ -143,7 +143,7 @@ Prerequisite:
 * [Physical topology build](ansible_resources/playbooks/02_physical_topology.yml)
 * [Logical topology build](ansible_resources/playbooks/03_logical_topology.yml)
 
-### Step 6. Execute [service deployment playbook](ansible_resources/playbooks/bau_endpoint_provisioning.yml)
+### Step 6. Execute [service deployment playbook](ansible_resources/playbooks/bau_endpoint_provisioning.yml) to provision the interface on the access switch.
 
 ```yaml
 ansible-playbook playbooks/bau_endpoint_provisioning.yml \
