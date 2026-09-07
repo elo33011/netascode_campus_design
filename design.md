@@ -98,14 +98,55 @@ This design is constructed from a set of data models which provides a structure 
 
 Design driven models are specific models created for this design. They defines the physical and logical network topology, as well as the endpoint service (i.e. interface configurations) required on the access switches.
 
-| Data Model | Purpose | JSON Schema |
-|---|---|---|
-| [Physical Topology - Campus Network](models/physical%20topology.yaml) | Ground-truth inventory of campus network hardware and cabling — devices, ports, and interconnects. | [physical-topology.schema.json](schemas/physical-topology.schema.json) |
-| [Physical Topology - Management Network](models/physical%20topology%20management%20network.yaml) | Ground-truth inventory of the OOB management network — terminal servers, management switches, and console cabling. | [physical-topology-management-network.schema.json](schemas/physical-topology-management-network.schema.json) |
-| [Logical Topology](models/logical%20topology.yaml) | Defines the campus's BGP underlay and VXLAN EVPN overlay — how traffic is forwarded and isolated, independent of physical hardware. | [logical-topology.schema.json](schemas/logical-topology.schema.json) |
-| [Endpoint Service](models/endpoint%20service.yaml) | Standardized security and QoS baseline for endpoint switchports — loop protection, 802.1X/MAB, FHS, and edge QoS | [endpoint-service.schema.json](schemas/endpoint-service.schema.json) |
+[Physical Topology - Campus Network](models/physical%20topology.yaml) 
+
+Purpose: Ground-truth inventory of campus network hardware and cabling — devices, ports, and interconnects
+
+- Layer 1/2 only — devices and cabling, no IPs/routing
+- Two failure domains (FD-A/FD-B), each a full WAN→Core→Agg stack, cross-connected for domain-level resilience
+- Every access switch dual-homed to two different agg switches
+- Cross-tier links declared once, reconciled by a filter function (not raw YAML)
+- No LACP — each fabric link goes to a different neighbor, so ECMP is the redundancy mechanism
+- Platform/role derived from hostname, not stored as a field
+- OOB management network modeled as a separate, parallel file
+- Validated both pre-push (render check) and post-push (LLDP neighbor count)
+- Only floor 1 built out; floors 2–10 are a documented pattern, not populated
+- Schema: [physical-topology.schema.json](schemas/physical-topology.schema.json)
+
+[Logical Topology](models/logical%20topology.yaml)
+
+Purpose: Defines the campus's BGP underlay and VXLAN EVPN overlay — how traffic is forwarded and isolated, independent of physical hardware
+
+- Layer 3+ on top of the physical model — IP addressing, BGP, and EVPN-VXLAN overlay, no cabling/ports of its own
+- Single AS (65100) for the whole campus — WAN, core, agg, access all iBGP; only the two ISP links are eBGP
+- VNI-to-VLAN mapping table is the single source of truth (6 segments: Users, Cameras, Voice, AP-mgmt, IPTV, Critical-fallback) — endpoint service model references it rather than redefining
+- Only VNI 10 has full RD/RT/gateway/DHCP fields populated; the other 5 are flagged as incomplete, not fabricated
+- Access switches are the EVPN VTEPs (Loopback0 mgmt + Loopback1 VTEP-source); core/agg are pure L3 underlay transit with no VTEP config
+- WAN routers have no interfaces: list of their own — a filter (wan_peer_binding) reconstructs their local port/IP by cross-referencing the physical model and peer IPs
+- Two normalization filters do the heavy lifting: one merges wan/core/agg's routing block and access's evpn_vtep block into one common shape; another matches an IP to the device that owns it
+- Known gap, no actual EVPN overlay peering (L2VPN address-family) is defined anywhere, so MAC/IP distribution between access-VTEPs isn't wired up in this model yet
+- Schema: [logical-topology.schema.json](schemas/logical-topology.schema.json)
+
+[Endpoint Service](models/endpoint%20service.yaml)
+
+Purpose: Standardized security and QoS baseline for endpoint switchports — loop protection, 802.1X/MAB, FHS, and edge QoS
+
+- Per-port switchport policy — VLAN, voice VLAN, security, QoS — not part of the one-time fabric build; it's the BAU template bau_endpoint_provisioning.yml re-runs for any port add/change
+- A default_profile applies across a whole range (GigabitEthernet1/0/1-48); port_overrides layer exceptions on top per-interface
+- The model uses two different field names for the same access-VLAN concept (native_vlan in the default, access_vlan in overrides) — a filter reconciles them, not the template
+- Each override carries a switch field: null/absent applies it to every access switch, a hostname scopes it to just one — this is what lets a real BAU change (via set_endpoint_port.py) target a single switch/port without touching the rest
+- Two models feed every rendered port: this file supplies the per-port policy, access role.yaml's baseline supplies switch-wide enable flags/thresholds — same "resolve once in a filter, never re-derive in the template" pattern used elsewhere
+- Security stack: 802.1X + MAB, DHCP snooping, IP source guard, dynamic ARP inspection, BPDU guard/portfast
+- Schema: [endpoint-service.schema.json](schemas/endpoint-service.schema.json)
+
+#### Model Design
+
+Physical Topology 
+
 
 ### Device Role Models
+
+(This does not belong to the design but include here for completeness)
 
 A role is the function of the device performed in the design. Device role models define a standardized, platform-agnostic set of foundational hardening and operational features that must be implemented on a role (i.e. WAN Edge). It is intentionally decoupled from the hardware platform such that to allow flexible use of platform against role. These models will be used in conjunction with the platform specific jinja2 template to render the configuration output that is required by the platform acting as that role.
 
