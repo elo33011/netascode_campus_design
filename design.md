@@ -10,9 +10,9 @@ This is a sample network design to demonstrate how an automation native network 
 |---|---|---|
 | Gather business requirement | Gather business requirement | Unchanged |
 | Translate technical requirement | Translate technical requirement | Unchanged |
-| Create strawman design options (with conceptual diagrams drawing) | Generate strawman design options (with AI rendered conceptual diagrams) | HLD itself changes here: it must commit to a repeatable, parameterizable topology pattern (every floor built the same way) and generalize devices into reusable roles (WAN Edge / Core & Agg / Access), because everything from LLD onward depends on the HLD already being expressible as a pattern + roles rather than 12 bespoke devices |
+| Create strawman design options (with conceptual diagrams drawing) | Unchanged |
 | Finalize options | Finalize options | Unchanged |
-| Create high level design | Create high level design | Unchanged |
+| Create high level design | Create high level design — but now designed for determinism, abstraction, and a single source of truth from the outset | Generate strawman design options (with AI rendered conceptual diagrams) | HLD itself changes here: it must commit to a repeatable, parameterizable topology pattern (every floor built the same way) and generalize devices into reusable roles (WAN Edge / Core & Agg / Access), because everything from LLD onward depends on the HLD already being expressible as a pattern + roles rather than 12 bespoke devices |
 | Create BoM | Create BoM | Unchanged |
 | Create low level design | Define data model schema (physical topology / logical topology / endpoint service) | LLD becomes structured, schema-validated data instead of a document |
 | Create rack and patching matrix + Obtain IP, ASN, Source of truth NMS parameters | Ingest source-of-truth values into the schema → data model | Two traditional steps merge into one — both are just values filling the same schema |
