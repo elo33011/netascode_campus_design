@@ -48,15 +48,6 @@
         dest: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.baseline.cfg"
       delegate_to: localhost
 
-    # -------------------------------------------------------------------
-    # Push. src: (not lines:) so the module diffs/pushes the file exactly
-    # as rendered -- splitting a rendered config with banners and "!"
-    # comment lines into a flat `lines:` list is NOT equivalent and will
-    # mis-handle both. Known caveat either way: ios_config/nxos_config's
-    # line-by-line diff can behave oddly against multi-line `banner login`
-    # blocks -- verify the actual diff (`-C` / --check with --diff) against
-    # a lab device before trusting this unattended in production.
-    # -------------------------------------------------------------------
     - name: Push baseline config (IOS-XE platforms)
       cisco.ios.ios_config:
         src: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.baseline.cfg"
