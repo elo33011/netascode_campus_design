@@ -147,17 +147,18 @@ A role is the function of the device performed in the design. This design will u
 
 [WAN Edge Role](models/wan%20edge%20role.yaml)
 
-- Platform: Catalyst 8000
+- Applying Platform: Catalyst 8000
+- Jinja2 template: [Cat 8000](templates/catalyst_8000.j2)
 - Schema: [wan-edge-role.schema.json](schemas/wan-edge-role.schema.json)
 
 [Core & Agg Role](models/core%20agg%20role.yaml) 
 
-- Platform: Nexus 93240
+- Applying Platform Platform: Nexus 93240
 - Schema: [core-agg-role.schema.json](schemas/core-agg-role.schema.json)
 
 [Access Role](models/access%20role.yaml) 
 
-- Platform: Catalyst 9000
+- Applying Platform: Catalyst 9000
 - Schema: [access-role.schema.json](schemas/access-role.schema.json)
 
 ## Design Validation
