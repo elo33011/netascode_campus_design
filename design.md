@@ -21,8 +21,7 @@ This is a sample network design to demonstrate how an automation native network 
 | Create procedure based runbook + Execute | Execute via playbook (playbook + config = deployed config) | Two traditional steps merge into one — the playbook performs the steps instead of describing them for a human to type |
 | — | Validate (data model vs deployed config) | New — no traditional equivalent; closes the loop by comparing intent against what's actually live |
 
-
-##Key takeaways:
+## Key takeaways:
 - Data model first, design content is generated from various data models in yaml.
 - Generated contents includes diagrams, cable patching matrix, design specific templates, configurations, playbooks.
 - Data model is constructed from various schema by merging the values obtained from source of truth (i.e Netbox). The integration of SOT is not shown in this example.
