@@ -8,6 +8,7 @@ Key takeaways:
 - Data model is constructed from various schema by merging the values obtained from source of truth (i.e Netbox). The integration of SOT is not shown in this example.
 - Device configuration is render using jinja2 templates by looking up the data models. Ansible comes afterward to deploy.
 - Design is validated by comparing the config output with the data model.
+- To support BAU port changes, the data model describing the endpoint service are constantly updated to reflect the latest switch port configuration.
 - Concept:
   - schema + value = data model
   - data model + template = config
