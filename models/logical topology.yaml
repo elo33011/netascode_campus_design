@@ -110,6 +110,13 @@ site_context:
       failure_domain: "FD-A"
       routing:
         global: { bgp_asn: 65100, router_id: "10.1.0.1" }
+        # This core is an L2VPN EVPN route reflector for its own
+        # failure domain's access-VTEPs, and RR-meshes with the other
+        # 3 RR cores so routes reflected in one FD reach the others --
+        # see filter_plugins/netascode_filters.py evpn_rr_peers() and
+        # templates/logical topology.j2. Resolves the EVPN peering gap
+        # previously flagged as FINDING 3.
+        evpn_route_reflector: true
         loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.1/32", type: "management" }]
         interfaces:
           - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.1/31" } # to wan-01
@@ -126,6 +133,13 @@ site_context:
       failure_domain: "FD-A"
       routing:
         global: { bgp_asn: 65100, router_id: "10.1.0.2" }
+        # This core is an L2VPN EVPN route reflector for its own
+        # failure domain's access-VTEPs, and RR-meshes with the other
+        # 3 RR cores so routes reflected in one FD reach the others --
+        # see filter_plugins/netascode_filters.py evpn_rr_peers() and
+        # templates/logical topology.j2. Resolves the EVPN peering gap
+        # previously flagged as FINDING 3.
+        evpn_route_reflector: true
         loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.2/32", type: "management" }]
         interfaces:
           - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.6/31" } # to wan-02 (Cross-FD)
@@ -142,6 +156,13 @@ site_context:
       failure_domain: "FD-B"
       routing:
         global: { bgp_asn: 65100, router_id: "10.1.0.3" }
+        # This core is an L2VPN EVPN route reflector for its own
+        # failure domain's access-VTEPs, and RR-meshes with the other
+        # 3 RR cores so routes reflected in one FD reach the others --
+        # see filter_plugins/netascode_filters.py evpn_rr_peers() and
+        # templates/logical topology.j2. Resolves the EVPN peering gap
+        # previously flagged as FINDING 3.
+        evpn_route_reflector: true
         loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.3/32", type: "management" }]
         interfaces:
           - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.3/31" } # to wan-01 (Cross-FD)
@@ -158,6 +179,13 @@ site_context:
       failure_domain: "FD-B"
       routing:
         global: { bgp_asn: 65100, router_id: "10.1.0.4" }
+        # This core is an L2VPN EVPN route reflector for its own
+        # failure domain's access-VTEPs, and RR-meshes with the other
+        # 3 RR cores so routes reflected in one FD reach the others --
+        # see filter_plugins/netascode_filters.py evpn_rr_peers() and
+        # templates/logical topology.j2. Resolves the EVPN peering gap
+        # previously flagged as FINDING 3.
+        evpn_route_reflector: true
         loopbacks: [{ interface: "Loopback0", ip_address: "10.1.0.4/32", type: "management" }]
         interfaces:
           - { interface: "HundredGigE0/0/1", ip_address: "10.18.1.4/31" } # to wan-02
