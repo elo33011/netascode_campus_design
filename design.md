@@ -10,7 +10,7 @@ This is a sample network design to demonstrate how an automation native network 
 |---|---|---|
 | Gather business requirement | Gather business requirement | Unchanged |
 | Translate technical requirement | Translate technical requirement | Unchanged |
-| Create strawman design options (with conceptual diagrams) | Create strawman design options (with conceptual diagrams) | Unchanged |
+| Create strawman design options (with conceptual diagrams drawing) | Generate strawman design options (with AI rendered conceptual diagrams) | Design options are generated |
 | Finalize options | Finalize options | Unchanged |
 | Create high level design | Create high level design | Unchanged |
 | Create BoM | Create BoM | Unchanged |
