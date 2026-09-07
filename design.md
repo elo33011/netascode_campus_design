@@ -109,11 +109,9 @@ Purpose: Ground-truth inventory of campus network hardware and cabling — devic
 - Two failure domains (FD-A/FD-B), each a full WAN→Core→Agg stack, cross-connected for domain-level resilience
 - Every access switch dual-homed to two different agg switches
 - Cross-tier links declared once, reconciled by a filter function (not raw YAML)
-- No LACP — each fabric link goes to a different neighbor, so ECMP is the redundancy mechanism
+- No LACP — each fabric link goes to a different neighbor, ECMP is the redundancy mechanism
 - Platform/role derived from hostname, not stored as a field
 - OOB management network modeled as a separate, parallel file
-- Validated both pre-push (render check) and post-push (LLDP neighbor count)
-- Only floor 1 built out; floors 2–10 are a documented pattern, not populated
 - Schema: [physical-topology.schema.json](schemas/physical-topology.schema.json)
 
 [Logical Topology](models/logical%20topology.yaml)
@@ -122,22 +120,21 @@ Purpose: Defines the campus's BGP underlay and VXLAN EVPN overlay — how traffi
 
 - Layer 3+ on top of the physical model — IP addressing, BGP, and EVPN-VXLAN overlay, no cabling/ports of its own
 - Single AS (65100) for the whole campus — WAN, core, agg, access all iBGP; only the two ISP links are eBGP
-- VNI-to-VLAN mapping table is the single source of truth (6 segments: Users, Cameras, Voice, AP-mgmt, IPTV, Critical-fallback) — endpoint service model references it rather than redefining
-- Only VNI 10 has full RD/RT/gateway/DHCP fields populated; the other 5 are flagged as incomplete, not fabricated
+- VNI-to-VLAN mapping table is the single source of truth (6 segments: Users, Cameras, Voice, AP-mgmt, IPTV, Critical-fallback) — referenced by endpoint service model
 - Access switches are the EVPN VTEPs (Loopback0 mgmt + Loopback1 VTEP-source); core/agg are pure L3 underlay transit with no VTEP config
-- WAN routers have no interfaces: list of their own — a filter (wan_peer_binding) reconstructs their local port/IP by cross-referencing the physical model and peer IPs
-- Two normalization filters do the heavy lifting: one merges wan/core/agg's routing block and access's evpn_vtep block into one common shape; another matches an IP to the device that owns it
-- Core routers double as L2VPN EVPN route reflectors — a single evpn_route_reflector: true flag per core is all the model states; a filter (evpn_rr_peers) derives the full peering scheme from that plus the existing failure_domain grouping (RR mesh between cores, route-reflector-client from each access-VTEP to its own FD's two cores) — no manual peer lists needed
+- WAN routers interface details are excluded — a filter script (wan_peer_binding) constructs their local port/IP by cross-referencing the physical model and peer IPs
+- Two normalization filter scripts do the heavy lifting rendering: one merges wan/core/agg's routing block and access's evpn_vtep block into one common shape; another matches an IP to the device that owns it
+- Core routers act as L2VPN EVPN route reflectors — a single evpn_route_reflector: true flag per core is all the model states; a filter script (evpn_rr_peers) derives the full peering scheme from that plus the existing failure_domain grouping (RR mesh between cores, route-reflector-client from each access-VTEP to its own FD's two cores)
 - Schema: [logical-topology.schema.json](schemas/logical-topology.schema.json)
 
 [Endpoint Service](models/endpoint%20service.yaml)
 
 Purpose: Standardized security and QoS baseline for endpoint switchports — loop protection, 802.1X/MAB, FHS, and edge QoS
 
-- Per-port switchport policy — VLAN, voice VLAN, security, QoS — not part of the one-time fabric build; it's the BAU template bau_endpoint_provisioning.yml re-runs for any port add/change
+- Per-port switchport policy — VLAN, voice VLAN, security, QoS
 - A default_profile applies across a whole range (GigabitEthernet1/0/1-48); port_overrides layer exceptions on top per-interface
-- The model uses two different field names for the same access-VLAN concept (native_vlan in the default, access_vlan in overrides) — a filter reconciles them, not the template
-- Each override carries a switch field: null/absent applies it to every access switch, a hostname scopes it to just one — this is what lets a real BAU change (via set_endpoint_port.py) target a single switch/port without touching the rest
+- The model uses two different field names for the same access-VLAN concept (native_vlan in the default, access_vlan in overrides) — a filter script is used to reconcile them
+- Each override carries a switch field: null/absent applies it to every access switch, a hostname scopes it to just one. This is to allow BAU change (via set_endpoint_port.py) target a single switch/port without touching the rest
 - Two models feed every rendered port: this file supplies the per-port policy, access role.yaml's baseline supplies switch-wide enable flags/thresholds — same "resolve once in a filter, never re-derive in the template" pattern used elsewhere
 - Security stack: 802.1X + MAB, DHCP snooping, IP source guard, dynamic ARP inspection, BPDU guard/portfast
 - Schema: [endpoint-service.schema.json](schemas/endpoint-service.schema.json)
