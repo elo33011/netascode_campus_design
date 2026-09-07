@@ -126,7 +126,6 @@ Purpose: Defines the campus's BGP underlay and VXLAN EVPN overlay — how traffi
 - Access switches are the EVPN VTEPs (Loopback0 mgmt + Loopback1 VTEP-source); core/agg are pure L3 underlay transit with no VTEP config
 - WAN routers have no interfaces: list of their own — a filter (wan_peer_binding) reconstructs their local port/IP by cross-referencing the physical model and peer IPs
 - Two normalization filters do the heavy lifting: one merges wan/core/agg's routing block and access's evpn_vtep block into one common shape; another matches an IP to the device that owns it
-- Known gap, no actual EVPN overlay peering (L2VPN address-family) is defined anywhere, so MAC/IP distribution between access-VTEPs isn't wired up in this model yet
 - Schema: [logical-topology.schema.json](schemas/logical-topology.schema.json)
 
 [Endpoint Service](models/endpoint%20service.yaml)
