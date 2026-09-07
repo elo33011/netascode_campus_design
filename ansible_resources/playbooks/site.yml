@@ -1,12 +1,6 @@
 ---
 # ============================================================================
-# Full build, in the order design.md's "Step 1. Baseline Build" specifies,
-# plus a pre-flight render-vs-data-model check (design.md's "## Validation",
-# layer 1) that runs before anything else:
-#   validate render -> baseline -> validate -> physical topology ->
-#   validate p2p connectivity -> logical topology -> validate L3/vlan
-# ============================================================================
-# Prerequisites (also stated in design.md):
+# Prerequisites
 #   - Management network up, devices reachable by these Ansible runners
 #     (see inventory/hosts.yml's FINDING about ansible_host / OOB IPAM gap)
 #   - Devices physically racked and patched per Rack_Patching_Record.md
