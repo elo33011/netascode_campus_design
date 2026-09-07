@@ -135,13 +135,13 @@ Purpose: Standardized security and QoS baseline for endpoint switchports — loo
 - A default_profile applies across a whole range (GigabitEthernet1/0/1-48); port_overrides layer exceptions on top per-interface
 - The model uses two different field names for the same access-VLAN concept (native_vlan in the default, access_vlan in overrides) — a filter script is used to reconcile them
 - Each override carries a switch field: null/absent applies it to every access switch, a hostname scopes it to just one. This is to allow BAU change (via set_endpoint_port.py) target a single switch/port without touching the rest
-- Two models feed every rendered port: this file supplies the per-port policy, access role.yaml's baseline supplies switch-wide enable flags/thresholds — same "resolve once in a filter, never re-derive in the template" pattern used elsewhere
-- Security stack: 802.1X + MAB, DHCP snooping, IP source guard, dynamic ARP inspection, BPDU guard/portfast
+- Work together with the acccess role model to produce the switch port configuration. Access role model supplies the switch-wide parameters. This model supply the per port policy.
+- Security stack enabled on switch port: 802.1X + MAB, DHCP snooping, IP source guard, dynamic ARP inspection, BPDU guard/portfast
 - Schema: [endpoint-service.schema.json](schemas/endpoint-service.schema.json)
 
 ### Device Role Models
 
-A role is the function of the device performed in the design. This design will utilize 3 role models from the product catalog. 
+A role is the function of the device performed in the design. This design will utilize 3 role models from an existing product catalog. 
 
 [WAN Edge Role](models/wan%20edge%20role.yaml)
 
