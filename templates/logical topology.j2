@@ -46,19 +46,22 @@
    scope of these two yaml files) -- flag for correction before deploying
    against real Nexus 93240 hardware.
 
-   FINDING 3 -- there is no BGP EVPN overlay peering anywhere in this data
-   model. Each access-vtep's bgp_peers are underlay-only iBGP sessions to
-   its two local aggregation switches (which are themselves declared
-   "role: aggregation-transit", pure L3 forwarders with no VTEP/EVPN
-   config at all). For EVPN-VXLAN to actually distribute MAC/IP routes
-   between abc-hq-f01-acc-01 and abc-hq-f01-acc-02, something has to run
-   the L2VPN EVPN address-family between the access-VTEPs (or a
-   route-reflector each peers to) -- normally their shared Loopback0/
-   Loopback1 space, or an RR seated at the core. That layer isn't defined
-   anywhere in logical_topology.yaml. `router bgp` / `address-family
-   l2vpn evpn` is still rendered below (NVE and per-VNI config are
-   meaningless without it), but with no neighbor activated under it --
-   this is flagged as a real design gap, not filled in with an assumed RR.
+   FINDING 3 (RESOLVED) -- there was no BGP EVPN overlay peering anywhere
+   in this data model: access-vteps' bgp_peers were underlay-only iBGP
+   sessions to their local aggregation switches (themselves pure L3
+   "aggregation-transit", no VTEP/EVPN config), so member vni config had
+   no way to actually distribute MAC/IP routes between access-VTEPs.
+   Fixed by seating the L2VPN EVPN route reflector at the core: each
+   core_routers entry in logical_topology.yaml now carries
+   evpn_route_reflector: true, and evpn_rr_peers() (filter_plugins/
+   netascode_filters.py) derives, from that one flag plus the existing
+   failure_domain grouping, who peers with whom -- every RR-flagged core
+   full-meshes with the other RR cores (so routes reflected in one
+   failure domain reach the others) and route-reflects to every
+   access-vtep in its own failure domain; each access-vtep peers, as a
+   route-reflector-client, to the 2 RR cores in ITS OWN failure domain.
+   All sessions ride Loopback0 (already used for BGP router-id) across
+   the underlay -- no new loopback, no direct physical adjacency needed.
    ============================================================================ #}
 {% set rtg = site_context | device_routing_record(device_name) %}
 {% set bgp_sec = platform_baseline.routing_baseline.bgp_security if platform_baseline.routing_baseline is defined and platform_baseline.routing_baseline.bgp_security is defined else none %}
@@ -153,6 +156,7 @@ router bgp {{ rtg.global.bgp_asn }}
  exit-address-family
 {% endif %}
 {# -------------------------- EVPN-VXLAN overlay (access-vtep only) -------------------------- #}
+{% set evpn_rr = site_context | evpn_rr_peers(device_name) %}
 {% if rtg.kind == 'access-vtep' %}
 {% set evpn = site_context.evpn_overlay_design %}
 {% set lo0 = rtg.loopbacks | selectattr('type', 'equalto', 'management') | map(attribute='ip_address') | first %}
@@ -212,12 +216,38 @@ interface nve1
  no shutdown
 !
 router bgp {{ rtg.global.bgp_asn }}
- address-family l2vpn evpn
-! NOTE: no neighbor is activated under this address-family -- see header
-! FINDING 3. Nothing in logical_topology.yaml defines an EVPN overlay
-! peer (route-reflector or full-mesh) between access-VTEPs; the two
-! underlay iBGP peers above only carry the IPv4 underlay, not L2VPN EVPN.
-! member vni configuration above is inert until this is resolved.
+{% for p in evpn_rr.peers %}
+neighbor {{ p.peer_ip }} remote-as {{ rtg.global.bgp_asn }}
+neighbor {{ p.peer_ip }} description EVPN route-reflector {{ p.peer_name }}
+neighbor {{ p.peer_ip }} update-source Loopback0
+{% endfor %}
+{% if evpn_rr.peers %}
+address-family l2vpn evpn
+{% for p in evpn_rr.peers %}
+ neighbor {{ p.peer_ip }} activate
+ neighbor {{ p.peer_ip }} send-community both
+{% endfor %}
+exit-address-family
+{% else %}
+! NOTE: no RR-flagged core_routers found in logical_topology.yaml for
+! this access-vtep's failure domain -- evpn_rr_peers() returned no
+! peers, so no EVPN neighbor could be rendered here.
+{% endif %}
+{% endif %}
+{% if evpn_rr.is_rr %}
+{# --------------- L2VPN EVPN route-reflector (core only) --------------- #}
+!
+router bgp {{ rtg.global.bgp_asn }}
+{% for p in evpn_rr.peers %}
+ neighbor {{ p.peer_ip }} remote-as {{ rtg.global.bgp_asn }}
+  description EVPN {{ 'RR-mesh to' if not p.client else 'RR-client' }} {{ p.peer_name }}
+  update-source loopback0
+  address-family l2vpn evpn
+   send-community both
+{% if p.client %}
+   route-reflector-client
+{% endif %}
+{% endfor %}
 {% endif %}
 !
 end
