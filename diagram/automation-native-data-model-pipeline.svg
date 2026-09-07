@@ -84,7 +84,7 @@
           </defs>
 
           <!-- title block -->
-          <text x="650" y="34" text-anchor="middle" class="sd-title">AUTOMATION-NATIVE DATA MODEL PIPELINE</text>
+          <text x="650" y="34" text-anchor="middle" class="sd-title">AUTOMATION-NATIVE DATA MODEL DESIGN APPROACH</text>
           <text x="650" y="54" text-anchor="middle" class="sd-subtitle">NetBox → Extracted YAML Models → Rendered Documentation &amp; Ansible-Deployed Configuration</text>
           <line x1="40" y1="68" x2="1260" y2="68" class="sd-divider"/>
 
