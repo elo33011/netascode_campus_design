@@ -1,6 +1,6 @@
 ---
 # ============================================================================
-# Stage 3 of design.md's "Step 1. Baseline Build" workflow:
+# Stage 3
 #   Apply logical topology template -> Run layer 3 connectivity validation,
 #   endpoint vlan validation
 # ============================================================================
@@ -56,16 +56,6 @@
         save_when: modified
       when: deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
 
-    # -------------------------------------------------------------------
-    # "Layer 3 connectivity validation" -- basic presence check: every
-    # bgp_peers[].peer_ip this device's own logical_topology.yaml record
-    # declares should appear in "show bgp summary" output. A real gate
-    # would parse neighbor state and assert Established, not just presence
-    # -- flagged rather than faked here since fragile output-format
-    # assumptions (IOS-XE vs NX-OS "show bgp summary" columns differ) are
-    # exactly the kind of thing this repo's existing templates already
-    # refuse to guess at.
-    # -------------------------------------------------------------------
     - name: Look up this device's own bgp_peers from logical_topology.yaml
       ansible.builtin.set_fact:
         this_device_routing: "{{ site_context | device_routing_record(inventory_hostname) }}"
@@ -104,10 +94,6 @@
         deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
         and item.peer_ip not in bgp_nxos.stdout[0]
 
-    # -------------------------------------------------------------------
-    # "Endpoint vlan validation" -- access-vtep devices only, per
-    # evpn_overlay_design.vni_service_mappings (VLANs 10/20/30/40/50/999).
-    # -------------------------------------------------------------------
     - name: Gather VLAN brief (access-vtep only)
       cisco.ios.ios_command:
         commands: ["show vlan brief"]
