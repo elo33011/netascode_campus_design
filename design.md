@@ -143,13 +143,22 @@ Purpose: Standardized security and QoS baseline for endpoint switchports — loo
 
 ### Device Role Models
 
-A role is the function of the device performed in the design. Device role models define a standardized, platform-agnostic set of foundational hardening and operational features that must be implemented on a role (i.e. WAN Edge). It is intentionally decoupled from the hardware platform such that to allow flexible use of platform against role. These models will be used in conjunction with the platform specific jinja2 template to render the configuration output that is required by the platform acting as that role.
+A role is the function of the device performed in the design. This design will utilize 3 role models from the product catalog. 
 
-| Role-based Data Model | Platform Template| JSON Schema |
-|---|---|---|
-| [WAN Edge Role](models/wan%20edge%20role.yaml) | [Catalyst 8000](templates/catalyst%208000.j2) | [wan-edge-role.schema.json](schemas/wan-edge-role.schema.json) |
-| [Core & Agg Role](models/core%20agg%20role.yaml) | [Nexus 93240](templates/nexus%2093240.j2) | [core-agg-role.schema.json](schemas/core-agg-role.schema.json) |
-| [Access Role](models/access%20role.yaml) | [Catalyst 9000](templates/catalyst%2090000.j2) | [access-role.schema.json](schemas/access-role.schema.json) |
+[WAN Edge Role](models/wan%20edge%20role.yaml)
+
+- Platform: Catalust 8000
+- Schema: [wan-edge-role.schema.json](schemas/wan-edge-role.schema.json)
+
+[Core & Agg Role](models/core%20agg%20role.yaml) 
+
+- Platform: Nexus 93240
+- Schema: [core-agg-role.schema.json](schemas/core-agg-role.schema.json)
+
+[Access Role](models/access%20role.yaml) 
+
+- Platform: Catalyst 9000
+- Schema: [access-role.schema.json](schemas/access-role.schema.json)
 
 ## Design Validation
 
