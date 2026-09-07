@@ -65,6 +65,7 @@ This section outlines the architectural framework and design principles for the 
 
 * Deploys a unified BGP Routing-based transport underlay.
 * Runs EVPN-VXLAN on top of the underlay to deliver flexible Layer 2/Layer 3 multi-tenant virtual overlay networks.
+* Seats the L2VPN EVPN route reflector at the Core tier — each access-VTEP peers as a route-reflector-client to the two core routers in its own failure domain; the four RR cores full-mesh each other so routes reflected in one failure domain reach the other.
 
 ![Logical Network Diagram](./diagram/logical.svg)
 
@@ -98,7 +99,7 @@ This design is constructed from a set of data models which provides a structure 
 
 Design driven models are specific models created for this design. They defines the physical and logical network topology, as well as the endpoint service (i.e. interface configurations) required on the access switches.
 
-![Model Relationship](./diagram//data-model-relationships.svg)
+![Model Relationship](./diagram/data-model-relationships.svg)
 
 [Physical Topology - Campus Network](models/physical%20topology.yaml) 
 
@@ -126,6 +127,7 @@ Purpose: Defines the campus's BGP underlay and VXLAN EVPN overlay — how traffi
 - Access switches are the EVPN VTEPs (Loopback0 mgmt + Loopback1 VTEP-source); core/agg are pure L3 underlay transit with no VTEP config
 - WAN routers have no interfaces: list of their own — a filter (wan_peer_binding) reconstructs their local port/IP by cross-referencing the physical model and peer IPs
 - Two normalization filters do the heavy lifting: one merges wan/core/agg's routing block and access's evpn_vtep block into one common shape; another matches an IP to the device that owns it
+- Core routers double as L2VPN EVPN route reflectors — a single evpn_route_reflector: true flag per core is all the model states; a filter (evpn_rr_peers) derives the full peering scheme from that plus the existing failure_domain grouping (RR mesh between cores, route-reflector-client from each access-VTEP to its own FD's two cores) — no manual peer lists needed
 - Schema: [logical-topology.schema.json](schemas/logical-topology.schema.json)
 
 [Endpoint Service](models/endpoint%20service.yaml)
