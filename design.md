@@ -10,7 +10,7 @@ This is a sample network design to demonstrate how an automation native network 
 |---|---|---|
 | Gather business requirement | Gather business requirement | Unchanged |
 | Translate technical requirement | Translate technical requirement | Unchanged |
-| Create strawman design options (with conceptual diagrams drawing) | Generate strawman design options (with AI rendered conceptual diagrams) | Design options are generated |
+| Create strawman design options (with conceptual diagrams drawing) | Generate strawman design options (with AI rendered conceptual diagrams) | HLD itself changes here: it must commit to a repeatable, parameterizable topology pattern (every floor built the same way) and generalize devices into reusable roles (WAN Edge / Core & Agg / Access), because everything from LLD onward depends on the HLD already being expressible as a pattern + roles rather than 12 bespoke devices |
 | Finalize options | Finalize options | Unchanged |
 | Create high level design | Create high level design | Unchanged |
 | Create BoM | Create BoM | Unchanged |
