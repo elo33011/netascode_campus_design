@@ -98,7 +98,7 @@ This design is constructed from a set of data models which provides a structure 
 
 Design driven models are specific models created for this design. They defines the physical and logical network topology, as well as the endpoint service (i.e. interface configurations) required on the access switches.
 
-![Model Relationship](./data-model-relationships.svg)
+![Model Relationship](./diagram//data-model-relationships.svg)
 
 [Physical Topology - Campus Network](models/physical%20topology.yaml) 
 
