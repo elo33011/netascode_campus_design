@@ -306,6 +306,9 @@
                         ],
                         "additionalProperties": false
                       },
+                      "evpn_route_reflector": {
+                        "type": "boolean"
+                      },
                       "loopbacks": {
                         "type": "array",
                         "items": {
@@ -392,6 +395,7 @@
                     },
                     "required": [
                       "bgp_peers",
+                      "evpn_route_reflector",
                       "global",
                       "interfaces",
                       "loopbacks"

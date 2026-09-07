@@ -310,6 +310,13 @@
                   "interface": {
                     "type": "string"
                   },
+                  "switch": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "null/absent = this override applies to every access switch; a hostname string scopes it to just that one switch. Both existing entries are currently null (site-wide); a real hostname value is written here by scripts/set_endpoint_port.py / playbooks/bau_endpoint_provisioning.yml when someone records a switch-specific BAU change."
+                  },
                   "description": {
                     "type": "string"
                   },
@@ -358,7 +365,8 @@
                 "required": [
                   "description",
                   "dot1x_enabled",
-                  "interface"
+                  "interface",
+                  "switch"
                 ],
                 "additionalProperties": false
               }
