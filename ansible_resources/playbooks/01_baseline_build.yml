@@ -62,14 +62,6 @@
       when: deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
       register: baseline_push_nxos
 
-    # -------------------------------------------------------------------
-    # "Validate device local configuration" -- design.md's own wording is
-    # generic at this stage (hostname/interfaces/BGP are deliberately NOT
-    # part of the baseline template yet, so there's nothing device-specific
-    # to check for besides "is it there and talking to us"). Facts-gathering
-    # succeeding is the gate; a real deployment would extend this with
-    # config-line presence checks (e.g. against rendered_baseline.splitlines()).
-    # -------------------------------------------------------------------
     - name: Validate reachability + gather facts (IOS-XE)
       cisco.ios.ios_facts:
         gather_subset: min
