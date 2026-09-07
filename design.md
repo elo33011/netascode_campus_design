@@ -139,14 +139,7 @@ Purpose: Standardized security and QoS baseline for endpoint switchports — loo
 - Security stack: 802.1X + MAB, DHCP snooping, IP source guard, dynamic ARP inspection, BPDU guard/portfast
 - Schema: [endpoint-service.schema.json](schemas/endpoint-service.schema.json)
 
-#### Model Design
-
-Physical Topology 
-
-
 ### Device Role Models
-
-(This does not belong to the design but include here for completeness)
 
 A role is the function of the device performed in the design. Device role models define a standardized, platform-agnostic set of foundational hardening and operational features that must be implemented on a role (i.e. WAN Edge). It is intentionally decoupled from the hardware platform such that to allow flexible use of platform against role. These models will be used in conjunction with the platform specific jinja2 template to render the configuration output that is required by the platform acting as that role.
 
