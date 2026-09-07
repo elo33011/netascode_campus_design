@@ -1,38 +1,3 @@
-{# ============================================================================
-   Cisco Nexus 93240 (NX-OS) -- Core/Aggregation Role Baseline Configuration
-   ============================================================================
-   Stage 1: baseline-only, same scope as wan_router_cat8000_iosxe.j2. Renders
-   purely from platform_core_agg_baseline.yaml. No device/topology data
-   (hostname, interfaces, BGP neighbors, port-channel membership) is
-   expected or used here -- those come from physical_topology.yaml /
-   logical_topology.yaml at a later stage.
-
-   NX-OS vs IOS-XE differences that matter for this template:
-     - Most NX-OS functionality is off until enabled with `feature X` --
-       these ARE device-wide (not per-interface), so they're rendered now
-       even though the interfaces/protocols they support aren't configured
-       yet.
-     - Several IOS-style global knobs either don't exist on NX-OS or work
-       differently (no `ip source-route` toggle, no direct `ip icmp
-       rate-limit unreachable` equivalent -- NX-OS handles this class of
-       thing through CoPP instead). Rendered as "! NOTE" rather than
-       guessed at, same policy as the WAN template.
-     - CoPP on NX-OS is normally applied via a system profile
-       (`copp profile <strict|moderate|lenient|dense>`) layered with
-       optional custom classes, not built from scratch the way IOS-XE's
-       class-map/policy-map is. Both are rendered: a profile as the
-       practical baseline, plus the three named custom classes from the
-       data model for finer control.
-
-   Also unresolved from the original review of this data model, restated
-   here since it's about to become code: first_hop_redundancy_protocols
-   doesn't have anywhere to attach in this design -- the access-VTEP layer
-   already provides a distributed anycast gateway via EVPN, which is what
-   FHRP (HSRP/VRRP) exists to replace. No SVI/HSRP group is configured
-   anywhere in physical_topology.yaml or logical_topology.yaml for core/agg
-   devices (they're pure L3 underlay transit, per "LAYER 3 ROUTED ACCESS
-   VTEPS ONLY"), so this renders as a note, not commands.
-   ============================================================================ #}
 {% set mp = platform_core_agg_baseline.management_plane %}
 {% set ip_prot = platform_core_agg_baseline.infrastructure_protection %}
 {% set ha = platform_core_agg_baseline.high_availability_and_transit %}
