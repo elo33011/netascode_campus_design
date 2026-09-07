@@ -148,7 +148,7 @@ A role is the function of the device performed in the design. This design will u
 
 [WAN Edge Role](models/wan%20edge%20role.yaml)
 
-- Platform: Catalust 8000
+- Platform: Catalyst 8000
 - Schema: [wan-edge-role.schema.json](schemas/wan-edge-role.schema.json)
 
 [Core & Agg Role](models/core%20agg%20role.yaml) 
