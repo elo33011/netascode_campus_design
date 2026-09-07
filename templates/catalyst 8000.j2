@@ -1,30 +1,3 @@
-{# ============================================================================
-   Cisco Catalyst 8000 (IOS XE) -- WAN Router Role Baseline Configuration
-   ============================================================================
-   Stage 1: baseline-only. Renders purely from platform_wan_baseline.yaml --
-   management plane, infrastructure protection, routing/CoPP baseline,
-   hardware integrity, and the WAN ACL skeleton. No device/topology data is
-   expected or used here.
-
-   Deliberately NOT rendered yet, since it depends on physical_topology.yaml
-   / logical_topology.yaml rather than the role baseline:
-     - hostname
-     - interface stanzas (Loopback0, external ISP circuit, internal fabric
-       links) and the per-interface hardening (no ip redirects/unreachables/
-       proxy-arp/mask-reply) and ACL application (ip access-group ... in)
-       that attach to them
-     - router bgp (neighbors, router-id, ASN, MD5, ttl-security) -- all of
-       it keys off device-specific peer/interface data
-   Those will come from a second template (or a second pass merging this
-   baseline with per-device topology data) once that stage is ready. The two
-   items still needing your confirmation before that stage -- ttl_security_
-   hops and passive_routing_interface -- live in platform_wan_baseline.yaml
-   itself and will matter once the BGP/interface sections are added back.
-
-   Fields with no confident, standard IOS-XE CLI equivalent are still
-   rendered as "! NOTE" comments rather than guessed at -- see
-   hardware_integrity below.
-   ============================================================================ #}
 {% set mp = platform_wan_baseline.management_plane %}
 {% set ip_prot = platform_wan_baseline.infrastructure_protection %}
 {% set rb = platform_wan_baseline.routing_baseline %}
