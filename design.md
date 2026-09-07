@@ -4,8 +4,9 @@ This is a sample network design to demonstrate how an automation native network 
 
 Key takeaways:
 - Data model first, design content is generated from vaarious data models in yaml.
-- Generated contents includes diagrams, cable patching matrix, design specific templates (And device template which is not part of this design), playbooks
-- Data model is constructed from various schema by merging the values obtained from source of truth (i.e Netbox). The integration ioof SOT s not shown in this example.
+- Generated contents includes diagrams, cable patching matrix, design specific templates, configurations, playbooks.
+- Data model is constructed from various schema by merging the values obtained from source of truth (i.e Netbox). The integration of SOT is not shown in this example.
+- Device configuration is render using jinja2 templates by looking up the data models. Ansible comes afterward to deploy.
 - Design is validated by comparing the config output with the data model.
 - Concept:
   - schema + value = data model
