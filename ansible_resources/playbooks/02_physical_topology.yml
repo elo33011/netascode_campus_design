@@ -45,16 +45,6 @@
         save_when: modified
       when: deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
 
-    # -------------------------------------------------------------------
-    # "Point-to-point connectivity validation between devices" -- a basic
-    # LLDP-neighbor-count check against physical_topology.yaml's own link
-    # count for this device (via the same device_phys_links() filter that
-    # built the rendered config, so the expectation and the config it's
-    # checking against can't drift apart). This is a presence/count check,
-    # NOT a full per-port neighbor-identity diff -- extend with structured
-    # parsing (ansible.utils.cli_parse / genie) for a real per-link
-    # assertion before relying on this in production.
-    # -------------------------------------------------------------------
     - name: Compute expected neighbor count from physical_topology.yaml
       ansible.builtin.set_fact:
         expected_links: "{{ site_physical_topology | device_phys_links(inventory_hostname) }}"
