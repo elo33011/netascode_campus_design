@@ -2,13 +2,33 @@
 
 This is a sample network design to demonstrate how an automation native network design should look like. Automation native is a design approach which incorporates the elements required by network automation into design process. These elements are: Determinsitic Topology, Abstraction, Machine-Friendly interfaces & structured data, Unique source of truth, Declarative state and Streaming Telemetry.
 
-Key takeaways:
-- Data model first, design content is generated from vaarious data models in yaml.
+## Difference between traditional and automation native design approach
+
+# Traditional vs Automation-Native Network Design Flow
+
+| Traditional Step | Automation-Native Step | What Changed |
+|---|---|---|
+| Gather business requirement | Gather business requirement | Unchanged |
+| Translate technical requirement | Translate technical requirement | Unchanged |
+| Create strawman design options (with conceptual diagrams) | Create strawman design options (with conceptual diagrams) | Unchanged |
+| Finalize options | Finalize options | Unchanged |
+| Create high level design | Create high level design | Unchanged |
+| Create BoM | Create BoM | Unchanged |
+| Create low level design | Define data model schema (physical topology / logical topology / endpoint service) | LLD becomes structured, schema-validated data instead of a document |
+| Create rack and patching matrix + Obtain IP, ASN, Source of truth NMS parameters | Ingest source-of-truth values into the schema → data model | Two traditional steps merge into one — both are just values filling the same schema |
+| Create text-based config template | Create text-based config template (Jinja2) | Same idea, same position — still built once, by hand |
+| Create deployable config | Render deployable config (data model + template = config) | Generated automatically, not hand-built per device |
+| Create procedure based runbook + Execute | Execute via playbook (playbook + config = deployed config) | Two traditional steps merge into one — the playbook performs the steps instead of describing them for a human to type |
+| — | Validate (data model vs deployed config) | New — no traditional equivalent; closes the loop by comparing intent against what's actually live |
+
+
+##Key takeaways:
+- Data model first, design content is generated from various data models in yaml.
 - Generated contents includes diagrams, cable patching matrix, design specific templates, configurations, playbooks.
 - Data model is constructed from various schema by merging the values obtained from source of truth (i.e Netbox). The integration of SOT is not shown in this example.
 - Device configuration is render using jinja2 templates by looking up the data models. Ansible comes afterward to deploy.
 - Design is validated by comparing the config output with the data model.
-- To support BAU port changes, the data model describing the endpoint service are constantly updated to reflect the latest switch port configuration.
+- To support BAU port changes, the data model need to be constantly updated to reflect the latest switch port configuration.
 - Concept:
   - schema + value = data model
   - data model + template = config
