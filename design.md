@@ -1,4 +1,4 @@
-# Automation Native Network Design Explain
+# Automation Native Network Design Explain - Executive Summary
 
 This example shows how an automation‑native enterprise network should be designed. Instead of treating automation as an add‑on, the design itself is built around automation requirements.
 
