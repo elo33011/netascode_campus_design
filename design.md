@@ -11,24 +11,24 @@ This is a sample enterprise network design to demonstrate how an automation nati
 
 ## Difference between traditional and automation native network design approach
 
-
-
 # Traditional vs Automation-Native Network Design Flow
 
-| Traditional Step | Automation-Native Step | What Changed |
-|---|---|---|
-| Gather business requirement | Gather business requirement | Unchanged |
-| Translate technical requirement | Translate technical requirement | Unchanged |
-| Create strawman design options (with conceptual diagrams drawing) | Unchanged |
-| Finalize options | Finalize options | Unchanged |
-| Create high level design | Create high level design — but now designed for determinism, abstraction, and a single source of truth from the outset | Generate strawman design options (with AI rendered conceptual diagrams) | HLD itself changes here: it must commit to a repeatable, parameterizable topology pattern (every floor built the same way) and generalize devices into reusable roles (WAN Edge / Core & Agg / Access), because everything from LLD onward depends on the HLD already being expressible as a pattern + roles rather than 12 bespoke devices |
-| Create BoM | Create BoM | Unchanged |
-| Create low level design | Define data model schema (physical topology / logical topology / endpoint service) | LLD becomes structured, schema-validated data instead of a document |
-| Create rack and patching matrix + Obtain IP, ASN, Source of truth NMS parameters | Ingest source-of-truth values into the schema → data model | Two traditional steps merge into one — both are just values filling the same schema |
-| Create text-based config template | Create text-based config template (Jinja2) | Same idea, same position — still built once, by hand |
-| Create deployable config | Render deployable config (data model + template = config) | Generated automatically, not hand-built per device |
-| Create procedure based runbook + Execute | Execute via playbook (playbook + config = deployed config) | Two traditional steps merge into one — the playbook performs the steps instead of describing them for a human to type |
-| — | Validate (data model vs deployed config) | New — no traditional equivalent; closes the loop by comparing intent against what's actually live |
+Both approaches pass through the same stages — the difference is *how* each stage is done.
+
+| Stage | Traditional Approach | Automation-Native Approach | What Changed |
+|---|---|---|---|
+| 1. Business requirement | Gather business requirement | Gather business requirement | Unchanged |
+| 2. Technical requirement | Translate technical requirement | Translate technical requirement | Unchanged |
+| 3. Brainstorm Design options | Create strawman design options (with conceptual diagrams) | Create strawman design options (with AI-rendered conceptual diagrams) | Same step, diagrams can be AI-generated instead of hand-drawn |
+| 4. Finalize options with stakeholder| Finalize options | Finalize options | Unchanged |
+| 5. High level design (why) | Create high level design | Create high level design — but now designed for determinism, abstraction, and a single source of truth from the outset | Same stage, different task: HLD must commit to a repeatable, parameterizable topology pattern (every floor built the same way) and generalize devices into reusable roles (WAN Edge / Core & Agg / Access), because everything downstream depends on the HLD already being expressible as a pattern + roles rather than bespoke devices |
+| 6. BoM | Create BoM | Create BoM | Unchanged |
+| 7. Low level design (how) | Create low level design (document) | Define data model schema (physical topology / logical topology / endpoint service) | Same stage, different task: LLD becomes structured, schema-validated data instead of a prose/spreadsheet document |
+| 8. Design values | Create rack and patching matrix + obtain IP, ASN, source of truth NMS parameters | Ingest source-of-truth values into the schema → data model | Same stage, different task: two traditional activities (patching matrix, IP/ASN/NMS lookup) both just become values filling the schema defined in stage 7 |
+| 9. Config template | Create text-based config template | Create text-based config template (Jinja2) | Same stage, same task in principle — still built once, by hand — but now a parameterized template rather than a per-device text file |
+| 10. Deployable config | Create deployable config (manually, per device) | Render deployable config (data model + template = config) | Same stage, different task: generated automatically from stages 7–9, not hand-built per device |
+| 11. Runbook & execute | Create procedure-based runbook + execute (manually, by an engineer) | Execute via playbook (playbook + config = deployed config) | Same stage, different task: the playbook performs the steps instead of describing them for a human to type |
+| 12. Validate | — (no dedicated stage; verification is ad hoc, done during/after execution) | Validate (data model vs deployed config) | New stage: closes the loop by comparing intent (the data model) against what's actually live on the device |
 
 ## Key takeaways:
 - Data model first, design content generated from various data model.
@@ -39,8 +39,8 @@ This is a sample enterprise network design to demonstrate how an automation nati
 - To support BAU port changes, the data model need to be constantly updated to reflect the latest switch port configuration.
 - Concept:
   - schema + value = data model
-  - data model + template = config
-  - playbook + config = deployed config
+  - data model + template = rendered config
+  - playbook + rendered config = deployed config
   - validation = data model vs deployed config
 
 <div style="display: flex; gap: 20px;">
