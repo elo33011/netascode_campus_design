@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.abc-hq.example.net/netascode-campus/telemetry.schema.json",
+  "title": "Streaming Telemetry",
+  "description": "Model-driven telemetry (MDT) subscriptions -- destinations and sensor groups, assigned per device role -- rendered by templates/telemetry.j2. Structurally inferred from models/telemetry.yaml by scripts/generate_schemas.py -- regenerate after any change to that file rather than hand-editing this one.",
+  "type": "object",
+  "properties": {
+    "site_telemetry": {
+      "type": "object",
+      "properties": {
+        "telemetry_destinations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "ip_address": {
+                "type": "string",
+                "pattern": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                "description": "IPv4 address, no prefix length."
+              },
+              "port": {
+                "type": "integer"
+              },
+              "protocol": {
+                "type": "string",
+                "enum": [
+                  "grpc"
+                ],
+                "description": "Transport protocol devices use to reach the collector."
+              },
+              "encoding": {
+                "type": "string",
+                "enum": [
+                  "gpb-kv",
+                  "gpb-compact",
+                  "json"
+                ],
+                "description": "Wire encoding for the streamed data -- gpb-kv is self-describing (no compiled .proto needed at the collector); gpb-compact is smaller but needs matching .proto definitions; json trades size for human readability."
+              },
+              "transport": {
+                "type": "string",
+                "enum": [
+                  "dial-out"
+                ],
+                "description": "dial-out = device pushes to the collector; no inbound reachability to devices required. dial-in (collector pulls via gNMI) is not modelled here."
+              }
+            },
+            "required": [
+              "name",
+              "ip_address",
+              "port",
+              "protocol",
+              "encoding",
+              "transport"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "sensor_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "sensor_paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "sample_interval_ms": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "description",
+              "name",
+              "sample_interval_ms",
+              "sensor_paths"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "role_subscriptions": {
+          "type": "object",
+          "properties": {
+            "wan-edge": {
+              "type": "object",
+              "properties": {
+                "destination": {
+                  "type": "string"
+                },
+                "sensor_groups": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "destination",
+                "sensor_groups"
+              ],
+              "additionalProperties": false
+            },
+            "core": {
+              "type": "object",
+              "properties": {
+                "destination": {
+                  "type": "string"
+                },
+                "sensor_groups": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "destination",
+                "sensor_groups"
+              ],
+              "additionalProperties": false
+            },
+            "aggregation-transit": {
+              "type": "object",
+              "properties": {
+                "destination": {
+                  "type": "string"
+                },
+                "sensor_groups": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "destination",
+                "sensor_groups"
+              ],
+              "additionalProperties": false
+            },
+            "access-vtep": {
+              "type": "object",
+              "properties": {
+                "destination": {
+                  "type": "string"
+                },
+                "sensor_groups": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "destination",
+                "sensor_groups"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "wan-edge",
+            "core",
+            "aggregation-transit",
+            "access-vtep"
+          ],
+          "additionalProperties": false,
+          "description": "Keyed by device_role() value (wan-edge / core / aggregation-transit / access-vtep). A role with no entry here is a documented gap -- device_telemetry_subscription() returns an empty subscription for it rather than guessing."
+        }
+      },
+      "required": [
+        "telemetry_destinations",
+        "sensor_groups",
+        "role_subscriptions"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "site_telemetry"
+  ],
+  "additionalProperties": false
+}
