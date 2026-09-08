@@ -1,0 +1,104 @@
+---
+# ============================================================================
+# Stage 4 - Streaming telemetry (MDT subscription)
+# ============================================================================
+# Renders templates/telemetry.j2 against telemetry.yaml: for every device
+# (not just access-vtep, unlike the endpoint service BAU stage), sets up a
+# model-driven telemetry subscription -- what this device streams, to
+# where, and how often. This is the "read path" back from devices; stages
+# 01-03 are all "write path" (intent pushed to devices). Applied after
+# logical topology, before the endpoint service BAU stage.
+#
+# Usage:
+#   ansible-playbook playbooks/04_streaming_telemetry.yml
+#   ansible-playbook playbooks/04_streaming_telemetry.yml -e deploy=false
+# ============================================================================
+- name: Stage 4 - Streaming telemetry (MDT subscription)
+  hosts: all
+  gather_facts: false
+  vars_files:
+    - "../models/telemetry.yaml"
+  tasks:
+    - name: Derive this device's platform + role from its hostname
+      ansible.builtin.set_fact:
+        device_name: "{{ inventory_hostname }}"
+        platform: "{{ inventory_hostname | device_platform }}"
+        role: "{{ inventory_hostname | device_role }}"
+
+    - name: Render streaming telemetry configuration for this device
+      ansible.builtin.set_fact:
+        rendered_telemetry: "{{ lookup('template', repo_root + '/templates/telemetry.j2') }}"
+
+    - name: Save rendered telemetry config locally
+      ansible.builtin.copy:
+        content: "{{ rendered_telemetry }}"
+        dest: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.telemetry.cfg"
+      delegate_to: localhost
+
+    - name: Push telemetry config (IOS-XE platforms)
+      cisco.ios.ios_config:
+        src: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.telemetry.cfg"
+        save_when: modified
+      when: deploy | bool and ansible_network_os == 'cisco.ios.ios'
+
+    - name: Push telemetry config (NX-OS platforms)
+      cisco.nxos.nxos_config:
+        src: "{{ repo_root }}/rendered_configs/{{ inventory_hostname }}.telemetry.cfg"
+        save_when: modified
+      when: deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
+
+    # -------------------------------------------------------------------
+    # "Confirm the subscription is actually configured" -- a running-config
+    # presence check for the collector IP this device should now be
+    # streaming to, computed from the SAME device_telemetry_subscription()
+    # filter that built the rendered config (so the expectation and the
+    # config it's checking against can't drift apart), same principle as
+    # 02_physical_topology.yml's LLDP-count check.
+    #
+    # This confirms the device is CONFIGURED to stream, not that the
+    # collector at that IP is actually receiving anything -- that needs a
+    # real collector in the loop and is a separate concern (see design.md's
+    # Streaming Telemetry section for what this stage does and doesn't
+    # cover).
+    # -------------------------------------------------------------------
+    - name: Compute expected telemetry destination from telemetry.yaml
+      ansible.builtin.set_fact:
+        expected_subscription: "{{ site_telemetry | device_telemetry_subscription(inventory_hostname) }}"
+
+    - name: Gather running-config (IOS-XE)
+      cisco.ios.ios_command:
+        commands: ["show running-config | section telemetry"]
+      when: deploy | bool and ansible_network_os == 'cisco.ios.ios' and expected_subscription.destination is not none
+      register: running_ios
+
+    - name: Gather running-config (NX-OS)
+      cisco.nxos.nxos_command:
+        commands: ["show running-config telemetry"]
+      when: deploy | bool and ansible_network_os == 'cisco.nxos.nxos' and expected_subscription.destination is not none
+      register: running_nxos
+
+    - name: Warn if the expected collector IP is not present in the running config (IOS-XE)
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} was configured to stream to
+          {{ expected_subscription.destination.ip_address }} but that
+          address was not found in "show running-config | section
+          telemetry" -- push may not have taken effect, review before
+          relying on this device's telemetry.
+      when: >
+        deploy | bool and ansible_network_os == 'cisco.ios.ios'
+        and expected_subscription.destination is not none
+        and expected_subscription.destination.ip_address not in running_ios.stdout[0]
+
+    - name: Warn if the expected collector IP is not present in the running config (NX-OS)
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} was configured to stream to
+          {{ expected_subscription.destination.ip_address }} but that
+          address was not found in "show running-config telemetry" --
+          push may not have taken effect, review before relying on this
+          device's telemetry.
+      when: >
+        deploy | bool and ansible_network_os == 'cisco.nxos.nxos'
+        and expected_subscription.destination is not none
+        and expected_subscription.destination.ip_address not in running_nxos.stdout[0]

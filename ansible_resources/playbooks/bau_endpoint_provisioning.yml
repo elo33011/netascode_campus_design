@@ -1,5 +1,30 @@
 ---
 # ============================================================================
+# BAU (business-as-usual) switchport provisioning -- deliberately NOT part
+# of playbooks/site.yml's one-time build sequence (00-03). Stages 00-03
+# build the fabric itself (rare: a new site, a re-cabled floor); this
+# playbook applies templates/endpoint service.j2 against
+# models/endpoint service.yaml's access_switch policy, and is meant to be
+# re-run every time an endpoint port needs adding or changing -- a new
+# camera, a new AP, a moved desk -- against a fabric that's already up.
+#
+# Two data models feed the render, same as every other stage:
+# platform_access_baseline (models/access role.yaml -- the switch-wide
+# enable flags + thresholds its own baseline template explicitly defers
+# to "the interface stage") and endpoint_service (models/endpoint
+# service.yaml -- the actual per-port policy). See templates/endpoint
+# service.j2's own header for the full render logic.
+#
+# THE ACTUAL BAU CHANGE -- three inputs: which switch, which interface,
+# which VLAN(s). Give all three (switch_name + interface_name + vlan) and
+# this playbook first calls scripts/set_endpoint_port.py to record the
+# change as a `switch`-scoped port_overrides entry directly in
+# models/endpoint service.yaml (so it's the persisted, git-diffable
+# source of truth from then on -- never a runtime-only override the next
+# full re-push would silently revert), THEN renders + pushes + validates
+# from that freshly-updated model, scoped to just that one switch and
+# that one interface.
+#
 # Usage:
 #   ansible-playbook playbooks/bau_endpoint_provisioning.yml \
 #       -e switch_name=abc-hq-f01-acc-01 \
@@ -16,6 +41,12 @@
 #       -e switch_name=abc-hq-f01-acc-01 -e interface_name=GigabitEthernet1/0/5 \
 #       -e vlan=20 -e deploy=false
 #     # same, but render + save locally only -- touch nothing (dry run)
+#
+#   ansible-playbook playbooks/bau_endpoint_provisioning.yml
+#     # no switch_name/interface_name/vlan given: render + push every
+#     # port on every access switch from whatever's already in
+#     # models/endpoint service.yaml (e.g. after editing it by hand, or
+#     # re-applying after a device reload)
 # ============================================================================
 - name: BAU - Endpoint service switchport provisioning (access switches only)
   hosts: access
@@ -34,6 +65,10 @@
         platform: "{{ inventory_hostname | device_platform }}"
         role: "{{ inventory_hostname | device_role }}"
 
+    # -------------------------------------------------------------------
+    # THE BAU CHANGE ITSELF -- runs exactly once (not once per host in the
+    # `access` group) and only when all three required inputs are given.
+    # -------------------------------------------------------------------
     - name: Apply BAU switchport change to the data model (models/endpoint service.yaml)
       ansible.builtin.command:
         argv: >-
@@ -54,6 +89,9 @@
         target_interfaces: ["{{ interface_name }}"]
       when: interface_name != ''
 
+    # Loaded as a task (not vars_files, which is evaluated once at play
+    # start) so a switch_name/interface_name/vlan run above always reads
+    # its own just-written change, not a stale in-memory copy.
     - name: Load endpoint service model (fresh read, reflects any change just made above)
       ansible.builtin.include_vars:
         file: "{{ repo_root }}/models/endpoint service.yaml"
@@ -90,6 +128,14 @@
         save_when: modified
       when: (switch_name == '' or inventory_hostname == switch_name) and deploy | bool
 
+    # -------------------------------------------------------------------
+    # Post-push validation: the ports actually touched this run (all of
+    # them, or just target_interfaces if set) should show their expected
+    # VLAN in "show interfaces status" -- same soft-WARNING-not-hard-fail
+    # pattern playbooks/03_logical_topology.yml's BGP/VLAN checks use,
+    # for the same reason (output-format parsing is inherently fragile,
+    # not something to gate a real push on).
+    # -------------------------------------------------------------------
     - name: Resolve the ports this run actually touched
       ansible.builtin.set_fact:
         touched_ports: >-
