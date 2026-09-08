@@ -226,10 +226,8 @@ ansible-playbook playbooks/bau_endpoint_provisioning.yml \
 ```
 
 ## Config Output
-```txt
 Here is the rendered configurations of a devices, other device's configuration can be found under [config](/config)
-
-<details>
+```
 ! ============================================================
 ! abc-hq-wan-01  (platform: catalyst8000, role: wan-edge)
 ! Rendered: baseline -> physical topology -> logical topology -> telemetry
@@ -473,5 +471,5 @@ telemetry ietf subscription 102
 ! stream anything meaningful; not silently substituted here.
 !
 end
-</details>
 ```
+</details>
