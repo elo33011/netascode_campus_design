@@ -2,7 +2,7 @@
 
 This example shows how an automation‑native enterprise network should be designed. Instead of treating automation as an add‑on, the design itself is built around automation requirements.
 
-##Core Principles
+## Core Principles
 - Deterministic topology — One repeatable pattern applied everywhere.
 - Abstraction — Devices grouped into reusable roles instead of configured individually.
 - Machine‑friendly data — Intent expressed as structured, schema‑validated data.
@@ -10,7 +10,7 @@ This example shows how an automation‑native enterprise network should be desig
 - Declarative state — Define the desired outcome; automation handles the steps.
 - Streaming telemetry — Continuous state reporting instead of periodic checks.
 
-##How It Differs from Traditional Design
+## How It Differs from Traditional Design
 <div style="border: 1px solid #ccc; padding: 10px;">
 
 Traditional network design treats the design as a set of documents — diagrams, spreadsheets, and configuration templates — that describe intent but are not directly connected to what gets deployed. Consistency and accuracy depend on engineers maintaining that connection by hand, which is why documentation and running configuration tend to drift apart over a network's life.
@@ -19,7 +19,7 @@ An automation-native approach instead defines intent as structured data: version
 
 The practical difference is where correctness is enforced. In the traditional approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap
 
-##Key Takeaways
+## Key Takeaways
 - Data model first — All design artifacts are generated from it.
 - Generated outputs — Diagrams, patch matrices, templates, configs, playbooks.
 - Data model built from schemas + values (e.g., from NetBox as SOT).
@@ -27,7 +27,7 @@ The practical difference is where correctness is enforced. In the traditional ap
 - Validation — Compare rendered config with the data model.
 - BAU changes — Update the data model so it always reflects real device state.
 
-##Core Concept Flow
+## Core Concept Flow
 - schema + values → data model
 - data model + template → rendered config
 - playbook + rendered config → deployed config
@@ -42,7 +42,6 @@ The practical difference is where correctness is enforced. In the traditional ap
     <img src="diagram/automation-native-data-model-pipeline.svg" width="1200">
   </div>
 </div>
-
 ---
 
 # Campus Network Design
