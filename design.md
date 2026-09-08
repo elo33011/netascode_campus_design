@@ -1,8 +1,17 @@
 # Automation Native Network Design Explain
 
-This is a sample network design to demonstrate how an automation native network design should look like. Automation native is a design approach which incorporates the elements required by network automation into design process. These elements are: Determinsitic Topology, Abstraction, Machine-Friendly interfaces & structured data, Unique source of truth, Declarative state and Streaming Telemetry.
+This is a sample enterprise network design to demonstrate how an automation native network design should look like. Automation native design approach incorporates the following elements required by network automation into the classic design process.
 
-## Difference between traditional and automation native design approach
+- **Determinsitic Topology**: One repeatable pattern, applied consistently everywhere it occurs
+- **Abstraction**: Devices generalized into reusable roles, not configured one by one
+- **Machine-Friendly interfaces & structured data**: Intent captured as schema-validated data, not prose or diagrams
+- **Unique source of truth**: Each fact lives in exactly one place, never restated elsewhere.
+- **Declarative state**: State the desired end result; automation works out the steps
+- **Streaming Telemetry**: Live device state flows back continuously, not checked on demand
+
+## Difference between traditional and automation native network design approach
+
+
 
 # Traditional vs Automation-Native Network Design Flow
 
