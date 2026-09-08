@@ -1,37 +1,37 @@
 # Automation Native Network Design Explain
 
-This is a sample enterprise network design to demonstrate how an automation native network design should look like. Automation native design approach incorporates the following elements required by network automation into the classic design process.
+This example shows how an automation‑native enterprise network should be designed. Instead of treating automation as an add‑on, the design itself is built around automation requirements.
 
-- **Determinsitic Topology**: One repeatable pattern, applied consistently everywhere it occurs
-- **Abstraction**: Devices generalized into reusable roles, not configured one by one
-- **Machine-Friendly interfaces & structured data**: Intent captured as schema-validated data, not prose or diagrams
-- **Unique source of truth**: Each fact lives in exactly one place, never restated elsewhere.
-- **Declarative state**: State the desired end result; automation works out the steps
-- **Streaming Telemetry**: Live device state flows back continuously, not checked on demand
+##Core Principles
+- Deterministic topology — One repeatable pattern applied everywhere.
+- Abstraction — Devices grouped into reusable roles instead of configured individually.
+- Machine‑friendly data — Intent expressed as structured, schema‑validated data.
+- Single source of truth — Every fact stored once, never duplicated.
+- Declarative state — Define the desired outcome; automation handles the steps.
+- Streaming telemetry — Continuous state reporting instead of periodic checks.
 
-## What's the difference from traditional network design approach ? 
-
+##How It Differs from Traditional Design
 <div style="border: 1px solid #ccc; padding: 10px;">
 
 Traditional network design treats the design as a set of documents — diagrams, spreadsheets, and configuration templates — that describe intent but are not directly connected to what gets deployed. Consistency and accuracy depend on engineers maintaining that connection by hand, which is why documentation and running configuration tend to drift apart over a network's life.
 
 An automation-native approach instead defines intent as structured data: version-controlled models that fully describe a network's devices, addressing, services, and monitoring requirements. Device configuration is not authored directly — it is rendered from these models through templates and pushed via automation, so every device of a given role is built identically and repeatably. A validation stage compares rendered configuration against the data model before and after deployment, and streaming telemetry reports operational state continuously rather than through periodic polling.
 
-The practical difference is where correctness is enforced. In the traditional approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap.
-</div>
+The practical difference is where correctness is enforced. In the traditional approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap
 
-## Key takeaways:
-- Data model first, design content generated from various data model.
-- Generated contents includes diagrams, cable patching matrix, design specific templates, configurations, playbooks.
-- Data model is constructed from various schema by merging the values obtained from source of truth (i.e Netbox). The integration of SOT is not shown in this example.
-- Device configuration is render using jinja2 templates by looking up the data models. Ansible comes afterward to deploy.
-- Design is validated by comparing the config output with the data model.
-- To support BAU port changes, the data model need to be constantly updated to reflect the latest switch port configuration.
-- Concept:
-  - schema + value = data model
-  - data model + template = rendered config
-  - playbook + rendered config = deployed config
-  - validation = data model vs deployed config
+##Key Takeaways
+- Data model first — All design artifacts are generated from it.
+- Generated outputs — Diagrams, patch matrices, templates, configs, playbooks.
+- Data model built from schemas + values (e.g., from NetBox as SOT).
+- Configs rendered via Jinja2, deployed via automation tools like Ansible.
+- Validation — Compare rendered config with the data model.
+- BAU changes — Update the data model so it always reflects real device state.
+
+##Core Concept Flow
+- schema + values → data model
+- data model + template → rendered config
+- playbook + rendered config → deployed config
+- validation → data model vs deployed config
 
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
