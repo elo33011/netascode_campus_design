@@ -11,8 +11,6 @@ This is a sample enterprise network design to demonstrate how an automation nati
 
 ## Difference between traditional and automation native network design approach
 
-# Traditional vs Automation-Native Network Design Flow
-
 Both approaches pass through the same stages — the difference is *how* each stage is done.
 
 | Stage | Traditional Approach | Automation-Native Approach | What Changed |
