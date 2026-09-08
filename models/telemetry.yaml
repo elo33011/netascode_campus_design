@@ -1,0 +1,76 @@
+# ============================================================================
+# STREAMING TELEMETRY DATA MODEL
+# ============================================================================
+# Model-driven telemetry (MDT) subscriptions -- what each device streams,
+# to where, and how often. This is the "read path" back from devices,
+# closing the loop the other three models only open (they describe intent
+# and get pushed to devices; nothing until now describes what comes back).
+#
+# Same "declare once, resolve per device by role" pattern as the rest of
+# this design: a destination and a sensor group are each declared once in
+# their own catalog below and referenced by name from role_subscriptions,
+# never repeated per device. filter_plugins/netascode_filters.py's
+# device_telemetry_subscription() resolves which role_subscriptions entry
+# a device gets via device_role() -- the same role-derivation mechanism the
+# platform baselines already use -- and expands it into full destination +
+# sensor-group data before templates/telemetry.j2 ever sees it.
+#
+# Platform CLI differs structurally here (NX-OS's `telemetry` feature vs
+# IOS-XE's `telemetry ietf subscription`), not just by keyword, so this
+# model stays vendor-neutral: sensor_paths below are given as NX-OS DME
+# paths, and templates/telemetry.j2 flags (rather than guesses) the
+# equivalent IOS-XE YANG xpath is a separate lookup not yet in this model --
+# see that template's own header.
+# ============================================================================
+site_telemetry:
+
+  telemetry_destinations:
+    - name: primary-collector
+      ip_address: "10.254.1.50"   # DEMO value -- example collector on the OOB mgmt range (same range as syslog/snmp/tacacs in the role baselines), not a real host
+      port: 57500
+      protocol: grpc
+      encoding: gpb-kv             # gpb-kv chosen over gpb-compact so the collector doesn't need Cisco's compiled .proto definitions to decode the stream; json is also available if a collector needs human-readable output instead
+      transport: dial-out          # device pushes to the collector -- no inbound reachability to devices required, matches this design's push/declarative posture
+
+  # Catalog, referenced by name from role_subscriptions below -- declared
+  # once, same pattern as physical topology.yaml's link-standards catalog.
+  sensor_groups:
+    - name: interfaces
+      description: "Interface operational state and counters"
+      sensor_paths:
+        - "Cisco-NX-OS-device:System/intf-items"
+      sample_interval_ms: 30000
+
+    - name: bgp-evpn
+      description: "BGP session state and L2VPN EVPN route/peer status"
+      sensor_paths:
+        - "Cisco-NX-OS-device:System/bgp-items"
+      sample_interval_ms: 60000
+
+    - name: environmentals
+      description: "CPU, memory, power, and temperature"
+      sensor_paths:
+        - "Cisco-NX-OS-device:System/proc-items"
+        - "Cisco-NX-OS-device:System/eqptmgr-items"
+      sample_interval_ms: 60000
+
+  # Per-role assignment -- device_role() resolves which entry a device
+  # gets (wan-edge / core / aggregation-transit / access-vtep), same
+  # "role picks the config, not the individual device" pattern
+  # endpoint_interfaces.default_profile already uses in endpoint service.yaml.
+  # A role with no entry here is a documented gap (see design.md), not
+  # silently defaulted -- device_telemetry_subscription() returns an empty
+  # subscription rather than guessing.
+  role_subscriptions:
+    wan-edge:
+      destination: primary-collector
+      sensor_groups: [interfaces, environmentals]
+    core:
+      destination: primary-collector
+      sensor_groups: [interfaces, bgp-evpn, environmentals]
+    aggregation-transit:
+      destination: primary-collector
+      sensor_groups: [interfaces, bgp-evpn, environmentals]
+    access-vtep:
+      destination: primary-collector
+      sensor_groups: [interfaces, bgp-evpn, environmentals]
