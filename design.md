@@ -1,11 +1,4 @@
 # Automation Native Network Design Explain
-| Stage | Traditional / Manual Approach | Modern / Automation-Native Approach |
-| :--- | :--- | :--- |
-| **1. Requirements & Discovery** | • Manual CLI logins (`show version`, `show interface status`) to audit devices individually.<br>• Inventory, port capacity, and IP addresses tracked in offline Excel spreadsheets.<br>• Manual physical walkthroughs for rack space, power, and cooling checks. | • Automated subnet sweeps and API scripts gather real-time inventory and metrics.<br>• Programmatic integration with a single Source of Truth (SoT) like NetBox or Nautobot.<br>• Real-time telemetry streaming (gNMI/Prometheus) to baseline bandwidth and performance. |
-| **2. Logical Design** | • Static topology diagrams hand-drawn in Microsoft Visio.<br>• Manual IP subnet calculations logged into static spreadsheets.<br>• Hand-crafted access control lists (ACLs) and static VLAN trunking rules. | • Network intent defined in structured data models (YAML/JSON).<br>• Modular Jinja2 configuration templates stored in version-controlled Git repositories.<br>• Digital Twins and virtual labs (Containerlab, EVE-NG) used to model and test topologies. |
-| **3. Physical Staging & Provisioning** | • Physical "bench-building" in a central lab using serial console cables and PuTTY/SecureCRT.<br>• Firmware transferred via local TFTP servers to each switch sequentially.<br>• Configuration built via text editor (Notepad++) copy-pasted line-by-line into the CLI. | • Zero-Touch Provisioning (ZTP): Unboxed devices pull firmware and base configs automatically over DHCP.<br>• GitOps workflow: Changes are submitted via Git Pull Requests with peer code reviews.<br>• Automated CI pipelines run syntax linting and virtual dry-run validations before deployment. |
-| **4. Implementation & Deployment** | • On-site "rack-and-stack" with manual cable labelling and hand-held Fluke line testers.<br>• Serial or SSH console access to manually push commands device-by-device.<br>• Cable tracing and link verification done manually by eye or physical inspection. | • Orchestration tools (Ansible, Terraform, Nornir) push configs across hundreds of nodes via APIs (NETCONF/RESTCONF).<br>• Declarative state enforcement detects and automatically reverts manual CLI drift.<br>• Automated LLDP/CDP topology checks immediately verify physical cabling against intent. |
-| **5. Validation & Operations** | • Manual failover testing (pulling cords) and typing diagnostic commands (`show ip route`, `ping`, `traceroute`).<br>• Late-night scheduled maintenance windows for manual CLI firmware updates and rollbacks.<br>• Periodic SNMP polling and reactive troubleshooting after users report outages. | • Continuous automated testing frameworks (PyATS, Batfish, Suzieq) run pre/post-change validation.<br>• Continuous sub-second streaming telemetry pushed to real-time dashboards (Grafana, Datadog).<br>• Event-driven closed-loop automation executes automated self-healing and remediation scripts. |
 
 This is a sample enterprise network design to demonstrate how an automation native network design should look like. Automation native design approach incorporates the following elements required by network automation into the classic design process.
 
@@ -19,21 +12,6 @@ This is a sample enterprise network design to demonstrate how an automation nati
 ## Difference between traditional and automation native network design approach
 
 Both approaches pass through the same stages — the difference is *how* each stage is done.
-
-| Stage | Traditional Approach | Automation-Native Approach | What Changed |
-|---|---|---|---|
-| 1. Business requirement | Gather business requirement | Gather business requirement | Unchanged |
-| 2. Technical requirement | Translate technical requirement | Translate technical requirement | Unchanged |
-| 3. Brainstorm Design options | Create strawman design options (with conceptual diagrams) | Create strawman design options (with AI-rendered conceptual diagrams) | Same step, diagrams can be AI-generated instead of hand-drawn |
-| 4. Finalize options with stakeholder| Finalize options | Finalize options | Unchanged |
-| 5. High level design (why) | Create high level design | Create high level design — but now designed for determinism, abstraction, and a single source of truth from the outset | Same stage, different task: HLD must commit to a repeatable, parameterizable topology pattern (every floor built the same way) and generalize devices into reusable roles (WAN Edge / Core & Agg / Access), because everything downstream depends on the HLD already being expressible as a pattern + roles rather than bespoke devices |
-| 6. BoM | Create BoM | Create BoM | Unchanged |
-| 7. Low level design (how) | Create low level design (document) | Define data model schema (physical topology / logical topology / endpoint service) | Same stage, different task: LLD becomes structured, schema-validated data instead of a prose/spreadsheet document |
-| 8. Design values | Create rack and patching matrix + obtain IP, ASN, source of truth NMS parameters | Ingest source-of-truth values into the schema → data model | Same stage, different task: two traditional activities (patching matrix, IP/ASN/NMS lookup) both just become values filling the schema defined in stage 7 |
-| 9. Config template | Create text-based config template | Create text-based config template (Jinja2) | Same stage, same task in principle — still built once, by hand — but now a parameterized template rather than a per-device text file |
-| 10. Deployable config | Create deployable config (manually, per device) | Render deployable config (data model + template = config) | Same stage, different task: generated automatically from stages 7–9, not hand-built per device |
-| 11. Runbook & execute | Create procedure-based runbook + execute (manually, by an engineer) | Execute via playbook (playbook + config = deployed config) | Same stage, different task: the playbook performs the steps instead of describing them for a human to type |
-| 12. Validate | — (no dedicated stage; verification is ad hoc, done during/after execution) | Validate (data model vs deployed config) | New stage: closes the loop by comparing intent (the data model) against what's actually live on the device |
 
 ## Key takeaways:
 - Data model first, design content generated from various data model.
@@ -174,6 +152,15 @@ Purpose: Standardized security and QoS baseline for endpoint switchports — loo
 - Security stack enabled on switch port: 802.1X + MAB, DHCP snooping, IP source guard, dynamic ARP inspection, BPDU guard/portfast
 - Schema: [endpoint-service.schema.json](schemas/endpoint-service.schema.json)
 
+[Telemery](models/telemetry.yaml)
+
+Purpose: Model-driven telemetry (MDT) subscriptions — what each device streams, to which collector, and how often
+
+- Three catalogs: telemetry_destinations (collector), sensor_groups (sensor paths + sample interval), role_subscriptions (per-role assignment referencing the other two by name)
+- A filter (device_telemetry_subscription()) resolves device_role() → role_subscriptions entry → expands the destination and sensor-group names into full data before the template consume it
+- This is the read path back from devices, closing the loop the other three models only open (they declare intent and get pushed; this one reports what's actually happening)
+- Schema: [telemetry.schema.json](schemas/telemetry.schema.json)
+
 ### Device Role Models
 
 A role is the function of the device performed in the design. This design will utilize 3 role models from an existing product catalog. 
@@ -223,6 +210,7 @@ Prerequisite:
 * [Baseline build](ansible_resources/playbooks/01_baseline_build.yml)
 * [Physical topology build](ansible_resources/playbooks/02_physical_topology.yml)
 * [Logical topology build](ansible_resources/playbooks/03_logical_topology.yml)
+* [Telemetry build](ansible_resources/playbooks/04_streaming_telemetry.yml)
 
 ```yaml
 ansible-playbook playbooks/site.yml                  # validates, then pushes config to real devices
@@ -236,6 +224,9 @@ ansible-playbook playbooks/bau_endpoint_provisioning.yml \
     -e switch_name=abc-hq-f01-acc-01 -e interface_name=GigabitEthernet1/0/5 \
     -e vlan=20 -e voice_vlan=30 -e description="Marketing desk move, INC0012345"
 ```
+
+## Config Output
+
 
 
 
