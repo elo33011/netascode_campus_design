@@ -226,7 +226,12 @@ ansible-playbook playbooks/bau_endpoint_provisioning.yml \
 ```
 
 ## Config Output
+
 Here is the rendered configurations of a devices, other device's configuration can be found under [config](/config)
+
+<details>
+  <summary>abc-hq-wan-01</summary>
+
 ```
 ! ============================================================
 ! abc-hq-wan-01  (platform: catalyst8000, role: wan-edge)
