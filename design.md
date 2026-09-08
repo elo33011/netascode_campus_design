@@ -481,4 +481,6 @@ end
 
 ## Telemetry Output
 
-[telemetry](./fabric-telemetry-dashboard-dark.png)
+The dataset tells one coherent story across a 30-minute window: 12 devices streaming cleanly, then a CRC error burst on abc-hq-agg-03's uplink to f01-acc-02 causes both of that access switch's EVPN route-reflector sessions (to cor-03 and cor-04) to drop for about a minute, visible simultaneously in the link-utilization chart, the session table, the event log, and the raw decoded payload at the bottom — then it self-recovers. That's deliberately the same scenario from our earlier conversation: a fact validate_configs.py can't see (a session actually going down) that only streaming telemetry catches.
+
+![Telemetry](./fabric-telemetry-dashboard-dark.png)
