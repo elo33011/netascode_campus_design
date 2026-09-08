@@ -17,7 +17,7 @@ Traditional network design treats the design as a set of documents — diagrams,
 
 An automation-native approach instead defines intent as structured data: version-controlled models that fully describe a network's devices, addressing, services, and monitoring requirements. Device configuration is not authored directly — it is rendered from these models through templates and pushed via automation, so every device of a given role is built identically and repeatably. A validation stage compares rendered configuration against the data model before and after deployment, and streaming telemetry reports operational state continuously rather than through periodic polling.
 
-The practical difference is where correctness is enforced. In the traditional approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap
+The practical difference is where correctness is enforced. In the traditional approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap.
 
 ## Key Takeaways
 - Data model first — All design artifacts are generated from it.
