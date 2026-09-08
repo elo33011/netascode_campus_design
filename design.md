@@ -226,7 +226,7 @@ ansible-playbook playbooks/bau_endpoint_provisioning.yml \
 ```
 
 ## Config Output
-
+```txt
 Here is the rendered configurations of a devices, other device's configuration can be found under [config](/config)
 
 <details>
@@ -474,5 +474,4 @@ telemetry ietf subscription 102
 !
 end
 </details>
-
-
+```
