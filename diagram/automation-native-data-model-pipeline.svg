@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 790" role="img" aria-label="Schematic titled Automation-Native Design Approach. NetBox, the network's single source of truth, holds every parameter — device inventory, IPAM, cabling, sites. YAML data models are extracted from NetBox, never hand-authored, and feed three domains: a static-artifacts domain that renders a topology diagram and a racking and cable-patching matrix into the repo; a device-deployment domain that renders baseline, design-specific, and access-switch endpoint configuration through Jinja2 templates, deployed to the network fabric by Ansible; and a validation domain that renders an Ansible test playbook from the same models and runs it against the fabric after the build, producing a test report.">
-          
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 860" role="img" aria-label="Schematic titled Automation-Native Data Model Pipeline. NetBox, the network's single source of truth, holds every parameter — device inventory, IPAM, cabling, sites. YAML data models are extracted from NetBox, never hand-authored, and feed three domains: a static-artifacts domain that renders a topology diagram and a racking and cable-patching matrix into the repo; a device-deployment domain that renders baseline, design-specific, streaming-telemetry, and access-switch endpoint configuration through Jinja2 templates, deployed to the network fabric by Ansible; and a validation domain that renders an Ansible test playbook from the same models and runs it against the fabric after the build, producing a test report.">
+
   <style>
     text{ font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; }
     .sd-title{ font-weight:700; font-size:19px; letter-spacing:0.03em; fill:#F3F6FB; }
@@ -36,8 +36,8 @@
     .sd-node-mono{ font-family:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-size:12px; font-weight:600; fill:#FFFFFF; }
     .sd-node-sub{ font-size:10.5px; fill:rgba(255,255,255,0.82); }
   </style>
-  
-  <rect x="0" y="0" width="1300" height="790" fill="#0B1220"/>
+
+  <rect x="0" y="0" width="1300" height="860" fill="#0B1220"/>
   <defs>
             <linearGradient id="gradGold" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#FFD873"/><stop offset="100%" stop-color="#C77F17"/>
@@ -116,23 +116,24 @@
           <text x="230" y="244" class="sd-file">● logical.yaml</text>
           <text x="230" y="274" class="sd-file">● platform.yaml</text>
           <text x="230" y="304" class="sd-file">● endpoints.yaml</text>
-          <circle cx="315" cy="332" r="1.6" class="sd-dot"/>
-          <circle cx="315" cy="350" r="1.6" class="sd-dot"/>
-          <circle cx="315" cy="368" r="1.6" class="sd-dot"/>
-          <line x1="230" y1="388" x2="400" y2="388" class="sd-divider"/>
+          <text x="230" y="334" class="sd-file">● telemetry.yaml</text>
+          <circle cx="315" cy="358" r="1.6" class="sd-dot"/>
+          <circle cx="315" cy="376" r="1.6" class="sd-dot"/>
+          <circle cx="315" cy="394" r="1.6" class="sd-dot"/>
+          <line x1="230" y1="414" x2="400" y2="414" class="sd-divider"/>
           <text x="315" y="480" text-anchor="middle" class="sd-node-sub">extracted from</text>
           <text x="315" y="496" text-anchor="middle" class="sd-node-sub">NetBox</text>
 
           <!-- spine: source of truth bus -->
           <line x1="420" y1="363" x2="440" y2="363" class="sd-line-orange"/>
-          <line x1="440" y1="150" x2="440" y2="700" class="sd-line-orange"/>
+          <line x1="440" y1="150" x2="440" y2="804" class="sd-line-orange"/>
 
           <!-- domain panels -->
           <rect class="sd-domain-red" x="462" y="98" width="630" height="202" rx="14"/>
           <rect class="sd-pill-red" x="480" y="88" width="172" height="22" rx="11"/>
           <text x="566" y="103" text-anchor="middle" class="sd-panel-label">STATIC ARTIFACTS</text>
 
-          <rect class="sd-domain-blue" x="462" y="310" width="558" height="302" rx="14"/>
+          <rect class="sd-domain-blue" x="462" y="310" width="558" height="406" rx="14"/>
           <rect class="sd-pill-blue" x="480" y="300" width="196" height="22" rx="11"/>
           <text x="578" y="315" text-anchor="middle" class="sd-panel-label">DEVICE DEPLOYMENT</text>
 
@@ -164,7 +165,7 @@
           <text x="990" y="251" text-anchor="middle" class="sd-node-title">Repo / Docs</text>
           <text x="990" y="269" text-anchor="middle" class="sd-node-sub">racking &amp; patching</text>
 
-          <!-- ===== Row 3 : Device baseline config ===== -->
+          <!-- ===== Row A : Device baseline config ===== -->
           <line x1="440" y1="358" x2="480" y2="358" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
           <text x="570" y="324" text-anchor="middle" class="sd-caption">platform.yaml</text>
           <rect class="sd-purple" x="480" y="330" width="180" height="56" rx="8"/>
@@ -177,7 +178,7 @@
           <rect class="sd-blue" x="910" y="330" width="90" height="56" rx="8"/>
           <text x="955" y="363" text-anchor="middle" class="sd-node-title">Ansible</text>
 
-          <!-- ===== Row 4 : Design-specific config ===== -->
+          <!-- ===== Row B : Design-specific config ===== -->
           <line x1="440" y1="462" x2="480" y2="462" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
           <text x="570" y="428" text-anchor="middle" class="sd-caption">topology.yaml + logical.yaml</text>
           <rect class="sd-purple" x="480" y="434" width="180" height="56" rx="8"/>
@@ -190,59 +191,73 @@
           <rect class="sd-blue" x="910" y="434" width="90" height="56" rx="8"/>
           <text x="955" y="467" text-anchor="middle" class="sd-node-title">Ansible</text>
 
-          <!-- ===== Row 5 : Access-switch endpoint config ===== -->
+          <!-- ===== Row C : Streaming telemetry config (NEW) ===== -->
           <line x1="440" y1="566" x2="480" y2="566" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
-          <text x="570" y="532" text-anchor="middle" class="sd-caption">endpoints.yaml</text>
+          <text x="570" y="532" text-anchor="middle" class="sd-caption">telemetry.yaml</text>
           <rect class="sd-purple" x="480" y="538" width="180" height="56" rx="8"/>
           <text x="570" y="571" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
           <line x1="660" y1="566" x2="700" y2="566" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
           <rect class="sd-orange" x="700" y="538" width="180" height="56" rx="8"/>
-          <text x="790" y="563" text-anchor="middle" class="sd-node-mono">iface-config.cfg</text>
-          <text x="790" y="581" text-anchor="middle" class="sd-node-sub">access-switch ports</text>
+          <text x="790" y="563" text-anchor="middle" class="sd-node-mono">telemetry-config.cfg</text>
+          <text x="790" y="581" text-anchor="middle" class="sd-node-sub">streaming telemetry (MDT)</text>
           <line x1="880" y1="566" x2="910" y2="566" class="sd-line-green" marker-end="url(#arrowGreen)"/>
           <rect class="sd-blue" x="910" y="538" width="90" height="56" rx="8"/>
           <text x="955" y="571" text-anchor="middle" class="sd-node-title">Ansible</text>
 
-          <!-- right fan-in bus: Ansible -> Network Fabric (rows 3-5) -->
+          <!-- ===== Row D : Access-switch endpoint config ===== -->
+          <line x1="440" y1="670" x2="480" y2="670" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="636" text-anchor="middle" class="sd-caption">endpoints.yaml</text>
+          <rect class="sd-purple" x="480" y="642" width="180" height="56" rx="8"/>
+          <text x="570" y="675" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
+          <line x1="660" y1="670" x2="700" y2="670" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="642" width="180" height="56" rx="8"/>
+          <text x="790" y="667" text-anchor="middle" class="sd-node-mono">iface-config.cfg</text>
+          <text x="790" y="685" text-anchor="middle" class="sd-node-sub">access-switch ports</text>
+          <line x1="880" y1="670" x2="910" y2="670" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-blue" x="910" y="642" width="90" height="56" rx="8"/>
+          <text x="955" y="675" text-anchor="middle" class="sd-node-title">Ansible</text>
+
+          <!-- right fan-in bus: Ansible -> Network Fabric (rows A-D) -->
           <line x1="1000" y1="358" x2="1030" y2="358" class="sd-line-green" marker-end="url(#arrowGreen)"/>
           <line x1="1000" y1="462" x2="1030" y2="462" class="sd-line-green" marker-end="url(#arrowGreen)"/>
           <line x1="1000" y1="566" x2="1030" y2="566" class="sd-line-green" marker-end="url(#arrowGreen)"/>
-          <line x1="1030" y1="358" x2="1030" y2="566" class="sd-line-green"/>
-          <line x1="1030" y1="462" x2="1050" y2="462" class="sd-line-green"/>
+          <line x1="1000" y1="670" x2="1030" y2="670" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <line x1="1030" y1="358" x2="1030" y2="670" class="sd-line-green"/>
+          <line x1="1030" y1="514" x2="1050" y2="514" class="sd-line-green"/>
 
-          <rect class="sd-green" x="1050" y="330" width="200" height="264" rx="14"/>
-          <text x="1150" y="452" text-anchor="middle" class="sd-node-title">NETWORK</text>
-          <text x="1150" y="472" text-anchor="middle" class="sd-node-title">FABRIC</text>
-          <text x="1150" y="498" text-anchor="middle" class="sd-node-sub">baseline + design +</text>
-          <text x="1150" y="514" text-anchor="middle" class="sd-node-sub">endpoint config, deployed</text>
+          <rect class="sd-green" x="1050" y="330" width="200" height="368" rx="14"/>
+          <text x="1150" y="504" text-anchor="middle" class="sd-node-title">NETWORK</text>
+          <text x="1150" y="524" text-anchor="middle" class="sd-node-title">FABRIC</text>
+          <text x="1150" y="550" text-anchor="middle" class="sd-node-sub">baseline + design + telemetry</text>
+          <text x="1150" y="566" text-anchor="middle" class="sd-node-sub">+ endpoint config, deployed</text>
 
           <!-- domain panel: post-build validation -->
-          <rect class="sd-domain-teal" x="462" y="652" width="558" height="96" rx="14"/>
-          <rect class="sd-pill-teal" x="480" y="642" width="188" height="22" rx="11"/>
-          <text x="574" y="657" text-anchor="middle" class="sd-panel-label">POST-BUILD VALIDATION</text>
+          <rect class="sd-domain-teal" x="462" y="756" width="558" height="96" rx="14"/>
+          <rect class="sd-pill-teal" x="480" y="746" width="188" height="22" rx="11"/>
+          <text x="574" y="761" text-anchor="middle" class="sd-panel-label">POST-BUILD VALIDATION</text>
 
           <!-- ===== Row 6 : Ansible test suite, run after the build ===== -->
-          <line x1="440" y1="700" x2="480" y2="700" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
-          <text x="570" y="666" text-anchor="middle" class="sd-caption">topology.yaml + logical.yaml + endpoints.yaml</text>
-          <rect class="sd-purple" x="480" y="672" width="180" height="56" rx="8"/>
-          <text x="570" y="705" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
-          <line x1="660" y1="700" x2="700" y2="700" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
-          <rect class="sd-orange" x="700" y="672" width="180" height="56" rx="8"/>
-          <text x="790" y="697" text-anchor="middle" class="sd-node-mono">test-tasks.yml</text>
-          <text x="790" y="715" text-anchor="middle" class="sd-node-sub">Ansible test playbook</text>
-          <line x1="880" y1="700" x2="910" y2="700" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
-          <rect class="sd-blue" x="910" y="672" width="90" height="56" rx="8"/>
-          <text x="955" y="705" text-anchor="middle" class="sd-node-title">Ansible</text>
+          <line x1="440" y1="804" x2="480" y2="804" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <text x="570" y="770" text-anchor="middle" class="sd-caption">topology.yaml + logical.yaml + endpoints.yaml</text>
+          <rect class="sd-purple" x="480" y="776" width="180" height="56" rx="8"/>
+          <text x="570" y="809" text-anchor="middle" class="sd-node-title">Jinja2 Template</text>
+          <line x1="660" y1="804" x2="700" y2="804" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-orange" x="700" y="776" width="180" height="56" rx="8"/>
+          <text x="790" y="801" text-anchor="middle" class="sd-node-mono">test-tasks.yml</text>
+          <text x="790" y="819" text-anchor="middle" class="sd-node-sub">Ansible test playbook</text>
+          <line x1="880" y1="804" x2="910" y2="804" class="sd-line-blue" marker-end="url(#arrowBlue)"/>
+          <rect class="sd-blue" x="910" y="776" width="90" height="56" rx="8"/>
+          <text x="955" y="809" text-anchor="middle" class="sd-node-title">Ansible</text>
 
           <!-- Ansible test run validates the already-built fabric (dashed = read/verify, not deploy) -->
-          <line x1="955" y1="672" x2="955" y2="630" class="sd-line-dashed"/>
-          <line x1="955" y1="630" x2="1150" y2="630" class="sd-line-dashed"/>
-          <line x1="1150" y1="630" x2="1150" y2="596" class="sd-line-dashed" marker-end="url(#arrowTeal)"/>
-          <text x="1052" y="622" text-anchor="middle" class="sd-caption" style="font-size:9.5px">tests · after build</text>
+          <line x1="955" y1="776" x2="955" y2="734" class="sd-line-dashed"/>
+          <line x1="955" y1="734" x2="1150" y2="734" class="sd-line-dashed"/>
+          <line x1="1150" y1="734" x2="1150" y2="700" class="sd-line-dashed" marker-end="url(#arrowTeal)"/>
+          <text x="1052" y="726" text-anchor="middle" class="sd-caption" style="font-size:9.5px">tests · after build</text>
 
           <!-- Ansible test run produces a report -->
-          <line x1="1000" y1="700" x2="1050" y2="700" class="sd-line-green" marker-end="url(#arrowGreen)"/>
-          <rect class="sd-red" x="1050" y="668" width="200" height="64" rx="12"/>
-          <text x="1150" y="694" text-anchor="middle" class="sd-node-title">TEST REPORT</text>
-          <text x="1150" y="712" text-anchor="middle" class="sd-node-sub">pass / fail per assertion</text>
+          <line x1="1000" y1="804" x2="1050" y2="804" class="sd-line-green" marker-end="url(#arrowGreen)"/>
+          <rect class="sd-red" x="1050" y="772" width="200" height="64" rx="12"/>
+          <text x="1150" y="798" text-anchor="middle" class="sd-node-title">TEST REPORT</text>
+          <text x="1150" y="816" text-anchor="middle" class="sd-node-sub">pass / fail per assertion</text>
         </svg>
