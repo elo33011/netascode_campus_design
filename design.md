@@ -227,6 +227,252 @@ ansible-playbook playbooks/bau_endpoint_provisioning.yml \
 
 ## Config Output
 
+Here is the rendered configurations of a devices, other device's configuration can be found under [config](/config)
 
+<details>
+! ============================================================
+! abc-hq-wan-01  (platform: catalyst8000, role: wan-edge)
+! Rendered: baseline -> physical topology -> logical topology -> telemetry
+! ============================================================
+
+! ---------- 1. Platform baseline (catalyst 8000.j2 + wan edge role.yaml) ----------
+!
+banner login ^C
+Authorized Use Only. System activity is logged.
+^C
+!
+ip domain name campus.example.net
+ip domain lookup source-interface Loopback0
+!
+ip ssh version 2
+!
+line con 0
+ exec-timeout 10 0
+ login local
+!
+line vty 0 15
+ exec-timeout 15 0
+ transport input ssh
+ login local
+!
+aaa local authentication attempts max-fail 3
+!
+no ip http server
+no ip http secure-server
+!
+ntp server 10.254.1.10
+ntp server 10.254.1.11
+ntp source Loopback0
+!
+logging host 10.254.1.30
+logging host 10.254.1.31
+logging source-interface Loopback0
+logging trap informational
+!
+snmp-server community CAMPUS-MONITORING-RO RO
+snmp-server contact netops@campus.example.net
+snmp-server location abc-hq
+snmp-server host 10.254.1.20 traps
+!
+tacacs server TACACS-1
+ address ipv4 10.254.1.40
+ key DEMO-TACACS-KEY-CHANGE-ME
+tacacs server TACACS-2
+ address ipv4 10.254.1.41
+ key DEMO-TACACS-KEY-CHANGE-ME
+ip tacacs source-interface Loopback0
+aaa group server tacacs+ TACACS-GROUP
+ server name TACACS-1
+ server name TACACS-2
+aaa authentication login default group TACACS-GROUP local
+aaa authorization exec default group TACACS-GROUP local
+!
+no ip source-route
+ip icmp rate-limit unreachable 100
+!
+! NOTE: the remaining infrastructure_protection settings (accept_redirects,
+! proxy_arp, mask_requests) and ipv6_hardening.ra_suppress are applied
+! per-interface (no ip redirects / no ip proxy-arp / no ip mask-reply /
+! ipv6 nd ra suppress all) -- deferred to the interface-stage template,
+! since there are no interfaces to attach them to yet.
+!
+ip access-list extended fw-in-wan-interface-acl
+ remark TODO: define real permit/deny entries for the WAN-facing ACL -- not present in the data model
+ remark Placeholder only -- do not deploy as-is
+ deny   ip any any log
+!
+! NOTE: this ACL is defined here as a baseline object but not yet applied to
+! an interface (ip access-group fw-in-wan-interface-acl in) -- that
+! application, and wan_interfaces.passive_routing_interface, happen at the
+! interface stage.
+!
+ip access-list extended COPP-ACL-ROUTING_UPDATES
+ remark BGP control-plane sessions -- the only routing protocol anywhere in
+ remark this design's data model (logical_topology.yaml has no OSPF/EIGRP
+ remark session defined); extend this ACL if another IGP is ever added.
+ permit tcp any eq bgp any
+ permit tcp any any eq bgp
+!
+ip access-list extended COPP-ACL-MANAGEMENT_ACCESS
+ remark Device management-plane access -- only matches protocols THIS
+ remark device's own management_plane settings actually enable (SSH is
+ remark unconditional; SNMP/NTP/TACACS+ only when enabled/non-empty),
+ remark same "don't render disabled things" rule the rest of this
+ remark template already follows.
+ permit tcp any any eq 22
+ permit udp any any eq snmp
+ permit udp any any eq snmptrap
+ permit udp any any eq ntp
+ permit tcp any any eq tacacs
+!
+ip access-list extended COPP-ACL-TRANSIT_TRAFFIC
+ remark ICMP hardware-forwarding-exception traffic (unreachables/TTL-exceeded
+ remark generation -- icmp_standards.unreachable_rate_limit is always set in
+ remark this baseline). ARP is matched separately below via "match protocol
+ remark arp" since ARP isn't an IP protocol an ACL can match. This is a
+ remark standard CoPP classification pairing, not a value logical_topology.
+ remark yaml / platform_wan_baseline.yaml specifies.
+ permit icmp any any
+!
+class-map match-any COPP-ROUTING_UPDATES
+ match access-group name COPP-ACL-ROUTING_UPDATES
+!
+class-map match-any COPP-MANAGEMENT_ACCESS
+ match access-group name COPP-ACL-MANAGEMENT_ACCESS
+!
+class-map match-any COPP-TRANSIT_TRAFFIC
+ match access-group name COPP-ACL-TRANSIT_TRAFFIC
+ match protocol arp
+!
+policy-map CONTROL-PLANE-POLICY
+ class COPP-ROUTING_UPDATES
+  police 32000 conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "medium" -- rate above is a starting-point placeholder, tune per site
+ class COPP-MANAGEMENT_ACCESS
+  police 8000 conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "low" -- rate above is a starting-point placeholder, tune per site
+ class COPP-TRANSIT_TRAFFIC
+  police 128000 conform-action transmit exceed-action drop
+  ! priority tier from platform_wan_baseline: "high" -- rate above is a starting-point placeholder, tune per site
+!
+control-plane
+ service-policy input CONTROL-PLANE-POLICY
+!
+! NOTE: bgp_security (md5_authentication: True,
+! ttl_security_hops: 2) is a per-neighbor
+! setting applied under "router bgp <asn>" once the ASN and neighbor list are
+! known from logical_topology.yaml -- deferred to that stage. Still flagged
+! from the earlier review: confirm ttl_security_hops (physical_topology.yaml
+! shows a single-hop ISP circuit, which would argue for 1, not 2) and confirm
+! whether wan_interfaces.passive_routing_interface is meant to apply anywhere,
+! since BGP has no native passive-interface concept.
+!
+! NOTE: secure_boot_verification -- Secure Boot on Catalyst 8000 is a
+! hardware-anchored (SUDI-based) feature verified automatically at boot;
+! there is no standard IOS-XE enable/disable command for it, so no CLI is
+! emitted here. Confirm via 'show platform sudi certificate' post-deploy.
+! NOTE: hardware_crypto_acceleration -- hardware crypto engine use on
+! Catalyst 8000 is governed by the installed throughput/security license
+! and platform hardware, not a single confirmed IOS-XE CLI toggle. Verify
+! via 'show platform hardware qfp active feature crypto' post-deploy
+! rather than assuming a command exists here.
+!
+end
+! ---------- 2. Physical topology (physical topology.j2) ----------
+!
+hostname abc-hq-wan-01
+!
+interface TenGigabitEthernet0/0/0
+ description EXTERNAL - Service Provider A 10Gbps Ethernet Line (wan_circuit)
+ no shutdown
+!
+interface HundredGigE0/1/0
+ description FABRIC - to abc-hq-wan-02 HundredGigE0/1/0 (inter_device)
+ no shutdown
+!
+interface HundredGigE0/2/0
+ description FABRIC - to abc-hq-cor-01 HundredGigE0/0/1 (inter_device)
+ no shutdown
+!
+interface HundredGigE0/2/1
+ description FABRIC - to abc-hq-cor-03 HundredGigE0/0/1 (inter_device)
+ no shutdown
+!
+! NOTE: abc-hq-wan-01's internal_links in physical_topology.yaml include
+! a link to its WAN-tier peer (the horizontal wan-01<->wan-02 interconnect)
+! that has no corresponding entry anywhere in logical_topology.yaml's
+! bgp_peers for this device -- that physical link is brought up above but
+! carries no routing session. Confirm whether it's meant to (e.g. a direct
+! iBGP/heartbeat path between the two WAN edges) or is deliberately
+! data-plane-only / unused at this stage.
+!
+end
+! ---------- 3. Logical topology (logical topology.j2) ----------
+!
+interface Loopback0
+ ip address 10.0.0.1 255.255.255.255
+ description LOOPBACK - management
+ no shutdown
+!
+! NOTE: TenGigabitEthernet0/0/0 carries "eBGP to ISP-A" (peer 192.168.10.1)
+! but no local IP can be derived for it -- eBGP peers have no counterpart
+! `interfaces:` entry on either side of logical_topology.yaml to derive an
+! address from (see FINDING 1). Address must be supplied before deploying.
+interface HundredGigE0/2/0
+ ip address 10.18.1.0 255.255.255.254
+ description UNDERLAY - iBGP to core-01 (FD-A)
+!
+interface HundredGigE0/2/1
+ ip address 10.18.1.2 255.255.255.254
+ description UNDERLAY - iBGP Cross-FD to core-03
+!
+router bgp 65100
+ bgp router-id 10.0.0.1
+ bgp log-neighbor-changes
+ neighbor 192.168.10.1 remote-as 65530
+ neighbor 192.168.10.1 description eBGP to ISP-A
+ neighbor 192.168.10.1 ttl-security hops 2
+ neighbor 192.168.10.1 password !! VAULT-REFERENCE-REQUIRED !!
+ neighbor 10.18.1.1 remote-as 65100
+ neighbor 10.18.1.1 description iBGP to core-01 (FD-A)
+ neighbor 10.18.1.1 ttl-security hops 2
+ neighbor 10.18.1.1 password !! VAULT-REFERENCE-REQUIRED !!
+ neighbor 10.18.1.3 remote-as 65100
+ neighbor 10.18.1.3 description iBGP Cross-FD to core-03
+ neighbor 10.18.1.3 ttl-security hops 2
+ neighbor 10.18.1.3 password !! VAULT-REFERENCE-REQUIRED !!
+ address-family ipv4 unicast
+  neighbor 192.168.10.1 activate
+  neighbor 10.18.1.1 activate
+  neighbor 10.18.1.3 activate
+ exit-address-family
+!
+end
+! ---------- 4. Streaming telemetry (telemetry.j2) ----------
+!
+telemetry ietf subscription 101
+ encoding gpb_kv
+ filter xpath Cisco-NX-OS-device:System/intf-items
+ stream yang-push
+ update-policy periodic 3000
+ receiver ip address 10.254.1.50 port 57500 protocol grpc-tcp
+!
+telemetry ietf subscription 102
+ encoding gpb_kv
+ filter xpath Cisco-NX-OS-device:System/proc-items
+ filter xpath Cisco-NX-OS-device:System/eqptmgr-items
+ stream yang-push
+ update-policy periodic 6000
+ receiver ip address 10.254.1.50 port 57500 protocol grpc-tcp
+!
+! NOTE: update-policy periodic is in centiseconds (1/100s) on IOS-XE MDT,
+! not milliseconds -- the value above is telemetry.yaml's
+! sample_interval_ms divided by 10. filter xpath values are placeholders
+! (see the FINDING above) -- this device's role needs the equivalent
+! Cisco-IOS-XE-*-oper YANG xpath before this subscription will actually
+! stream anything meaningful; not silently substituted here.
+!
+end
+</details>
 
 
