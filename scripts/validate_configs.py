@@ -43,6 +43,7 @@ from netascode_filters import (
     device_platform, device_role, device_external_links, device_phys_links,
     device_routing_record, wan_peer_binding, ios_addr,
     endpoint_port_configs, endpoint_vlan_list, evpn_rr_peers,
+    device_telemetry_subscription,
 )
 
 PLATFORM_MAP = {
@@ -151,7 +152,7 @@ class Check:
         self.note = note
 
 
-def validate_device(name, phys, logical, baseline, platform, role, cfg_text, endpoint_service):
+def validate_device(name, phys, logical, baseline, platform, role, cfg_text, endpoint_service, telemetry):
     checks = []
     lset = line_set(cfg_text)
     stanzas = parse_interface_stanzas(cfg_text)
@@ -334,6 +335,34 @@ def validate_device(name, phys, logical, baseline, platform, role, cfg_text, end
                 want('evpn-svi-ip', f"interface {svi_name} has ip address {expected_ip}",
                      iface_has_line(stanzas, svi_name, f"ip address {expected_ip}"))
 
+    # --- Streaming telemetry (all devices -- templates/telemetry.j2 /
+    #     telemetry.yaml, resolved per device by device_telemetry_
+    #     subscription(), same "expected == what the filter itself
+    #     resolved" principle every other check in this file follows) ---
+    subscription = device_telemetry_subscription(telemetry, name)
+    dest = subscription['destination']
+    if dest and subscription['sensor_groups']:
+        if platform == 'nexus93240':
+            want('telemetry-feature', 'feature telemetry', 'feature telemetry' in lset)
+            dest_line = (f"ip address {dest['ip_address']} port {dest['port']} "
+                         f"protocol {dest['protocol'].upper()} encoding {dest['encoding'].upper()}")
+            want('telemetry-destination-group', dest_line, dest_line in lset)
+            for sg in subscription['sensor_groups']:
+                for path in sg['sensor_paths']:
+                    line = f"path {path}"
+                    want('telemetry-sensor-path', f"{sg['name']}: {line}", line in lset)
+        else:
+            for sg in subscription['sensor_groups']:
+                for path in sg['sensor_paths']:
+                    line = f"filter xpath {path}"
+                    want('telemetry-filter-xpath', f"{sg['name']}: {line}", line in lset)
+            receiver_line = f"receiver ip address {dest['ip_address']} port {dest['port']} protocol {dest['protocol']}-tcp"
+            want('telemetry-receiver', receiver_line, receiver_line in lset)
+    else:
+        want('telemetry-subscription (skipped)',
+             f"{name}'s role ({role}) has no role_subscriptions entry in telemetry.yaml",
+             True, note='skipped: known data-model gap, not a render defect')
+
     # --- Endpoint service (access-vtep only, BAU stage 4 --
     #     templates/endpoint service.j2 / endpoint service.yaml) ---
     if role == 'access-vtep':
@@ -400,6 +429,7 @@ def main():
     phys = load_yaml(os.path.join(models_dir, 'physical topology.yaml'))['site_physical_topology']
     logical = load_yaml(os.path.join(models_dir, 'logical topology.yaml'))['site_context']
     endpoint_service = load_yaml(os.path.join(models_dir, 'endpoint service.yaml'))['site_context']
+    telemetry = load_yaml(os.path.join(models_dir, 'telemetry.yaml'))['site_telemetry']
     device_names = all_device_names(phys)
 
     all_checks = []
@@ -413,7 +443,7 @@ def main():
             continue
         with open(cfg_path) as f:
             cfg_text = f.read()
-        all_checks.extend(validate_device(name, phys, logical, baseline, platform, role, cfg_text, endpoint_service))
+        all_checks.extend(validate_device(name, phys, logical, baseline, platform, role, cfg_text, endpoint_service, telemetry))
 
     by_device = {}
     for c in all_checks:
