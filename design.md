@@ -481,6 +481,8 @@ end
 
 ## Telemetry Output
 
+[Open the HTML file](./fabric-telemetry-dashboard.html)
+
 Subscription 101 — Interfaces statistics from abc-hq-cor-01 (every 30s, Cisco-NX-OS-device:System/intf-items):
 ```JSON
 {
