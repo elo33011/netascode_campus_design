@@ -9,9 +9,16 @@ This is a sample enterprise network design to demonstrate how an automation nati
 - **Declarative state**: State the desired end result; automation works out the steps
 - **Streaming Telemetry**: Live device state flows back continuously, not checked on demand
 
-## Difference between traditional and automation native network design approach
+## What's the difference from traditional network design approach ? 
 
-Both approaches pass through the same stages — the difference is *how* each stage is done.
+<div style="border: 1px solid #ccc; padding: 10px;">
+
+Traditional network design treats the design as a set of documents — diagrams, spreadsheets, and configuration templates — that describe intent but are not directly connected to what gets deployed. Consistency and accuracy depend on engineers maintaining that connection by hand, which is why documentation and running configuration tend to drift apart over a network's life.
+
+An automation-native approach instead defines intent as structured data: version-controlled models that fully describe a network's devices, addressing, services, and monitoring requirements. Device configuration is not authored directly — it is rendered from these models through templates and pushed via automation, so every device of a given role is built identically and repeatably. A validation stage compares rendered configuration against the data model before and after deployment, and streaming telemetry reports operational state continuously rather than through periodic polling.
+
+The practical difference is where correctness is enforced. In the traditional approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap.
+</div>
 
 ## Key takeaways:
 - Data model first, design content generated from various data model.
