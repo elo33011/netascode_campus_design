@@ -478,3 +478,54 @@ telemetry ietf subscription 102
 end
 ```
 </details>
+
+## Telemetry Output
+
+Subscription 101 — Interfaces statistics from abc-hq-cor-01 (every 30s, Cisco-NX-OS-device:System/intf-items):
+```JSON
+{
+  "node_id_str": "abc-hq-cor-01",
+  "subscription_id_str": "101",
+  "encoding_path": "Cisco-NX-OS-device:System/intf-items",
+  "collection_id": 58213,
+  "msg_timestamp": 1757320800456,
+  "data": [
+    {
+      "keys": { "intf-items/phys-items/PhysIf-list/id": "HundredGigE0/0/1" },
+      "content": {
+        "operSt": "up", "adminSt": "up",
+        "eth-items/rx-items/pkts": 1928374651,
+        "eth-items/tx-items/pkts": 1738475920,
+        "eth-items/rx-items/errors": 0
+      }
+    },
+    {
+      "keys": { "intf-items/phys-items/PhysIf-list/id": "HundredGigE1/0/1" },
+      "content": {
+        "operSt": "up", "adminSt": "up",
+        "eth-items/rx-items/pkts": 2011938442,
+        "eth-items/rx-items/errors": 0
+      }
+    }
+  ]
+}
+```
+Subscription 102 — BGP/EVPN Statistics from abc-hq-cor-01 (every 60s, Cisco-NX-OS-device:System/bgp-items):
+```JSON
+{
+  "node_id_str": "abc-hq-cor-01",
+  "subscription_id_str": "102",
+  "encoding_path": "Cisco-NX-OS-device:System/bgp-items",
+  "msg_timestamp": 1757320800789,
+  "data": [
+    {
+      "keys": { "bgp-items/inst-items/dom-items/Dom-list/peer-items/Peer-list/addr": "10.18.1.0" },
+      "content": { "state": "established", "description": "iBGP Underlay to wan-01", "af-name": "ipv4-unicast" }
+    },
+    {
+      "keys": { "bgp-items/inst-items/dom-items/Dom-list/peer-items/Peer-list/addr": "10.9.1.1" },
+      "content": { "state": "established", "description": "iBGP Underlay to agg-01", "af-name": "l2vpn-evpn", "af-rx-routes": 6 }
+    }
+  ]
+}
+```
