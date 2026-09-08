@@ -439,6 +439,42 @@ def evpn_rr_peers(site_context, device_name):
     return {'is_rr': False, 'peers': []}
 
 
+def device_telemetry_subscription(site_telemetry, device_name):
+    """Resolves this device's streaming telemetry subscription from
+    telemetry.yaml, keyed off device_role() -- same "declare once per
+    role, resolve per device" pattern the platform role baselines already
+    use (platform_map in inventory/group_vars/all.yml): a device carries
+    no telemetry data of its own, it just gets its role's entry from
+    site_telemetry['role_subscriptions'] expanded in full.
+
+    Expands each sensor-group name in that role_subscriptions entry into
+    its full sensor_paths/sample_interval_ms from the sensor_groups
+    catalog, and the destination name into the full telemetry_destinations
+    entry -- so templates/telemetry.j2 never does its own catalog lookups,
+    matching the fully-pre-resolved convention evpn_rr_peers() and
+    endpoint_port_configs() already established.
+
+    Returns {'destination': {...} | None, 'sensor_groups': [{'name',
+    'description', 'sensor_paths', 'sample_interval_ms'}, ...]}. A role
+    with no role_subscriptions entry returns an empty subscription rather
+    than raising -- this model is additive, so a device's role simply not
+    being covered yet is a documented gap (visible in the rendered config
+    as a NOTE), not a hard failure of the whole render.
+    """
+    role = device_role(device_name)
+    role_sub = site_telemetry.get('role_subscriptions', {}).get(role)
+    if not role_sub:
+        return {'destination': None, 'sensor_groups': []}
+
+    dest_by_name = {d['name']: d for d in site_telemetry.get('telemetry_destinations', [])}
+    sg_by_name = {g['name']: g for g in site_telemetry.get('sensor_groups', [])}
+
+    destination = dest_by_name.get(role_sub.get('destination'))
+    sensor_groups = [sg_by_name[n] for n in role_sub.get('sensor_groups', []) if n in sg_by_name]
+
+    return {'destination': destination, 'sensor_groups': sensor_groups}
+
+
 def resolve_rd(rd_template, loopback_cidr):
     """logical_topology.yaml documents route_distinguisher as
     '10.3.0.x:10' where 'x = last octet of the originating access-VTEP's
@@ -464,6 +500,7 @@ FILTERS = {
     'ios_addr': ios_addr,
     'resolve_rd': resolve_rd,
     'evpn_rr_peers': evpn_rr_peers,
+    'device_telemetry_subscription': device_telemetry_subscription,
 }
 
 
