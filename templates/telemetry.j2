@@ -1,0 +1,95 @@
+{# ============================================================================
+   Streaming Telemetry Deployment Template (platform-agnostic)
+   ============================================================================
+   New pipeline stage, closing the loop the earlier stages only open: they
+   describe intent and push it to devices (the "write path"); this stage
+   configures each device to push its own operational state back out (the
+   "read path") -- design.md's Streaming Telemetry element, previously an
+   unimplemented core element. Applied after logical topology.j2, before
+   endpoint service.j2 (BAU) -- see scripts/render_configs.py's stage order.
+
+   Render context expected (one device at a time, same convention as every
+   other template here):
+     site_telemetry : full parsed telemetry.yaml (site_telemetry)
+     device_name     : hostname being rendered
+     platform        : 'catalyst8000' | 'nexus93240' | 'catalyst9000'
+
+   All resolution -- which sensor groups this device's role gets, and
+   expanding each one from telemetry.yaml's catalog -- happens in
+   device_telemetry_subscription() (filter_plugins/netascode_filters.py).
+   This template only renders what that filter already resolved; no
+   catalog lookups happen here, same "no lookups in the template itself"
+   convention evpn_rr_peers()/endpoint_port_configs() established.
+
+   NX-OS vs IOS-XE differ structurally here, not just by keyword (unlike
+   physical/logical topology.j2's small per-line branches): NX-OS's
+   `telemetry` feature is destination-group/sensor-group/subscription
+   objects; IOS-XE's model-driven telemetry is a numbered `telemetry ietf
+   subscription` block per sensor path. Both branches render from the same
+   resolved site_telemetry data -- there is no separate per-platform model.
+
+   FINDING -- not silently resolved, flagged instead: telemetry.yaml's
+   sensor_paths are written as NX-OS DME paths (Cisco-NX-OS-device:...)
+   only. The IOS-XE branch below reuses them as filter xpath values rather
+   than substituting the equivalent Cisco-IOS-XE-*-oper YANG xpath, because
+   no such mapping exists anywhere in this model yet -- confirm with the
+   design owner whether telemetry.yaml should carry a per-platform path
+   variant (mirroring how physical/logical topology.j2 branch on platform
+   for small syntax differences) before deploying to a WAN or access
+   device.
+
+   A device whose role has no role_subscriptions entry in telemetry.yaml
+   renders nothing but a NOTE -- a device simply not being covered yet is a
+   documented gap, not a rendering failure.
+   ============================================================================ #}
+{% set subscription = site_telemetry | device_telemetry_subscription(device_name) %}
+{% set dest = subscription.destination %}
+!
+{% if dest and subscription.sensor_groups %}
+{% if platform == 'nexus93240' %}
+feature telemetry
+!
+telemetry
+  destination-group DG-{{ dest.name }}
+    ip address {{ dest.ip_address }} port {{ dest.port }} protocol {{ dest.protocol | upper }} encoding {{ dest.encoding | upper }}
+{% for sg in subscription.sensor_groups %}
+  sensor-group SG-{{ sg.name }}
+{% for path in sg.sensor_paths %}
+    path {{ path }}
+{% endfor %}
+{% endfor %}
+{% for sg in subscription.sensor_groups %}
+  subscription {{ 100 + loop.index }}
+    dst-grp DG-{{ dest.name }}
+    snsr-grp SG-{{ sg.name }} sample-interval {{ sg.sample_interval_ms }}
+{% endfor %}
+! NOTE: sensor_paths above are taken directly from telemetry.yaml's NX-OS
+! DME paths -- verify each against your exact NX-OS release's supported
+! path list (e.g. "show telemetry transport all") before deploying.
+{% else %}
+{% for sg in subscription.sensor_groups %}
+telemetry ietf subscription {{ 100 + loop.index }}
+ encoding {{ dest.encoding | replace('-', '_') }}
+{% for path in sg.sensor_paths %}
+ filter xpath {{ path }}
+{% endfor %}
+ stream yang-push
+ update-policy periodic {{ (sg.sample_interval_ms / 10) | int }}
+ receiver ip address {{ dest.ip_address }} port {{ dest.port }} protocol {{ dest.protocol }}-tcp
+!
+{% endfor %}
+! NOTE: update-policy periodic is in centiseconds (1/100s) on IOS-XE MDT,
+! not milliseconds -- the value above is telemetry.yaml's
+! sample_interval_ms divided by 10. filter xpath values are placeholders
+! (see the FINDING above) -- this device's role needs the equivalent
+! Cisco-IOS-XE-*-oper YANG xpath before this subscription will actually
+! stream anything meaningful; not silently substituted here.
+{% endif %}
+{% else %}
+! NOTE: no streaming telemetry subscription resolved for {{ device_name }}
+! ({{ 'no destination' if not dest else 'no sensor groups' }} configured in
+! models/telemetry.yaml's role_subscriptions for this device's role) --
+! documented gap, not a render defect.
+{% endif %}
+!
+end
