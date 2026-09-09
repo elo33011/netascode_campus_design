@@ -115,7 +115,7 @@ This design is constructed from a set of data models which provides a structure 
 
 ### Design Driven Models
 
-Design driven models are specific models created for this design. They defines the physical and logical network topology, as well as the endpoint service (i.e. interface configurations) required on the access switches.
+Design driven models defines the physical and logical network topology, as well as the endpoint service (i.e. interface configurations) required on the access switches. It alsos defines what telemetry data will be produced.
 
 ![Model Relationship](./diagram/data-model-relationships.svg)
 
