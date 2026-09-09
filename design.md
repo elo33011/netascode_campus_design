@@ -28,9 +28,9 @@ The practical difference is where correctness is enforced. In the classic approa
 - BAU changes — Update the data model so it always reflects real device state.
 
 ## Core Concept Flow
-- schema + values → data model
-- data model + template → rendered config
-- playbook + rendered config → deployed config
+- schema + values = data model
+- data model + template = rendered config
+- playbook + rendered config = deployed config
 - validation = data model vs deployed config
 
 <div style="display: flex; gap: 20px;">
