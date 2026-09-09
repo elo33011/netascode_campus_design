@@ -10,14 +10,14 @@ This example shows how an automation‑native enterprise network should be desig
 - Declarative state — Define the desired outcome; automation handles the steps.
 - Streaming telemetry — Continuous state reporting instead of periodic checks.
 
-## How It Differs from Traditional Design
+## How It differs from Classic design approach
 <div style="border: 1px solid #ccc; padding: 10px;">
 
-Traditional network design treats the design as a set of documents — diagrams, spreadsheets, and configuration templates — that describe intent but are not directly connected to what gets deployed. Consistency and accuracy depend on engineers maintaining that connection by hand, which is why documentation and running configuration tend to drift apart over a network's life.
+Classic network design treats the design as a set of documents — diagrams, spreadsheets, and configuration templates — that describe intent but are not directly connected to what gets deployed. Consistency depends on engineers manually keeping documentation and device configurations aligned, which is why drift is common over a network’s life. Automation built on top of this model often fails for the same reason: it automates outputs (templates, configs) rather than the intent. When the intent changes, the automation has nothing authoritative to follow, so it quickly falls out of sync.
 
 An automation-native approach instead defines intent as structured data: version-controlled models that fully describe a network's devices, addressing, services, and monitoring requirements. Device configuration is not authored directly — it is rendered from these models through templates and pushed via automation, so every device of a given role is built identically and repeatably. A validation stage compares rendered configuration against the data model before and after deployment, and streaming telemetry reports operational state continuously rather than through periodic polling.
 
-The practical difference is where correctness is enforced. In the traditional approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap.
+The practical difference is where correctness is enforced. In the classic approach, correctness depends on the design and the deployed network being kept in sync by discipline. In the automation-native approach, the deployed network is a direct, repeatable output of the data model, so the two cannot silently diverge — a discrepancy is a defect in the pipeline, not a documentation gap.
 
 ## Key Takeaways
 - Data model first — All design artifacts are generated from it.
