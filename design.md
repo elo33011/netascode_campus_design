@@ -22,7 +22,7 @@ The practical difference is where correctness is enforced. In the classic approa
 - Data model first — All design artifacts are generated from it.
 - Generated outputs — Diagrams, patch matrices, templates, configs, playbooks.
 - Data model built from schemas + values (e.g., from NetBox as SOT).
-- Configs rendered via Jinja2, deployed via automation tools like Ansible.
+- Configs rendered via templating engine, deployed via automation tools like Ansible.
 - Validation — Compare rendered config with the data model.
 - BAU changes — Update the data model so it always reflects real device state.
 
