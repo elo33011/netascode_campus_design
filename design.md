@@ -168,7 +168,7 @@ Purpose: Model-driven telemetry (MDT) subscriptions — what each device streams
 
 ### Device Role Models
 
-A role is the function of the device performed in the design. This design will utilize 3 role models from an existing product catalog. 
+Device role models define the foundational configuration of a device in order to operate this design. A role is the function of a device performed and it is design agnostic. They are prebuilt and pull into the design from the product catalog.
 
 [WAN Edge Role](models/wan%20edge%20role.yaml)
 
