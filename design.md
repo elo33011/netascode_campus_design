@@ -1,8 +1,7 @@
 # Automation Native Network Design Explain - Executive Summary
 
-This example shows how an automation‑native enterprise network should be designed. Instead of treating automation as an add‑on, the design itself is built around automation requirements.
+This example shows how an automation‑native enterprise network should be designed. Instead of treating automation as an add‑on, the design itself is built around these automation elements:
 
-## Core Principles
 - Deterministic topology — One repeatable pattern applied everywhere.
 - Abstraction — Devices grouped into reusable roles instead of configured individually.
 - Machine‑friendly data — Intent expressed as structured, schema‑validated data.
