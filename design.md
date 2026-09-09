@@ -10,7 +10,7 @@ This example shows how an automation‑native enterprise network should be desig
 - Declarative state — Define the desired outcome; automation handles the steps.
 - Streaming telemetry — Continuous state reporting instead of periodic checks.
 
-## How It differs from classic design approach
+## Classic Design Approach - Whats wrong with it ?
 <div style="border: 1px solid #ccc; padding: 10px;">
 
 Classic network design treats the design as a set of documents — diagrams, spreadsheets, and configuration templates — that describe intent but are not directly connected to what gets deployed. Consistency depends on engineers manually keeping documentation and device configurations aligned, which is why drift is common over a network’s life. Automation built on top of this model often fails for the same reason: it automates outputs (templates, configs) rather than the intent. When the intent changes, the automation has nothing authoritative to follow, so it quickly falls out of sync.
@@ -31,7 +31,7 @@ The practical difference is where correctness is enforced. In the classic approa
 - schema + values → data model
 - data model + template → rendered config
 - playbook + rendered config → deployed config
-- validation → data model vs deployed config
+- validation = data model vs deployed config
 
 <div style="display: flex; gap: 20px;">
   <div style="flex: 1;">
