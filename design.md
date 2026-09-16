@@ -64,7 +64,7 @@ The business requirements can be summarized as:
 
 ## Scope
 
-For the sake of demonstration, the implementation details of management and WIFI network are not covered.
+For the sake of demonstration, the implementation details of management network, WIFI network and the authenication platform are not covered.
 
 ## Network Design
 
