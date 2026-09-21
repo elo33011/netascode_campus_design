@@ -38,7 +38,7 @@ The practical difference is where correctness is enforced. In the classic approa
   </div>
 
   <div style="flex: 1;">
-    <img src="wanlab_topology.png" width="1200">
+    <img src="diagram/automation-native-data-model-pipeline.svg" width="1200">
   </div>
 </div>
 ---
